@@ -39334,8 +39334,23 @@ class TimeManager {
 const timeManager = new TimeManager();
 /**
  * Returns the current time in milliseconds.
- * Uses performance.now() when available, falls back to Date.now().
- * Time can be frozen using setNow() for deterministic rendering.
+ * When time is frozen via setNow(), returns the frozen timestamp.
+ * Otherwise returns real browser time (performance.now() or Date.now()).
+ *
+ * @returns Current time in milliseconds
+ * @example
+ * ```ts
+ * // Measure elapsed time
+ * const start = maplibregl.now();
+ * // ... later ...
+ * const elapsed = maplibregl.now() - start;
+ *
+ * // During frozen time
+ * maplibregl.setNow(16.67);
+ * console.log(maplibregl.now()); // 16.67
+ * maplibregl.restoreNow();
+ * console.log(maplibregl.now()); // real time
+ * ```
  */
 function now() {
     return timeManager.getCurrentTime();
@@ -69722,6 +69737,7 @@ exports.getWorkerCount = getWorkerCount;
 exports.getWorkerUrl = getWorkerUrl;
 exports.importScriptInWorkers = importScriptInWorkers;
 exports.isTimeFrozen = isTimeFrozen;
+exports.now = now;
 exports.prewarm = prewarm;
 exports.restoreNow = restoreNow;
 exports.setMaxParallelImageRequests = setMaxParallelImageRequests;

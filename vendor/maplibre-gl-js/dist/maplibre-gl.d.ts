@@ -14047,6 +14047,27 @@ export declare class GlobeControl implements IControl {
 	_updateGlobeIcon: () => void;
 }
 /**
+ * Returns the current time in milliseconds.
+ * When time is frozen via setNow(), returns the frozen timestamp.
+ * Otherwise returns real browser time (performance.now() or Date.now()).
+ *
+ * @returns Current time in milliseconds
+ * @example
+ * ```ts
+ * // Measure elapsed time
+ * const start = maplibregl.now();
+ * // ... later ...
+ * const elapsed = maplibregl.now() - start;
+ *
+ * // During frozen time
+ * maplibregl.setNow(16.67);
+ * console.log(maplibregl.now()); // 16.67
+ * maplibregl.restoreNow();
+ * console.log(maplibregl.now()); // real time
+ * ```
+ */
+export declare function now(): number;
+/**
  * Freezes time at a specific timestamp for deterministic rendering.
  * Useful for frame-by-frame video capture where each frame needs
  * a consistent time value.
