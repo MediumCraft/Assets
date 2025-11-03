@@ -27034,20 +27034,22 @@ var WorkerClass = {
     workerParams: void 0
 };
 
-function createWorker() {
-    return WorkerClass.workerClass != null ? new WorkerClass.workerClass() : new self.Worker(WorkerClass.workerUrl, WorkerClass.workerParams);
+function createWorker(name) {
+    return WorkerClass.workerClass != null ? new WorkerClass.workerClass() : new self.Worker(WorkerClass.workerUrl, Object.assign({ name }, WorkerClass.workerParams));
 }
 
 const PRELOAD_POOL_ID = 'mapboxgl_preloaded_worker_pool';
 class WorkerPool {
-    constructor() {
+    constructor(name) {
         this.active = {};
+        this.name = name;
     }
     acquire(mapId, count = WorkerPool.workerCount) {
         if (!this.workers) {
             this.workers = [];
             while (this.workers.length < count) {
-                this.workers.push(createWorker());
+                const w = createWorker(`${ this.name || '' }WorkerPool: ${ mapId }-${ this.workers.length }`);
+                this.workers.push(w);
             }
         }
         this.active[mapId] = true;
@@ -27128,7 +27130,7 @@ function getGlobalWorkerPool() {
 }
 function getImageRasterizerWorkerPool() {
     if (!imageRasterizerWorkerPool) {
-        imageRasterizerWorkerPool = new WorkerPool();
+        imageRasterizerWorkerPool = new WorkerPool('ImageRasterizer');
     }
     return imageRasterizerWorkerPool;
 }
@@ -72719,7 +72721,7 @@ const modelUniformValues = (matrix, lightingMatrix, normalMatrix, nodeMatrix, pa
         colorMix.b = materialOverride.color.b;
         colorMix.a = materialOverride.colorMix;
         emissiveStrength = materialOverride.emissionStrength;
-        opacity = materialOverride.opacity;
+        opacity = materialOverride.opacity * opacity;
     }
     const uniformValues = {
         'u_matrix': matrix,
@@ -79904,12 +79906,15 @@ class Painter {
         let layersRequireTerrainDepth = false;
         let layersRequireFinalDepth = false;
         let buildingLayer = null;
+        let conflationSourcesOrLayersInStyle = 0;
+        let conflationActiveThisFrame = false;
         for (const id of layerIds) {
             const layer = layers[id];
             if (layer.type === 'circle') {
                 layersRequireTerrainDepth = true;
             } else if (layer.type === 'building') {
                 buildingLayer = layer;
+                ++conflationSourcesOrLayersInStyle;
             } else if (layer.type === 'symbol') {
                 if (layer.hasOcclusionOpacityProperties) {
                     layersRequireFinalDepth = true;
@@ -79924,14 +79929,12 @@ class Painter {
         this.modelManager = style.modelManager;
         this.symbolFadeChange = style.placement.symbolFadeChange(index.o.now());
         this.imageManager.beginFrame();
-        let conflationSourcesInStyle = 0;
-        let conflationActiveThisFrame = false;
         for (const id in sourceCaches) {
             const sourceCache = sourceCaches[id];
             if (sourceCache.used) {
                 sourceCache.prepare(this.context);
                 if (sourceCache.getSource().usedInConflation) {
-                    ++conflationSourcesInStyle;
+                    ++conflationSourcesOrLayersInStyle;
                 }
             }
         }
@@ -79963,7 +79966,7 @@ class Painter {
                 return null;
             return cache.getSource();
         };
-        if (conflationSourcesInStyle || clippingActiveThisFrame || this._clippingActiveLastFrame) {
+        if (conflationSourcesOrLayersInStyle || clippingActiveThisFrame || this._clippingActiveLastFrame) {
             const conflationLayersInStyle = [];
             const conflationLayerIndicesInStyle = [];
             let idx = 0;
@@ -84911,6 +84914,33 @@ class Camera extends index.E {
     }
 }
 
+function sanitizeLinks(html) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const elements = Array.from(doc.body.querySelectorAll('*'));
+    elements.forEach(el => {
+        const text = el.textContent || '';
+        if (el.tagName !== 'A') {
+            el.replaceWith(doc.createTextNode(text));
+            return;
+        }
+        const href = el.getAttribute('href');
+        if (!href || !/^(https?:|mailto:)/i.test(href)) {
+            el.replaceWith(doc.createTextNode(text));
+            return;
+        }
+        const a = doc.createElement('a');
+        a.href = href;
+        a.textContent = text;
+        a.rel = 'noopener nofollow';
+        const className = el.getAttribute('class');
+        if (className)
+            a.className = className;
+        el.replaceWith(a);
+    });
+    return doc.body.innerHTML;
+}
+
 class AttributionControl {
     constructor(options = {}) {
         this.options = options;
@@ -85040,7 +85070,7 @@ class AttributionControl {
                 attributions = [this.options.customAttribution];
             }
         }
-        const attribHTML = attributions.join(' | ');
+        const attribHTML = attributions.map(attr => sanitizeLinks(attr)).join(' | ');
         if (attribHTML === this._attribHTML)
             return;
         this._attribHTML = attribHTML;
