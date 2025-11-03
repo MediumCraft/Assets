@@ -1,7 +1,7 @@
 /**
  * @license
  * Cesium - https://github.com/CesiumGS/cesium
- * Version 1.134.1
+ * Version 1.135.0
  *
  * Copyright 2011-2022 Cesium Contributors
  *
@@ -25,26 +25,26 @@
 
 import {
   createTaskProcessorWorker_default
-} from "./chunk-LOHB5R25.js";
+} from "./chunk-DOOVZ7KK.js";
 import {
   AttributeCompression_default
-} from "./chunk-VETSIH6N.js";
+} from "./chunk-MG5S7WER.js";
 import {
   Rectangle_default
-} from "./chunk-OVA5IU5S.js";
-import "./chunk-DNOQ22DJ.js";
+} from "./chunk-PGJX7IDB.js";
+import "./chunk-BU5UQP56.js";
+import "./chunk-5O437JQW.js";
+import "./chunk-L67GICVQ.js";
 import {
   Cartesian3_default,
   Cartographic_default,
   Ellipsoid_default
-} from "./chunk-GN7NDGB5.js";
+} from "./chunk-OWZNJTRO.js";
 import {
   Math_default
-} from "./chunk-D45VIGEV.js";
-import "./chunk-OZBWVSA5.js";
-import "./chunk-YGYL7X3Q.js";
-import "./chunk-O2X2JK6G.js";
-import "./chunk-OZLASBIH.js";
+} from "./chunk-X3F3GI34.js";
+import "./chunk-O7QILKQD.js";
+import "./chunk-3AOYYRRB.js";
 
 // packages/engine/Source/Workers/createVectorTilePoints.js
 var maxShort = 32767;

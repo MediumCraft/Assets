@@ -1,7 +1,7 @@
 /**
  * @license
  * Cesium - https://github.com/CesiumGS/cesium
- * Version 1.134.1
+ * Version 1.135.0
  *
  * Copyright 2011-2022 Cesium Contributors
  *
@@ -25,34 +25,34 @@
 
 import {
   PrimitivePipeline_default
-} from "./chunk-JVLR3MB4.js";
+} from "./chunk-QPBZVL2V.js";
 import {
   createTaskProcessorWorker_default
-} from "./chunk-LOHB5R25.js";
-import "./chunk-S4XRQQOW.js";
-import "./chunk-U4PPBISB.js";
-import "./chunk-VETSIH6N.js";
-import "./chunk-7NKJPKFI.js";
-import "./chunk-Z3XNZ7FI.js";
-import "./chunk-FW75VHQU.js";
-import "./chunk-JTRSO6FN.js";
-import "./chunk-3MD6ELKN.js";
-import "./chunk-IJ63WEE3.js";
-import "./chunk-IW3HDLIX.js";
-import "./chunk-OVA5IU5S.js";
-import "./chunk-DNOQ22DJ.js";
-import "./chunk-GN7NDGB5.js";
-import "./chunk-D45VIGEV.js";
-import "./chunk-OZBWVSA5.js";
-import "./chunk-YGYL7X3Q.js";
+} from "./chunk-DOOVZ7KK.js";
+import "./chunk-4Y626NS4.js";
+import "./chunk-SBODMIH7.js";
+import "./chunk-MG5S7WER.js";
+import "./chunk-7QPYGCRZ.js";
+import "./chunk-34MFV7YX.js";
+import "./chunk-2FJJCUZK.js";
+import "./chunk-JPJ4LSZG.js";
+import "./chunk-BADPSCOT.js";
+import "./chunk-OFW7RW5O.js";
+import "./chunk-VXNAM6M6.js";
+import "./chunk-PGJX7IDB.js";
+import "./chunk-BU5UQP56.js";
+import "./chunk-5O437JQW.js";
+import "./chunk-L67GICVQ.js";
+import "./chunk-OWZNJTRO.js";
+import "./chunk-X3F3GI34.js";
 import {
   DeveloperError_default
-} from "./chunk-O2X2JK6G.js";
+} from "./chunk-O7QILKQD.js";
 import {
   __glob,
   __require,
   defined_default
-} from "./chunk-OZLASBIH.js";
+} from "./chunk-3AOYYRRB.js";
 
 // import("./**/*.js") in packages/engine/Source/Workers/createGeometry.js
 var globImport_js = __glob({
@@ -93,6 +93,7 @@ var globImport_js = __glob({
   "./createVectorTilePoints.js": () => import("./createVectorTilePoints.js"),
   "./createVectorTilePolygons.js": () => import("./createVectorTilePolygons.js"),
   "./createVectorTilePolylines.js": () => import("./createVectorTilePolylines.js"),
+  "./createVerticesFromCesium3DTilesTerrain.js": () => import("./createVerticesFromCesium3DTilesTerrain.js"),
   "./createVerticesFromGoogleEarthEnterpriseBuffer.js": () => import("./createVerticesFromGoogleEarthEnterpriseBuffer.js"),
   "./createVerticesFromHeightmap.js": () => import("./createVerticesFromHeightmap.js"),
   "./createVerticesFromQuantizedTerrainMesh.js": () => import("./createVerticesFromQuantizedTerrainMesh.js"),
@@ -105,7 +106,8 @@ var globImport_js = __glob({
   "./gaussianSplatTextureGenerator.js": () => import("./gaussianSplatTextureGenerator.js"),
   "./transcodeKTX2.js": () => import("./transcodeKTX2.js"),
   "./transferTypedArrayTest.js": () => import("./transferTypedArrayTest.js"),
-  "./upsampleQuantizedTerrainMesh.js": () => import("./upsampleQuantizedTerrainMesh.js")
+  "./upsampleQuantizedTerrainMesh.js": () => import("./upsampleQuantizedTerrainMesh.js"),
+  "./upsampleVerticesFromCesium3DTilesTerrain.js": () => import("./upsampleVerticesFromCesium3DTilesTerrain.js")
 });
 
 // packages/engine/Source/Workers/createGeometry.js
