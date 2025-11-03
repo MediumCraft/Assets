@@ -1,6 +1,6 @@
 /**
  * MapLibre GL JS
- * @license 3-Clause BSD. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v5.10.0/LICENSE.txt
+ * @license 3-Clause BSD. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v5.11.0/LICENSE.txt
  */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
@@ -27042,7 +27042,7 @@ class ColorReliefStyleLayer extends StyleLayer {
             remappedColorRamp.elevationStops.push(colorRamp.elevationStops[Math.round(i)]);
             remappedColorRamp.colorStops.push(colorRamp.colorStops[Math.round(i)]);
         }
-        warnOnce(`Too many colors in specification of ${this.id} color-relief layer, may not render properly.`);
+        warnOnce(`Too many colors in specification of ${this.id} color-relief layer, may not render properly. Max possible colors: ${maxLength}, provided: ${colorRamp.elevationStops.length}`);
         return remappedColorRamp;
     }
     _colorRampChanged() {
@@ -39039,7 +39039,7 @@ define('index', ['exports', './shared'], (function (exports, performance$1) { 'u
 
 var name = "maplibre-gl";
 var description = "BSD licensed community fork of mapbox-gl, a WebGL interactive maps library";
-var version$2 = "5.10.0";
+var version$2 = "5.11.0";
 var main = "dist/maplibre-gl.js";
 var style = "dist/maplibre-gl.css";
 var license = "BSD-3-Clause";
@@ -39084,7 +39084,7 @@ var devDependencies = {
 	"@rollup/plugin-commonjs": "^28.0.9",
 	"@rollup/plugin-json": "^6.1.0",
 	"@rollup/plugin-node-resolve": "^16.0.3",
-	"@rollup/plugin-replace": "^6.0.2",
+	"@rollup/plugin-replace": "^6.0.3",
 	"@rollup/plugin-strip": "^3.0.4",
 	"@rollup/plugin-terser": "^0.4.4",
 	"@rollup/plugin-typescript": "^12.1.4",
@@ -39098,7 +39098,7 @@ var devDependencies = {
 	"@types/minimist": "^1.2.5",
 	"@types/murmurhash-js": "^1.0.6",
 	"@types/nise": "^1.4.5",
-	"@types/node": "^24.9.1",
+	"@types/node": "^24.9.2",
 	"@types/offscreencanvas": "^2019.7.3",
 	"@types/pixelmatch": "^5.2.6",
 	"@types/pngjs": "^6.0.5",
@@ -39109,18 +39109,18 @@ var devDependencies = {
 	"@types/window-or-global": "^1.0.6",
 	"@typescript-eslint/eslint-plugin": "^8.46.2",
 	"@typescript-eslint/parser": "^8.43.0",
-	"@vitest/coverage-v8": "3.2.4",
-	"@vitest/eslint-plugin": "^1.3.23",
-	"@vitest/ui": "3.2.4",
+	"@vitest/coverage-v8": "4.0.5",
+	"@vitest/eslint-plugin": "^1.4.0",
+	"@vitest/ui": "4.0.5",
 	address: "^2.0.3",
 	autoprefixer: "^10.4.21",
 	benchmark: "^2.1.4",
 	canvas: "^3.2.0",
 	cspell: "^9.2.2",
-	cssnano: "^7.1.1",
+	cssnano: "^7.1.2",
 	d3: "^7.9.0",
 	"d3-queue": "^3.0.7",
-	"devtools-protocol": "^0.0.1534754",
+	"devtools-protocol": "^0.0.1537100",
 	diff: "^8.0.2",
 	"dts-bundle-generator": "^9.5.1",
 	eslint: "^9.38.0",
@@ -39132,7 +39132,7 @@ var devDependencies = {
 	glob: "^11.0.3",
 	globals: "^16.4.0",
 	"is-builtin-module": "^5.0.0",
-	jsdom: "^27.0.1",
+	jsdom: "^27.1.0",
 	"junit-report-builder": "^5.1.1",
 	minimist: "^1.2.8",
 	"mock-geolocation": "^1.0.11",
@@ -39147,7 +39147,7 @@ var devDependencies = {
 	"postcss-cli": "^11.0.1",
 	"postcss-inline-svg": "^6.0.0",
 	"pretty-bytes": "^7.1.0",
-	puppeteer: "^24.26.1",
+	puppeteer: "^24.27.0",
 	react: "^19.1.1",
 	"react-dom": "^19.2.0",
 	rollup: "^4.52.5",
@@ -39165,7 +39165,7 @@ var devDependencies = {
 	typedoc: "^0.28.14",
 	"typedoc-plugin-markdown": "^4.9.0",
 	typescript: "^5.9.3",
-	vitest: "3.2.4",
+	vitest: "4.0.5",
 	"vitest-webgl-canvas-mock": "^1.1.0"
 };
 var scripts = {
@@ -44567,6 +44567,10 @@ class TileManager extends performance$1.Evented {
     }
     _tileLoaded(tile, id, previousState) {
         tile.timeAdded = now();
+        // Since self-fading applies to unloaded tiles, fadeEndTime must be updated upon load
+        if (tile.selfFading) {
+            tile.fadeEndTime = tile.timeAdded + this._rasterFadeDuration;
+        }
         if (previousState === 'expired')
             tile.refreshedUponExpiration = true;
         this._setTileReloadTimer(id, tile);

@@ -1,6 +1,6 @@
 /**
  * MapLibre GL JS
- * @license 3-Clause BSD. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v5.10.0/LICENSE.txt
+ * @license 3-Clause BSD. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v5.11.0/LICENSE.txt
  */
 var maplibregl = (function () {
 'use strict';
@@ -27200,7 +27200,7 @@ class ColorReliefStyleLayer extends StyleLayer {
             remappedColorRamp.elevationStops.push(colorRamp.elevationStops[Math.round(i)]);
             remappedColorRamp.colorStops.push(colorRamp.colorStops[Math.round(i)]);
         }
-        warnOnce(`Too many colors in specification of ${this.id} color-relief layer, may not render properly.`);
+        warnOnce(`Too many colors in specification of ${this.id} color-relief layer, may not render properly. Max possible colors: ${maxLength}, provided: ${colorRamp.elevationStops.length}`);
         return remappedColorRamp;
     }
     _colorRampChanged() {
