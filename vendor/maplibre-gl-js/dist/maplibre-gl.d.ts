@@ -2120,6 +2120,7 @@ export declare class Dispatcher {
 	getActor(): Actor;
 	remove(mapRemoved?: boolean): void;
 	registerMessageHandler<T extends MessageType>(type: T, handler: MessageHandler<T>): void;
+	unregisterMessageHandler<T extends MessageType>(type: T): void;
 }
 /**
  * A way to identify a feature, either by string or by number
@@ -3758,6 +3759,7 @@ declare class GlyphManager {
 	 * Sniffs the font weight out of a font family name.
 	 */
 	_fontWeight(fontFamily: string): string;
+	destroy(): void;
 }
 type PoolObject = {
 	id: number;
@@ -4551,10 +4553,7 @@ interface ITransformGetters {
 	get nearZ(): number;
 	get farZ(): number;
 	get autoCalculateNearFarZ(): boolean;
-	/**
-	 * Get center lngLat and zoom to ensure that longitude and latitude bounds are respected and regions beyond the map bounds are not displayed.
-	 */
-	get constrain(): TransformConstrainFunction;
+	get constrainOverride(): TransformConstrainFunction;
 }
 interface ITransformMutators {
 	clone(): ITransform;
@@ -4653,11 +4652,11 @@ interface ITransformMutators {
 	 * @param bounds - A {@link LngLatBounds} object describing the new geographic boundaries of the map.
 	 */
 	setMaxBounds(bounds?: LngLatBounds | null): void;
-	/** Sets or clears the callback overriding the transform's default constrain,
+	/** Sets or clears the custom callback overriding the transform's default constrain,
 	 * whose responsibility is to respect the longitude and latitude bounds by constraining the viewport's lnglat and zoom.
 	 * @param constrain - A {@link TransformConstrainFunction} callback defining how the viewport should respect the bounds.
 	 */
-	setConstrain(constrain?: TransformConstrainFunction | null): void;
+	setConstrainOverride(constrain?: TransformConstrainFunction | null): void;
 	/**
 	 * @internal
 	 * Called before rendering to allow the transform implementation
@@ -4791,6 +4790,10 @@ interface IReadonlyTransform extends ITransformGetters {
 	 * The tranform's default callback that ensures that longitude and latitude bounds are respected by the viewport.
 	 */
 	defaultConstrain: TransformConstrainFunction;
+	/**
+	 * Constrain the center lngLat and zoom to ensure that longitude and latitude bounds are respected and regions beyond the map bounds are not displayed.
+	 */
+	applyConstrain: TransformConstrainFunction;
 	maxPitchScaleFactor(): number;
 	/**
 	 * The camera looks at the map from a 3D (lng, lat, altitude) location. Let's use `cameraLocation`
@@ -6410,6 +6413,7 @@ declare class ImageManager extends Evented {
 	atlasTexture: Texture;
 	dirty: boolean;
 	constructor();
+	destroy(): void;
 	isLoaded(): boolean;
 	setLoaded(loaded: boolean): void;
 	getImage(id: string): StyleImage;
@@ -6439,6 +6443,7 @@ declare class ImageManager extends Evented {
 	_updatePatternAtlas(): void;
 	beginFrame(): void;
 	dispatchRenderCallbacks(ids: Array<string>): void;
+	cloneImages(): Record<string, StyleImage>;
 }
 type LightPosition = {
 	x: number;
@@ -7023,6 +7028,7 @@ export declare class Style extends Evented {
 	placement: Placement;
 	z: number;
 	constructor(map: Map$1, options?: StyleOptions);
+	private _setInitialValues;
 	_rtlPluginLoaded: () => void;
 	setGlobalStateProperty(name: string, value: any): this;
 	getGlobalState(): Record<string, any>;
@@ -7235,6 +7241,10 @@ export declare class Style extends Evented {
 	 * @param completion - the completion handler
 	 */
 	setSprite(sprite: SpriteSpecification, options?: StyleSetterOptions, completion?: (err: Error) => void): void;
+	/**
+	 * Destroys all internal resources of the style (sources, images, layers, etc.)
+	 */
+	destroy(): void;
 }
 type BucketParameters<Layer extends TypedStyleLayer> = {
 	index: number;
@@ -7714,6 +7724,7 @@ export declare class Actor implements IActor {
 	 */
 	constructor(target: ActorTarget, mapId?: string | number);
 	registerMessageHandler<T extends MessageType>(type: T, handler: MessageHandler<T>): void;
+	unregisterMessageHandler<T extends MessageType>(type: T): void;
 	/**
 	 * Sends a message from a main-thread map to a Worker or from a Worker back to
 	 * a main-thread map instance.
@@ -10930,6 +10941,12 @@ type DelegatedListener = {
 	};
 };
 type Delegate<E extends Event$1 = Event$1> = (e: E) => void;
+type LostContextStyle = {
+	style: StyleSpecification | null;
+	images: {
+		[_: string]: StyleImage;
+	} | null;
+};
 /**
  * The `Map` object represents the map on your page. It exposes methods
  * and properties that enable you to programmatically change the map,
@@ -11016,6 +11033,11 @@ declare class Map$1 extends Camera {
 	 * image queue throttling handle. To be used later when clean up
 	 */
 	_imageQueueHandle: number;
+	/**
+	 * @internal
+	 * Used to store the previous style and images when a context loss occurs, so they can be restored.
+	 */
+	_lostContextStyle: LostContextStyle;
 	/**
 	 * The map's {@link ScrollZoomHandler}, which implements zooming in and out with a scroll wheel or trackpad.
 	 * Find more details and examples using `scrollZoom` in the {@link ScrollZoomHandler} section.
@@ -11369,7 +11391,7 @@ declare class Map$1 extends Camera {
 	 *
 	 * @param constrain - A {@link TransformConstrainFunction} callback defining how the viewport should respect the bounds.
 	 *
-	 * `null` clears the callback and reverses the override of the map transform's default constrain function.
+	 * `null` clears the callback and reverts the constrain to the map transform's default constrain function.
 	 * @example
 	 * ```ts
 	 * function customTransformConstrain(lngLat, zoom) {
@@ -11828,6 +11850,12 @@ declare class Map$1 extends Camera {
 	 *
 	 */
 	getStyle(): StyleSpecification;
+	/**
+	 * @internal
+	 * Returns the map's style and cloned images to restore context.
+	 * @returns An object containing the style and images.
+	 */
+	_getStyleAndImages(): LostContextStyle;
 	/**
 	 * Returns a Boolean indicating whether the map's style is fully loaded.
 	 *

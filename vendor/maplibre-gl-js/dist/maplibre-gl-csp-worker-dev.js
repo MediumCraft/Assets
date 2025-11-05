@@ -21983,6 +21983,9 @@ class Actor {
     registerMessageHandler(type, handler) {
         this.messageHandlers[type] = handler;
     }
+    unregisterMessageHandler(type) {
+        delete this.messageHandlers[type];
+    }
     /**
      * Sends a message from a main-thread map to a Worker or from a Worker back to
      * a main-thread map instance.

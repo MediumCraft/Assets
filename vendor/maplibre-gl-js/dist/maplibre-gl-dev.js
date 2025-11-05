@@ -33593,6 +33593,9 @@ class Actor {
     registerMessageHandler(type, handler) {
         this.messageHandlers[type] = handler;
     }
+    unregisterMessageHandler(type) {
+        delete this.messageHandlers[type];
+    }
     /**
      * Sends a message from a main-thread map to a Worker or from a Worker back to
      * a main-thread map instance.
@@ -39109,9 +39112,9 @@ var devDependencies = {
 	"@types/window-or-global": "^1.0.6",
 	"@typescript-eslint/eslint-plugin": "^8.46.2",
 	"@typescript-eslint/parser": "^8.43.0",
-	"@vitest/coverage-v8": "4.0.5",
+	"@vitest/coverage-v8": "4.0.6",
 	"@vitest/eslint-plugin": "^1.4.0",
-	"@vitest/ui": "4.0.5",
+	"@vitest/ui": "4.0.6",
 	address: "^2.0.3",
 	autoprefixer: "^10.4.21",
 	benchmark: "^2.1.4",
@@ -39120,17 +39123,17 @@ var devDependencies = {
 	cssnano: "^7.1.2",
 	d3: "^7.9.0",
 	"d3-queue": "^3.0.7",
-	"devtools-protocol": "^0.0.1537100",
+	"devtools-protocol": "^0.0.1538951",
 	diff: "^8.0.2",
 	"dts-bundle-generator": "^9.5.1",
-	eslint: "^9.38.0",
+	eslint: "^9.39.0",
 	"eslint-plugin-html": "^8.1.3",
 	"eslint-plugin-import": "^2.32.0",
 	"eslint-plugin-react": "^7.37.5",
 	"eslint-plugin-tsdoc": "0.4.0",
 	expect: "^30.2.0",
 	glob: "^11.0.3",
-	globals: "^16.4.0",
+	globals: "^16.5.0",
 	"is-builtin-module": "^5.0.0",
 	jsdom: "^27.1.0",
 	"junit-report-builder": "^5.1.1",
@@ -39165,7 +39168,7 @@ var devDependencies = {
 	typedoc: "^0.28.14",
 	"typedoc-plugin-markdown": "^4.9.0",
 	typescript: "^5.9.3",
-	vitest: "4.0.5",
+	vitest: "4.0.6",
 	"vitest-webgl-canvas-mock": "^1.1.0"
 };
 var scripts = {
@@ -39949,6 +39952,20 @@ class ImageManager extends performance$1.Evented {
         this.atlasImage = new performance$1.RGBAImage({ width: 1, height: 1 });
         this.dirty = true;
     }
+    destroy() {
+        // Destroy atlas texture if it exists
+        if (this.atlasTexture) {
+            this.atlasTexture.destroy();
+            this.atlasTexture = null;
+        }
+        // Remove all images and patterns
+        for (const id of Object.keys(this.images)) {
+            this.removeImage(id);
+        }
+        this.patterns = {};
+        this.atlasImage = new performance$1.RGBAImage({ width: 1, height: 1 });
+        this.dirty = true;
+    }
     isLoaded() {
         return this.loaded;
     }
@@ -40185,6 +40202,14 @@ class ImageManager extends performance$1.Evented {
                 this.updateImage(id, image);
             }
         }
+    }
+    cloneImages() {
+        const clonedImages = {};
+        for (const id in this.images) {
+            const image = this.images[id];
+            clonedImages[id] = Object.assign(Object.assign({}, image), { data: image.data ? image.data.clone() : null });
+        }
+        return clonedImages;
     }
 }
 
@@ -40574,6 +40599,18 @@ class GlyphManager {
             }
         }
         return match;
+    }
+    destroy() {
+        for (const stack in this.entries) {
+            const entry = this.entries[stack];
+            if (entry.tinySDF) {
+                entry.tinySDF = null;
+            }
+            entry.glyphs = {};
+            entry.requests = {};
+            entry.ranges = {};
+        }
+        this.entries = {};
     }
 }
 // exposed as statics to enable stubbing in unit tests
@@ -41050,6 +41087,11 @@ class Dispatcher {
     registerMessageHandler(type, handler) {
         for (const actor of this.actors) {
             actor.registerMessageHandler(type, handler);
+        }
+    }
+    unregisterMessageHandler(type) {
+        for (const actor of this.actors) {
+            actor.unregisterMessageHandler(type);
         }
     }
 }
@@ -43206,6 +43248,8 @@ class CanvasSource extends ImageSource {
     serialize() {
         return {
             type: 'canvas',
+            animate: this.animate,
+            canvas: this.options.canvas,
             coordinates: this.coordinates
         };
     }
@@ -48642,6 +48686,14 @@ function getTileZoom(zoom) {
 class TransformHelper {
     constructor(callbacks, options) {
         var _a;
+        this.applyConstrain = (lngLat, zoom) => {
+            if (this._constrainOverride !== null) {
+                return this._constrainOverride(lngLat, zoom);
+            }
+            else {
+                return this._callbacks.defaultConstrain(lngLat, zoom);
+            }
+        };
         this._callbacks = callbacks;
         this._tileSize = 512; // constant
         this._renderWorldCopies = (options === null || options === void 0 ? void 0 : options.renderWorldCopies) === undefined ? true : !!(options === null || options === void 0 ? void 0 : options.renderWorldCopies);
@@ -48649,7 +48701,7 @@ class TransformHelper {
         this._maxZoom = (options === null || options === void 0 ? void 0 : options.maxZoom) || 22;
         this._minPitch = ((options === null || options === void 0 ? void 0 : options.minPitch) === undefined || (options === null || options === void 0 ? void 0 : options.minPitch) === null) ? 0 : options === null || options === void 0 ? void 0 : options.minPitch;
         this._maxPitch = ((options === null || options === void 0 ? void 0 : options.maxPitch) === undefined || (options === null || options === void 0 ? void 0 : options.maxPitch) === null) ? 60 : options === null || options === void 0 ? void 0 : options.maxPitch;
-        this._constrain = (_a = options === null || options === void 0 ? void 0 : options.constrain) !== null && _a !== void 0 ? _a : this._callbacks.constrain;
+        this._constrainOverride = (_a = options === null || options === void 0 ? void 0 : options.constrainOverride) !== null && _a !== void 0 ? _a : null;
         this.setMaxBounds();
         this._width = 0;
         this._height = 0;
@@ -48668,6 +48720,7 @@ class TransformHelper {
         this._autoCalculateNearFarZ = true;
     }
     apply(thatI, constrain, forceOverrideZ) {
+        this._constrainOverride = thatI.constrainOverride;
         this._latRange = thatI.latRange;
         this._lngRange = thatI.lngRange;
         this._width = thatI.width;
@@ -48727,14 +48780,14 @@ class TransformHelper {
         if (this._minZoom === zoom)
             return;
         this._minZoom = zoom;
-        this.setZoom(this.constrain(this._center, this.zoom).zoom);
+        this.setZoom(this.applyConstrain(this._center, this.zoom).zoom);
     }
     get maxZoom() { return this._maxZoom; }
     setMaxZoom(zoom) {
         if (this._maxZoom === zoom)
             return;
         this._maxZoom = zoom;
-        this.setZoom(this.constrain(this._center, this.zoom).zoom);
+        this.setZoom(this.applyConstrain(this._center, this.zoom).zoom);
     }
     get minPitch() { return this._minPitch; }
     setMinPitch(pitch) {
@@ -48760,12 +48813,13 @@ class TransformHelper {
         }
         this._renderWorldCopies = renderWorldCopies;
     }
-    get constrain() { return this._constrain; }
-    setConstrain(constrain) {
-        if (!constrain) {
-            constrain = this._callbacks.constrain;
-        }
-        this._constrain = constrain;
+    get constrainOverride() { return this._constrainOverride; }
+    setConstrainOverride(constrain) {
+        if (constrain === undefined)
+            constrain = null;
+        if (this._constrainOverride === constrain)
+            return;
+        this._constrainOverride = constrain;
         this.constrainInternal();
         this._calcMatrices();
     }
@@ -48840,7 +48894,7 @@ class TransformHelper {
     }
     get zoom() { return this._zoom; }
     setZoom(zoom) {
-        const constrainedZoom = this.constrain(this._center, zoom).zoom;
+        const constrainedZoom = this.applyConstrain(this._center, zoom).zoom;
         if (this._zoom === constrainedZoom)
             return;
         this._unmodified = false;
@@ -48993,7 +49047,7 @@ class TransformHelper {
             return;
         this._constraining = true;
         const unmodified = this._unmodified;
-        const { center, zoom } = this.constrain(this.center, this.zoom);
+        const { center, zoom } = this.applyConstrain(this.center, this.zoom);
         this.setCenter(center);
         this.setZoom(zoom);
         this._unmodified = unmodified;
@@ -49472,8 +49526,8 @@ class MercatorTransform {
     setMaxBounds(bounds) {
         this._helper.setMaxBounds(bounds);
     }
-    setConstrain(constrain) {
-        this._helper.setConstrain(constrain);
+    setConstrainOverride(constrain) {
+        this._helper.setConstrainOverride(constrain);
     }
     overrideNearFarZ(nearZ, farZ) {
         this._helper.overrideNearFarZ(nearZ, farZ);
@@ -49568,8 +49622,8 @@ class MercatorTransform {
     get cameraToCenterDistance() {
         return this._helper.cameraToCenterDistance;
     }
-    get constrain() {
-        return this._helper.constrain;
+    get constrainOverride() {
+        return this._helper.constrainOverride;
     }
     get nearZ() {
         return this._helper.nearZ;
@@ -49667,9 +49721,12 @@ class MercatorTransform {
             }
             return result;
         };
+        this.applyConstrain = (lngLat, zoom) => {
+            return this._helper.applyConstrain(lngLat, zoom);
+        };
         this._helper = new TransformHelper({
             calcMatrices: () => { this._calcMatrices(); },
-            constrain: (center, zoom) => { return this.defaultConstrain(center, zoom); }
+            defaultConstrain: (center, zoom) => { return this.defaultConstrain(center, zoom); }
         }, options);
         this._coveringTilesDetailsProvider = new MercatorCoveringTilesDetailsProvider();
     }
@@ -50229,7 +50286,7 @@ class MercatorCameraHelper {
         const zoom = optionsZoom ? +options.zoom : tr.zoom;
         let pointAtOffset = tr.centerPoint.add(options.offsetAsPoint);
         const locationAtOffset = tr.screenPointToLocation(pointAtOffset);
-        const { center, zoom: endZoom } = tr.constrain(performance$1.LngLat.convert(options.center || locationAtOffset), zoom !== null && zoom !== void 0 ? zoom : startZoom);
+        const { center, zoom: endZoom } = tr.applyConstrain(performance$1.LngLat.convert(options.center || locationAtOffset), zoom !== null && zoom !== void 0 ? zoom : startZoom);
         normalizeCenter(tr, center);
         const from = projectToWorldCoordinates(tr.worldSize, locationAtOffset);
         const delta = projectToWorldCoordinates(tr.worldSize, center).sub(from);
@@ -50277,7 +50334,7 @@ class MercatorCameraHelper {
         const optionsZoom = typeof options.zoom !== 'undefined';
         const startZoom = tr.zoom;
         // Obtain target center and zoom
-        const constrained = tr.constrain(performance$1.LngLat.convert(options.center || options.locationAtOffset), optionsZoom ? +options.zoom : startZoom);
+        const constrained = tr.applyConstrain(performance$1.LngLat.convert(options.center || options.locationAtOffset), optionsZoom ? +options.zoom : startZoom);
         const targetCenter = constrained.center;
         const targetZoom = constrained.zoom;
         normalizeCenter(tr, targetCenter);
@@ -50289,7 +50346,7 @@ class MercatorCameraHelper {
         let scaleOfMinZoom;
         if (optionsMinZoom) {
             const minZoomPreConstrain = Math.min(+options.minZoom, startZoom, targetZoom);
-            const minZoom = tr.constrain(targetCenter, minZoomPreConstrain).zoom;
+            const minZoom = tr.applyConstrain(targetCenter, minZoomPreConstrain).zoom;
             scaleOfMinZoom = performance$1.zoomScale(minZoom - startZoom);
         }
         const easeFunc = (k, scale, centerFactor, pointAtOffset) => {
@@ -51656,8 +51713,8 @@ class VerticalPerspectiveTransform {
     setMaxBounds(bounds) {
         this._helper.setMaxBounds(bounds);
     }
-    setConstrain(constrain) {
-        this._helper.setConstrain(constrain);
+    setConstrainOverride(constrain) {
+        this._helper.setConstrainOverride(constrain);
     }
     overrideNearFarZ(nearZ, farZ) {
         this._helper.overrideNearFarZ(nearZ, farZ);
@@ -51749,8 +51806,8 @@ class VerticalPerspectiveTransform {
     get renderWorldCopies() {
         return this._helper.renderWorldCopies;
     }
-    get constrain() {
-        return this._helper.constrain;
+    get constrainOverride() {
+        return this._helper.constrainOverride;
     }
     get nearZ() {
         return this._helper.nearZ;
@@ -51786,9 +51843,12 @@ class VerticalPerspectiveTransform {
                 zoom: constrainedZoom
             };
         };
+        this.applyConstrain = (lngLat, zoom) => {
+            return this._helper.applyConstrain(lngLat, zoom);
+        };
         this._helper = new TransformHelper({
             calcMatrices: () => { this._calcMatrices(); },
-            constrain: (center, zoom) => { return this.defaultConstrain(center, zoom); }
+            defaultConstrain: (center, zoom) => { return this.defaultConstrain(center, zoom); }
         }, options);
         this._coveringTilesDetailsProvider = new GlobeCoveringTilesDetailsProvider();
     }
@@ -52501,8 +52561,8 @@ class GlobeTransform {
     setMaxBounds(bounds) {
         this._helper.setMaxBounds(bounds);
     }
-    setConstrain(constrain) {
-        this._helper.setConstrain(constrain);
+    setConstrainOverride(constrain) {
+        this._helper.setConstrainOverride(constrain);
     }
     overrideNearFarZ(nearZ, farZ) {
         this._helper.overrideNearFarZ(nearZ, farZ);
@@ -52597,8 +52657,8 @@ class GlobeTransform {
     get cameraToCenterDistance() {
         return this._helper.cameraToCenterDistance;
     }
-    get constrain() {
-        return this._helper.constrain;
+    get constrainOverride() {
+        return this._helper.constrainOverride;
     }
     get nearZ() {
         return this._helper.nearZ;
@@ -52640,9 +52700,12 @@ class GlobeTransform {
         this.defaultConstrain = (lngLat, zoom) => {
             return this.currentTransform.defaultConstrain(lngLat, zoom);
         };
+        this.applyConstrain = (lngLat, zoom) => {
+            return this._helper.applyConstrain(lngLat, zoom);
+        };
         this._helper = new TransformHelper({
             calcMatrices: () => { this._calcMatrices(); },
-            constrain: (center, zoom) => { return this.defaultConstrain(center, zoom); }
+            defaultConstrain: (center, zoom) => { return this.defaultConstrain(center, zoom); }
         }, options);
         this._globeness = 1; // When transform is cloned for use in symbols, `_updateAnimation` function which usually sets this value never gets called.
         this._mercatorTransform = new MercatorTransform();
@@ -52976,7 +53039,7 @@ class VerticalPerspectiveCameraHelper {
         // Special zoom & center handling for globe:
         // Globe constrained center isn't dependent on zoom level
         const startingLat = tr.center.lat;
-        const constrainedCenter = tr.constrain(options.center ? performance$1.LngLat.convert(options.center) : tr.center, tr.zoom).center;
+        const constrainedCenter = tr.applyConstrain(options.center ? performance$1.LngLat.convert(options.center) : tr.center, tr.zoom).center;
         tr.setCenter(constrainedCenter.wrap());
         // Make sure to compute correct target zoom level if no zoom is specified
         const targetZoom = (typeof options.zoom !== 'undefined') ? +options.zoom : (tr.zoom + getZoomAdjustment(startingLat, constrainedCenter.lat));
@@ -53002,7 +53065,7 @@ class VerticalPerspectiveCameraHelper {
         const preConstrainCenter = options.center ?
             performance$1.LngLat.convert(options.center) :
             startCenter;
-        const constrainedCenter = tr.constrain(preConstrainCenter, startZoom // zoom can be whatever at this stage, it should not affect anything if globe is enabled
+        const constrainedCenter = tr.applyConstrain(preConstrainCenter, startZoom // zoom can be whatever at this stage, it should not affect anything if globe is enabled
         ).center;
         normalizeCenter(tr, constrainedCenter);
         const clonedTr = tr.clone();
@@ -53074,7 +53137,7 @@ class VerticalPerspectiveCameraHelper {
         const startPadding = tr.padding;
         const doPadding = !tr.isPaddingEqual(options.padding);
         // Obtain target center and zoom
-        const constrainedCenter = tr.constrain(performance$1.LngLat.convert(options.center || options.locationAtOffset), startZoom).center;
+        const constrainedCenter = tr.applyConstrain(performance$1.LngLat.convert(options.center || options.locationAtOffset), startZoom).center;
         const targetZoom = optionsZoom ? +options.zoom : tr.zoom + getZoomAdjustment(tr.center.lat, constrainedCenter.lat);
         // Compute target center that respects offset by creating a temporary transform and calling its `setLocationAtPoint`.
         const clonedTr = tr.clone();
@@ -53095,7 +53158,7 @@ class VerticalPerspectiveCameraHelper {
             const normalizedOptionsMinZoom = +options.minZoom + getZoomAdjustment(targetCenter.lat, 0);
             const normalizedMinZoomPreConstrain = Math.min(normalizedOptionsMinZoom, normalizedStartZoom, normalizedTargetZoom);
             const minZoomPreConstrain = normalizedMinZoomPreConstrain + getZoomAdjustment(0, targetCenter.lat);
-            const minZoom = tr.constrain(targetCenter, minZoomPreConstrain).zoom;
+            const minZoom = tr.applyConstrain(targetCenter, minZoomPreConstrain).zoom;
             const normalizedMinZoom = minZoom + getZoomAdjustment(targetCenter.lat, 0);
             scaleOfMinZoom = performance$1.zoomScale(normalizedMinZoom - normalizedStartZoom);
         }
@@ -53210,7 +53273,7 @@ class GlobeCameraHelper {
 }
 
 function createProjectionFromName(name, transformConstrain) {
-    const transformOptions = { constrain: transformConstrain };
+    const transformOptions = { constrainOverride: transformConstrain };
     if (Array.isArray(name)) {
         const globeProjection = new GlobeProjection({ type: name });
         return {
@@ -53305,14 +53368,7 @@ class Style extends performance$1.Evented {
         this.glyphManager = new GlyphManager(map._requestManager, options.localIdeographFontFamily, glyphLang);
         this.lineAtlas = new LineAtlas(256, 512);
         this.crossTileSymbolIndex = new CrossTileSymbolIndex();
-        this._spritesImagesIds = {};
-        this._layers = {};
-        this._order = [];
-        this.tileManagers = {};
-        this.zoomHistory = new performance$1.ZoomHistory();
-        this._loaded = false;
-        this._availableImages = [];
-        this._globalState = {};
+        this._setInitialValues();
         this._resetUpdates();
         this.dispatcher.broadcast("SR" /* MessageType.setReferrer */, performance$1.getReferrer());
         rtlMainThreadPluginFactory().on(RTLPluginLoadedEventName, this._rtlPluginLoaded);
@@ -53335,6 +53391,36 @@ class Style extends performance$1.Evented {
                 }
             }
         });
+    }
+    _setInitialValues() {
+        var _a;
+        this._spritesImagesIds = {};
+        this._layers = {};
+        this._order = [];
+        this.tileManagers = {};
+        this.zoomHistory = new performance$1.ZoomHistory();
+        this._availableImages = [];
+        this._globalState = {};
+        this._serializedLayers = {};
+        this.stylesheet = null;
+        this.light = null;
+        this.sky = null;
+        if (this.projection) {
+            this.projection.destroy();
+            delete this.projection;
+        }
+        this._loaded = false;
+        this._changed = false;
+        this._updatedLayers = {};
+        this._updatedSources = {};
+        this._changedImages = {};
+        this._glyphsDidChange = false;
+        this._updatedPaintProps = {};
+        this._layerOrderChanged = false;
+        this.crossTileSymbolIndex = new (((_a = this.crossTileSymbolIndex) === null || _a === void 0 ? void 0 : _a.constructor) || Object)();
+        this.pauseablePlacement = undefined;
+        this.placement = undefined;
+        this.z = 0;
     }
     setGlobalStateProperty(name, value) {
         var _a, _b, _c;
@@ -54758,6 +54844,67 @@ class Style extends performance$1.Evented {
                 completion(null);
             }
         }
+    }
+    /**
+     * Destroys all internal resources of the style (sources, images, layers, etc.)
+     */
+    destroy() {
+        // cancel any pending requests
+        if (this._frameRequest) {
+            this._frameRequest.abort();
+            this._frameRequest = null;
+        }
+        if (this._loadStyleRequest) {
+            this._loadStyleRequest.abort();
+            this._loadStyleRequest = null;
+        }
+        if (this._spriteRequest) {
+            this._spriteRequest.abort();
+            this._spriteRequest = null;
+        }
+        // remove sourcecaches
+        for (const id in this.tileManagers) {
+            const tileManager = this.tileManagers[id];
+            tileManager.setEventedParent(null);
+            if (tileManager._tiles) {
+                for (const tileId in tileManager._tiles) {
+                    const tile = tileManager._tiles[tileId];
+                    tile.unloadVectorData();
+                }
+                tileManager._tiles = {};
+            }
+            tileManager._cache.reset();
+            tileManager.onRemove(this.map);
+        }
+        this.tileManagers = {};
+        // Destroy imageManager and clear images
+        if (this.imageManager) {
+            this.imageManager.setEventedParent(null);
+            this.imageManager.destroy();
+            this._availableImages = [];
+            this._spritesImagesIds = {};
+        }
+        // Destroy glyphManager
+        if (this.glyphManager) {
+            this.glyphManager.destroy();
+        }
+        // Remove layers
+        for (const layerId in this._layers) {
+            const layer = this._layers[layerId];
+            layer.setEventedParent(null);
+            if (layer.onRemove)
+                layer.onRemove(this.map);
+        }
+        // reset internal state
+        this._setInitialValues();
+        // Remove event listeners
+        this.setEventedParent(null);
+        this.dispatcher.unregisterMessageHandler("GG" /* MessageType.getGlyphs */);
+        this.dispatcher.unregisterMessageHandler("GI" /* MessageType.getImages */);
+        this.dispatcher.unregisterMessageHandler("GDA" /* MessageType.getDashes */);
+        this.dispatcher.remove(true);
+        this._listeners = {};
+        this._oneTimeListeners = {};
     }
 }
 
@@ -58990,8 +59137,50 @@ class Painter {
         }
     }
     destroy() {
+        var _a, _b;
+        if (this._tileTextures) {
+            for (const size in this._tileTextures) {
+                const textures = this._tileTextures[size];
+                if (textures) {
+                    for (const texture of textures) {
+                        texture.destroy();
+                    }
+                }
+            }
+            this._tileTextures = {};
+        }
+        if (this.tileExtentBuffer)
+            this.tileExtentBuffer.destroy();
+        if (this.debugBuffer)
+            this.debugBuffer.destroy();
+        if (this.rasterBoundsBuffer)
+            this.rasterBoundsBuffer.destroy();
+        if (this.rasterBoundsBufferPosOnly)
+            this.rasterBoundsBufferPosOnly.destroy();
+        if (this.viewportBuffer)
+            this.viewportBuffer.destroy();
+        if (this.tileBorderIndexBuffer)
+            this.tileBorderIndexBuffer.destroy();
+        if (this.quadTriangleIndexBuffer)
+            this.quadTriangleIndexBuffer.destroy();
+        if (this.tileExtentMesh)
+            (_a = this.tileExtentMesh.vertexBuffer) === null || _a === void 0 ? void 0 : _a.destroy();
+        if (this.tileExtentMesh)
+            (_b = this.tileExtentMesh.indexBuffer) === null || _b === void 0 ? void 0 : _b.destroy();
         if (this.debugOverlayTexture) {
             this.debugOverlayTexture.destroy();
+        }
+        if (this.cache) {
+            for (const key in this.cache) {
+                const program = this.cache[key];
+                if (program && program.program) {
+                    this.context.gl.deleteProgram(program.program);
+                }
+            }
+            this.cache = {};
+        }
+        if (this.context) {
+            this.context.setDefault();
         }
     }
     /*
@@ -60900,7 +61089,7 @@ class ScrollZoomHandler {
                 scale = 1 / scale;
             }
             const fromScale = typeof this._targetZoom !== 'number' ? tr.scale : performance$1.zoomScale(this._targetZoom);
-            this._targetZoom = tr.constrain(tr.getCameraLngLat(), performance$1.scaleZoom(fromScale * scale)).zoom;
+            this._targetZoom = tr.applyConstrain(tr.getCameraLngLat(), performance$1.scaleZoom(fromScale * scale)).zoom;
             // if this is a mouse wheel, refresh the starting zoom and easing
             // function we're using to smooth out the zooming between wheel
             // events
@@ -64388,7 +64577,7 @@ let Map$1 = class Map extends Camera {
             transform.setRenderWorldCopies(resolvedOptions.renderWorldCopies);
         }
         if (resolvedOptions.transformConstrain !== null) {
-            transform.setConstrain(resolvedOptions.transformConstrain);
+            transform.setConstrainOverride(resolvedOptions.transformConstrain);
         }
         super(transform, cameraHelper, { bearingSnap: resolvedOptions.bearingSnap });
         this._idleTriggered = false;
@@ -64396,15 +64585,44 @@ let Map$1 = class Map extends Camera {
         this._renderTaskQueue = new TaskQueue();
         this._controls = [];
         this._mapId = performance$1.uniqueId();
+        /**
+         * @internal
+         * Used to store the previous style and images when a context loss occurs, so they can be restored.
+         */
+        this._lostContextStyle = {
+            style: null,
+            images: null
+        };
         this._contextLost = (event) => {
             event.preventDefault();
             if (this._frameRequest) {
                 this._frameRequest.abort();
                 this._frameRequest = null;
             }
+            this.painter.destroy();
+            // check if style contains custom layers to warn user that they can't be restored automatically
+            for (const layer of Object.values(this.style._layers)) {
+                if (layer.type === 'custom') {
+                    console.warn(`Custom layer with id '${layer.id}' cannot be restored after WebGL context loss. You will need to re-add it manually after context restoration.`);
+                }
+                if (layer._listeners) {
+                    for (const [event] of Object.entries(layer._listeners)) {
+                        console.warn(`Custom layer with id '${layer.id}' had event listeners for event '${event}' which cannot be restored after WebGL context loss. You will need to re-add them manually after context restoration.`);
+                    }
+                }
+            }
+            this._lostContextStyle = this._getStyleAndImages();
+            this.style.destroy();
+            this.style = null;
             this.fire(new performance$1.Event('webglcontextlost', { originalEvent: event }));
         };
         this._contextRestored = (event) => {
+            if (this._lostContextStyle.style) {
+                this.setStyle(this._lostContextStyle.style, { diff: false });
+            }
+            if (this._lostContextStyle.images) {
+                this.style.imageManager.images = this._lostContextStyle.images;
+            }
             this._setupPainter();
             this.resize();
             this._update();
@@ -64980,7 +65198,7 @@ let Map$1 = class Map extends Camera {
      *
      * @param constrain - A {@link TransformConstrainFunction} callback defining how the viewport should respect the bounds.
      *
-     * `null` clears the callback and reverses the override of the map transform's default constrain function.
+     * `null` clears the callback and reverts the constrain to the map transform's default constrain function.
      * @example
      * ```ts
      * function customTransformConstrain(lngLat, zoom) {
@@ -64991,7 +65209,7 @@ let Map$1 = class Map extends Camera {
      * @see [Customize the map transform constrain](https://maplibre.org/maplibre-gl-js/docs/examples/customize-the-map-transform-constrain/)
      */
     setTransformConstrain(constrain) {
-        this.transform.setConstrain(constrain);
+        this.transform.setConstrainOverride(constrain);
         return this._update();
     }
     /**
@@ -65474,6 +65692,20 @@ let Map$1 = class Map extends Camera {
         if (this.style) {
             return this.style.serialize();
         }
+    }
+    /**
+     * @internal
+     * Returns the map's style and cloned images to restore context.
+     * @returns An object containing the style and images.
+     */
+    _getStyleAndImages() {
+        if (this.style) {
+            return {
+                style: this.style.serialize(),
+                images: this.style.imageManager.cloneImages()
+            };
+        }
+        return { style: null, images: {} };
     }
     /**
      * Returns a Boolean indicating whether the map's style is fully loaded.
