@@ -1,0 +1,8 @@
+/**
+ * Limits for regex check to prevent overload of regex engine.
+ */
+declare const enum RegexLimits {
+    shortLimit = 1000,
+    svgLimit = 100000000
+}
+export default RegexLimits;

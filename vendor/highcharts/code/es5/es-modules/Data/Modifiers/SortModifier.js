@@ -1,0 +1,163 @@
+/* *
+ *
+ *  (c) 2009-2025 Highsoft AS
+ *
+ *  License: www.highcharts.com/license
+ *
+ *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
+ *
+ *  Authors:
+ *  - Sophie Bremer
+ *  - Dawid Dragula
+ *
+ * */
+'use strict';
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+import DataModifier from './DataModifier.js';
+import U from '../../Core/Utilities.js';
+var merge = U.merge;
+/* *
+ *
+ *  Class
+ *
+ * */
+/**
+ * Sort table rows according to values of a column.
+ *
+ */
+var SortModifier = /** @class */ (function (_super) {
+    __extends(SortModifier, _super);
+    /* *
+     *
+     *  Constructor
+     *
+     * */
+    /**
+     * Constructs an instance of the sort modifier.
+     *
+     * @param {Partial<SortDataModifier.Options>} [options]
+     * Options to configure the sort modifier.
+     */
+    function SortModifier(options) {
+        var _this = _super.call(this) || this;
+        _this.options = merge(SortModifier.defaultOptions, options);
+        return _this;
+    }
+    /* *
+     *
+     *  Static Functions
+     *
+     * */
+    SortModifier.ascending = function (a, b) {
+        return ((a || 0) < (b || 0) ? -1 :
+            (a || 0) > (b || 0) ? 1 :
+                0);
+    };
+    SortModifier.descending = function (a, b) {
+        return ((b || 0) < (a || 0) ? -1 :
+            (b || 0) > (a || 0) ? 1 :
+                0);
+    };
+    SortModifier.compareFactory = function (direction, customCompare) {
+        if (customCompare) {
+            if (direction === 'desc') {
+                return function (a, b) { return -customCompare(a, b); };
+            }
+            return customCompare;
+        }
+        return (direction === 'asc' ?
+            SortModifier.ascending :
+            SortModifier.descending);
+    };
+    /* *
+     *
+     *  Functions
+     *
+     * */
+    /**
+     * Returns index and row for sort reference.
+     *
+     * @private
+     *
+     * @param {Highcharts.DataTable} table
+     * Table with rows to reference.
+     *
+     * @return {Array<SortModifier.RowReference>}
+     * Array of row references.
+     */
+    SortModifier.prototype.getRowReferences = function (table) {
+        var rows = table.getRows(), rowReferences = [];
+        for (var i = 0, iEnd = rows.length; i < iEnd; ++i) {
+            rowReferences.push({
+                index: i,
+                row: rows[i]
+            });
+        }
+        return rowReferences;
+    };
+    SortModifier.prototype.modifyTable = function (table, eventDetail) {
+        var _a;
+        var modifier = this;
+        modifier.emit({ type: 'modify', detail: eventDetail, table: table });
+        var columnIds = table.getColumnIds(), rowCount = table.getRowCount(), rowReferences = this.getRowReferences(table), _b = modifier.options, direction = _b.direction, orderByColumn = _b.orderByColumn, orderInColumn = _b.orderInColumn, customCompare = _b.compare, compare = SortModifier.compareFactory(direction, customCompare), orderByColumnIndex = columnIds.indexOf(orderByColumn), modified = table.getModified();
+        if (orderByColumnIndex !== -1) {
+            rowReferences.sort(function (a, b) { return compare(a.row[orderByColumnIndex], b.row[orderByColumnIndex]); });
+        }
+        if (orderInColumn) {
+            var column = [];
+            for (var i = 0; i < rowCount; ++i) {
+                column[rowReferences[i].index] = i;
+            }
+            modified.setColumns((_a = {}, _a[orderInColumn] = column, _a));
+        }
+        else {
+            var originalIndexes = [];
+            var rows = [];
+            var rowReference = void 0;
+            for (var i = 0; i < rowCount; ++i) {
+                rowReference = rowReferences[i];
+                originalIndexes.push(table.getOriginalRowIndex(rowReference.index));
+                rows.push(rowReference.row);
+            }
+            modified.setRows(rows, 0);
+            modified.setOriginalRowIndexes(originalIndexes);
+        }
+        modifier.emit({ type: 'afterModify', detail: eventDetail, table: table });
+        return table;
+    };
+    /* *
+     *
+     *  Static Properties
+     *
+     * */
+    /**
+     * Default options to group table rows.
+     */
+    SortModifier.defaultOptions = {
+        type: 'Sort',
+        direction: 'desc',
+        orderByColumn: 'y'
+    };
+    return SortModifier;
+}(DataModifier));
+DataModifier.registerType('Sort', SortModifier);
+/* *
+ *
+ *  Default Export
+ *
+ * */
+export default SortModifier;

@@ -1,0 +1,142 @@
+import type Axis from '../../Core/Axis/Axis';
+import type Chart from '../../Core/Chart/Chart';
+import type { MarkerClusterLayoutAlgorithmOptions, MarkerClusterOptions, MarkerClusterZonesOptions } from './MarkerClusterOptions';
+import type Options from '../../Core/Options';
+import type Point from '../../Core/Series/Point';
+import type { PointOptions, PointShortOptions } from '../../Core/Series/PointOptions';
+import type PositionObject from '../../Core/Renderer/PositionObject';
+import type Series from '../../Core/Series/Series';
+import type SeriesOptions from '../../Core/Series/SeriesOptions';
+import type SVGElement from '../../Core/Renderer/SVG/SVGElement';
+declare module '../../Core/Series/PointBase' {
+    interface PointBase {
+        isCluster?: boolean;
+        clusteredData?: Array<MarkerClusterSplitDataObject>;
+        clusterPointsAmount?: number;
+    }
+}
+declare module '../../Core/Series/SeriesBase' {
+    interface SeriesBase {
+        markerClusterInfo?: MarkerClusterInfoObject;
+        markerClusterAlgorithms?: Record<string, MarkerClusterAlgorithmFunction>;
+        markerClusterSeriesData?: (Array<Point | null> | null);
+        gridValueSize?: number;
+        baseClusters?: (BaseClustersObject | null);
+        initMaxX?: number;
+        initMinX?: number;
+        initMaxY?: number;
+        initMinY?: number;
+        debugGridLines?: Array<SVGElement>;
+        dataMaxX?: number;
+        dataMinX?: number;
+        dataMaxY?: number;
+        dataMinY?: number;
+        /** @requires modules/marker-clusters */
+        getRealExtremes(): Record<string, number>;
+        /** @requires modules/marker-clusters */
+        getGridOffset(): Record<string, number>;
+        /** @requires modules/marker-clusters */
+        animateClusterPoint(clusterObj: ClusterAndNoiseObject): void;
+        /** @requires modules/marker-clusters */
+        getClusterDistancesFromPoint(clusters: Array<KmeansClusterObject>, pointX: number, pointY: number): Array<Record<string, number>>;
+        /** @requires modules/marker-clusters */
+        getScaledGridSize(options: MarkerClusterLayoutAlgorithmOptions): number;
+        /** @requires modules/marker-clusters */
+        getPointsState(clusteredData: MarkerClusterInfoObject, oldMarkerClusterInfo: (MarkerClusterInfoObject | undefined), dataLength: number): Record<string, MarkerClusterPointsState>;
+        /** @requires modules/marker-clusters */
+        preventClusterCollisions(props: MarkerClusterPreventCollisionObject): PositionObject;
+        /** @requires modules/marker-clusters */
+        isValidGroupedDataObject(groupedData: Record<string, MarkerClusterSplitDataArray>): boolean;
+        /** @requires modules/marker-clusters */
+        getClusteredData(groupedData: Record<string, MarkerClusterSplitDataArray>, options: MarkerClusterOptions): (MarkerClusterInfoObject | boolean);
+        /** @requires modules/marker-clusters */
+        destroyClusteredData(): void;
+        hideClusteredData(): void;
+    }
+}
+interface BaseClustersObject {
+    clusters: Array<ClusterAndNoiseObject>;
+    noise: Array<ClusterAndNoiseObject>;
+}
+export interface ClusterAndNoiseObject {
+    data: Array<MarkerClusterSplitDataObject>;
+    id: string;
+    index: number;
+    stateId: string;
+    x: number;
+    y: number;
+    point?: Point;
+    clusterZone?: MarkerClusterZonesOptions;
+    clusterZoneClassName?: string;
+    pointsOutside?: Array<MarkerClusterSplitDataObject>;
+    pointsInside?: Array<MarkerClusterSplitDataObject>;
+}
+export interface GroupMapObject {
+    options?: GroupMapOptionsObject;
+}
+interface GroupMapOptionsObject extends SeriesOptions {
+    formatPrefix?: string;
+    userOptions?: (PointOptions | PointShortOptions);
+    x?: number;
+    y?: number;
+}
+export interface MarkerClusterAlgorithmFunction {
+    (processedXData: Array<number>, processedYData: Array<number>, visibleDataIndexes: Array<number>, options: MarkerClusterLayoutAlgorithmOptions): Record<string, MarkerClusterSplitDataArray>;
+}
+export interface MarkerClusterInfoObject {
+    clusters: Array<ClusterAndNoiseObject>;
+    noise: Array<ClusterAndNoiseObject>;
+    groupedXData: Array<number>;
+    groupedYData: Array<number>;
+    groupMap: Array<GroupMapObject>;
+    initMinX?: number;
+    initMaxX?: number;
+    initMinY?: number;
+    initMaxY?: number;
+    pointsState?: MarkerClusterPointsStateObject;
+}
+export interface KmeansClusterObject {
+    posX: number;
+    posY: number;
+    oldX: number;
+    oldY: number;
+    startPointsLen: number;
+    points: Array<MarkerClusterSplitDataObject>;
+}
+export interface MarkerClusterPointsState {
+    x: number;
+    y: number;
+    id: string;
+    parentsId: Array<string>;
+    point: (Point | undefined);
+}
+interface MarkerClusterPointsStateObject {
+    oldState?: Record<string, MarkerClusterPointsState>;
+    newState: Record<string, MarkerClusterPointsState>;
+}
+export interface MarkerClusterPreventCollisionObject {
+    x: number;
+    y: number;
+    key: string;
+    groupedData: Record<string, MarkerClusterSplitDataArray>;
+    gridSize: number;
+    defaultRadius: number;
+    clusterRadius: number;
+}
+export interface MarkerClusterSplitDataArray extends Array<MarkerClusterSplitDataObject> {
+    posX?: number;
+    posY?: number;
+}
+export interface MarkerClusterSplitDataObject {
+    dataIndex: number;
+    x: number;
+    y: number;
+    parentStateId?: string;
+    options?: (PointOptions | PointShortOptions);
+}
+/** @private */
+declare function compose(AxisClass: typeof Axis, ChartClass: typeof Chart, highchartsDefaultOptions: Options, SeriesClass: typeof Series): void;
+declare const MarkerClusters: {
+    compose: typeof compose;
+};
+export default MarkerClusters;

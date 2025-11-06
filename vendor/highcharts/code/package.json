@@ -1,0 +1,14 @@
+{
+    "private": true,
+    "author": "Highsoft AS <support@highcharts.com> (http://www.highcharts.com/about)",
+    "bugs": "https://github.com/highcharts/highcharts/issues",
+    "description": "Use `npm i ../highcharts/code` to test local. Remember to run `npx gulp scripts` and `npx gulp jsdoc-dts` to generate the code folder.",
+    "homepage": "http://www.highcharts.com",
+    "license": "https://www.highcharts.com/license",
+    "main": "highcharts.src.js",
+    "module": "es-modules/masters/highcharts.src.js",
+    "name": "highcharts",
+    "repository": "https://github.com/highcharts/highcharts.git",
+    "types": "highcharts.src.d.ts",
+    "version": "11.0.0+local"
+}
