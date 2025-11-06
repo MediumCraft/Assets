@@ -3554,6 +3554,7 @@ var layout_symbol = {
 		requires: [
 			"text-field"
 		],
+		appearance: true,
 		"sdk-support": {
 			"basic functionality": {
 				js: "0.10.0",
@@ -3957,6 +3958,7 @@ var layout_symbol = {
 		requires: [
 			"text-field"
 		],
+		appearance: true,
 		"sdk-support": {
 			"basic functionality": {
 				js: "0.10.0",
@@ -4088,6 +4090,7 @@ var layout_symbol = {
 				"!": "text-radial-offset"
 			}
 		],
+		appearance: true,
 		"sdk-support": {
 			"basic functionality": {
 				js: "0.10.0",

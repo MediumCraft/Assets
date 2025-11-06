@@ -52,7 +52,7 @@ var dependencies = {
 var devDependencies = {
 	"@mapbox/mapbox-gl-rtl-text": "^0.3.0",
 	"@mapbox/mvt-fixtures": "^3.10.0",
-	"@rollup/plugin-commonjs": "^28.0.9",
+	"@rollup/plugin-commonjs": "^29.0.0",
 	"@rollup/plugin-json": "^6.1.0",
 	"@rollup/plugin-node-resolve": "^16.0.3",
 	"@rollup/plugin-replace": "^6.0.3",
@@ -33470,7 +33470,7 @@ class SymbolBucket {
     constructor(options) {
         this.collisionBoxArray = options.collisionBoxArray;
         this.zoom = options.zoom;
-        this.overscaling = isSafari(globalThis) ? Math.min(options.overscaling, 128) : options.overscaling;
+        this.overscaling = options.overscaling;
         this.layers = options.layers;
         this.layerIds = this.layers.map(layer => layer.id);
         this.index = options.index;
@@ -36749,7 +36749,8 @@ class VectorTileSource extends Evented {
                 pixelRatio: this.map.getPixelRatio(),
                 showCollisionBoxes: this.map.showCollisionBoxes,
                 promoteId: this.promoteId,
-                subdivisionGranularity: this.map.style.projection.subdivisionGranularity
+                subdivisionGranularity: this.map.style.projection.subdivisionGranularity,
+                overzoomParameters: this._getOverzoomParameters(tile),
             };
             params.request.collectResourceTiming = this._collectResourceTiming;
             let messageType = "RT" /* MessageType.reloadTile */;
@@ -36782,6 +36783,24 @@ class VectorTileSource extends Evented {
                 this._afterTileLoadWorkerResponse(tile, null);
             }
         });
+    }
+    /**
+     * When the requested tile has a higher canonical Z than source maxzoom, pass overzoom parameters so worker can load the
+     * deepest tile at source max zoom to generate sub tiles using geojsonvt for highest performance on vector overscaling
+     */
+    _getOverzoomParameters(tile) {
+        if (tile.tileID.canonical.z <= this.maxzoom) {
+            return undefined;
+        }
+        if (this.map._zoomLevelsToOverscale === undefined) {
+            return undefined;
+        }
+        const maxZoomTileID = tile.tileID.scaledTo(this.maxzoom).canonical;
+        const maxZoomTileUrl = maxZoomTileID.url(this.tiles, this.map.getPixelRatio(), this.scheme);
+        return {
+            maxZoomTileID,
+            overzoomRequest: this.map._requestManager.transformRequest(maxZoomTileUrl, "Tile" /* ResourceType.Tile */)
+        };
     }
     _afterTileLoadWorkerResponse(tile, data) {
         if (data && data.resourceTiming) {
@@ -39747,6 +39766,35 @@ class TileCache {
         }
     }
 }
+class BoundedLRUCache {
+    constructor(maxEntries) {
+        this.maxEntries = maxEntries;
+        this.map = new Map();
+    }
+    get(key) {
+        const value = this.map.get(key);
+        if (value !== undefined) {
+            // Move key to end (most recently used)
+            this.map.delete(key);
+            this.map.set(key, value);
+        }
+        return value;
+    }
+    set(key, value) {
+        if (this.map.has(key)) {
+            this.map.delete(key);
+        }
+        else if (this.map.size >= this.maxEntries) {
+            // Delete oldest
+            const oldestKey = this.map.keys().next().value;
+            this.map.delete(oldestKey);
+        }
+        this.map.set(key, value);
+    }
+    clear() {
+        this.map.clear();
+    }
+}
 
 /**
  * @internal
@@ -40612,11 +40660,13 @@ class TileManager extends Evented {
             idealTileIDs = coveringTiles(transform, {
                 tileSize: this.usedForTerrain ? this.tileSize : this._source.tileSize,
                 minzoom: this._source.minzoom,
-                maxzoom: this._source.maxzoom,
+                maxzoom: this._source.type === 'vector' && this.map._zoomLevelsToOverscale !== undefined
+                    ? transform.maxZoom - this.map._zoomLevelsToOverscale
+                    : this._source.maxzoom,
                 roundZoom: this.usedForTerrain ? false : this._source.roundZoom,
                 reparseOverscaled: this._source.reparseOverscaled,
                 terrain,
-                calculateTileZoom: this._source.calculateTileZoom
+                calculateTileZoom: this._source.calculateTileZoom,
             });
             if (this._source.hasTile) {
                 idealTileIDs = idealTileIDs.filter((coord) => this._source.hasTile(coord));
@@ -41258,6 +41308,141 @@ function clipLine(lines, x1, y1, x2, y2) {
         }
     }
     return clippedLines;
+}
+/**
+ * Clips the geometry to the given bounds.
+ * @param geometry - the geometry to clip
+ * @param type - the geometry type (1=POINT, 2=LINESTRING, 3=POLYGON)
+ * @param x1 - the left edge of the clipping box
+ * @param y1 - the top edge of the clipping box
+ * @param x2 - the right edge of the clipping box
+ * @param y2 - the bottom edge of the clipping box
+ * @returns the clipped geometry
+ */
+function clipGeometry(geometry, type, x1, y1, x2, y2) {
+    let clippedGeometry = clipGeometryOnAxis(geometry, type, x1, x2, 0 /* AxisType.X */);
+    clippedGeometry = clipGeometryOnAxis(clippedGeometry, type, y1, y2, 1 /* AxisType.Y */);
+    return clippedGeometry;
+}
+/**
+ * Clip features between two vertical or horizontal axis-parallel lines:
+ * ```
+ *     |        |
+ *  ___|___     |     /
+ * /   |   \____|____/
+ *     |        |
+ *```
+ * @param geometry - the geometry to clip
+ * @param type - the geometry type (1=POINT, 2=LINESTRING, 3=POLYGON)
+ * @param start - the start line coordinate (x or y) to clip against
+ * @param end - the end line coordinate (x or y) to clip against
+ * @param axis - the axis to clip on (X or Y)
+ * @returns the clipped geometry
+ */
+function clipGeometryOnAxis(geometry, type, start, end, axis) {
+    switch (type) {
+        case 1: // POINT
+            return clipPoints(geometry, start, end, axis);
+        case 2: // LINESTRING
+            return clipLines(geometry, start, end, axis, false);
+        case 3: // POLYGON
+            return clipLines(geometry, start, end, axis, true);
+    }
+    return [];
+}
+function clipPoints(geometry, start, end, axis) {
+    const newGeometry = [];
+    for (const ring of geometry) {
+        for (const point of ring) {
+            const a = axis === 0 /* AxisType.X */ ? point.x : point.y;
+            if (a >= start && a <= end) {
+                newGeometry.push([point]);
+            }
+        }
+    }
+    return newGeometry;
+}
+/**
+ * Clips a line to the given start and end coordinates.
+ * @param line - the line to clip
+ * @param start - the start line coordinate (x or y) to clip against
+ * @param end - the end line coordinate (x or y) to clip against
+ * @param axis - the axis to clip on (X or Y)
+ * @param isPolygon - whether the line is part of a polygon
+ * @returns the clipped line(s)
+ */
+function clipLineInternal(line, start, end, axis, isPolygon) {
+    const intersectionPoint = axis === 0 /* AxisType.X */ ? intersectionPointX : intersectionPointY;
+    let slice = [];
+    const newLine = [];
+    for (let i = 0; i < line.length - 1; i++) {
+        const p1 = line[i];
+        const p2 = line[i + 1];
+        const pos1 = axis === 0 /* AxisType.X */ ? p1.x : p1.y;
+        const pos2 = axis === 0 /* AxisType.X */ ? p2.x : p2.y;
+        let exited = false;
+        if (pos1 < start) {
+            // ---|-->  | (line enters the clip region from the left)
+            if (pos2 > start) {
+                slice.push(intersectionPoint(p1, p2, start));
+            }
+        }
+        else if (pos1 > end) {
+            // |  <--|--- (line enters the clip region from the right)
+            if (pos2 < end) {
+                slice.push(intersectionPoint(p1, p2, end));
+            }
+        }
+        else {
+            slice.push(p1);
+        }
+        if (pos2 < start && pos1 >= start) {
+            // <--|---  | or <--|-----|--- (line exits the clip region on the left)
+            slice.push(intersectionPoint(p1, p2, start));
+            exited = true;
+        }
+        if (pos2 > end && pos1 <= end) {
+            // |  ---|--> or ---|-----|--> (line exits the clip region on the right)
+            slice.push(intersectionPoint(p1, p2, end));
+            exited = true;
+        }
+        if (!isPolygon && exited) {
+            newLine.push(slice);
+            slice = [];
+        }
+    }
+    // add the last point
+    const last = line.length - 1;
+    const lastPos = axis === 0 /* AxisType.X */ ? line[last].x : line[last].y;
+    if (lastPos >= start && lastPos <= end) {
+        slice.push(line[last]);
+    }
+    // close the polygon if its endpoints are not the same after clipping
+    if (isPolygon && slice.length > 0 && !slice[0].equals(slice[slice.length - 1])) {
+        slice.push(new Point(slice[0].x, slice[0].y));
+    }
+    if (slice.length > 0) {
+        newLine.push(slice);
+    }
+    return newLine;
+}
+function clipLines(geometry, start, end, axis, isPolygon) {
+    const newGeometry = [];
+    for (const line of geometry) {
+        const clippedLines = clipLineInternal(line, start, end, axis, isPolygon);
+        if (clippedLines.length > 0) {
+            newGeometry.push(...clippedLines);
+        }
+    }
+    return newGeometry;
+}
+function intersectionPointX(p1, p2, x) {
+    const t = (x - p1.x) / (p2.x - p1.x);
+    return new Point(x, p1.y + (p2.y - p1.y) * t);
+}
+function intersectionPointY(p1, p2, y) {
+    const t = (y - p1.y) / (p2.y - p1.y);
+    return new Point(p1.x + (p2.x - p1.x) * t, y);
 }
 
 class PathInterpolator {
@@ -61997,7 +62182,8 @@ const defaultOptions$4 = {
     /**Because GL MAX_TEXTURE_SIZE is usually at least 4096px. */
     maxCanvasSize: [4096, 4096],
     cancelPendingTileRequestsWhileZooming: true,
-    centerClampedToGround: true
+    centerClampedToGround: true,
+    experimentalZoomLevelsToOverscale: undefined
 };
 /**
  * The `Map` object represents the map on your page. It exposes methods
@@ -62145,6 +62331,7 @@ let Map$1 = class Map extends Camera {
         this._clickTolerance = resolvedOptions.clickTolerance;
         this._overridePixelRatio = resolvedOptions.pixelRatio;
         this._maxCanvasSize = resolvedOptions.maxCanvasSize;
+        this._zoomLevelsToOverscale = resolvedOptions.experimentalZoomLevelsToOverscale;
         this.transformCameraUpdate = resolvedOptions.transformCameraUpdate;
         this.transformConstrain = resolvedOptions.transformConstrain;
         this.cancelPendingTileRequestsWhileZooming = resolvedOptions.cancelPendingTileRequestsWhileZooming === true;

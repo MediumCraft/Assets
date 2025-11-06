@@ -5104,6 +5104,15 @@ type WorkerTileParameters = TileParameters & {
 	collectResourceTiming?: boolean;
 	returnDependencies?: boolean;
 	subdivisionGranularity: SubdivisionGranularitySetting;
+	/**
+	 * Provide this property when the requested tile has a higher canonical Z than source maxzoom.
+	 * This allows the worker to know that it needs to overzoom from a source tile.
+	 */
+	overzoomParameters?: OverzoomParameters;
+};
+type OverzoomParameters = {
+	maxZoomTileID: CanonicalTileID;
+	overzoomRequest: RequestParameters;
 };
 type WorkerDEMTileParameters = TileParameters & {
 	rawImageData: RGBAImage | ImageBitmap | ImageData;
@@ -10931,6 +10940,18 @@ export type MapOptions = {
 	 * keep the camera above ground when pitch \> 90 degrees.
 	 */
 	centerClampedToGround?: boolean;
+	/**
+	 * Allows overzooming by splitting vector tiles after max zoom.
+	 * Defines the number of zoom level that will overscale from map's max zoom and below.
+	 * For example if the map's max zoom is 20 and this is set to 3, the zoom levels of 20, 19 and 18 will be overscaled
+	 * and the rest will be split.
+	 * When undefined, all zoom levels after source's max zoom will be overscaled.
+	 * This can help in reducing the size of the overscaling and improve performance in high zoom levels.
+	 * The drawback is that it changes rendering for polygon centered labels and changes the results of query rendered features.
+	 * @defaultValue undefined
+	 * @experimental
+	 */
+	experimentalZoomLevelsToOverscale?: number;
 };
 type CompleteMapOptions = Complete<MapOptions>;
 type DelegatedListener = {
@@ -11028,6 +11049,8 @@ declare class Map$1 extends Camera {
 		number
 	];
 	_terrainDataCallback: (e: MapStyleDataEvent | MapSourceDataEvent) => void;
+	/** @internal */
+	_zoomLevelsToOverscale: number | undefined;
 	/**
 	 * @internal
 	 * image queue throttling handle. To be used later when clean up
@@ -14383,6 +14406,11 @@ export declare class VectorTileSource extends Evented implements Source {
 	onRemove(): void;
 	serialize(): VectorSourceSpecification;
 	loadTile(tile: Tile): Promise<void>;
+	/**
+	 * When the requested tile has a higher canonical Z than source maxzoom, pass overzoom parameters so worker can load the
+	 * deepest tile at source max zoom to generate sub tiles using geojsonvt for highest performance on vector overscaling
+	 */
+	private _getOverzoomParameters;
 	private _afterTileLoadWorkerResponse;
 	abortTile(tile: Tile): Promise<void>;
 	unloadTile(tile: Tile): Promise<void>;

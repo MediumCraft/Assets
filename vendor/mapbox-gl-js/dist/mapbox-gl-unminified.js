@@ -3381,7 +3381,7 @@ const exported$1 = {
         const offscreenCanvasContext = offscreenCanvas.getContext('2d', { willReadFrequently: true });
         let inc = 0;
         for (let i = 0; i < offscreenCanvas.width; ++i) {
-            offscreenCanvasContext.fillStyle = 'rgba('.concat(inc++, ',').concat(inc++, ',').concat(inc++, ', 255)');
+            offscreenCanvasContext.fillStyle = `rgba(${ inc++ },${ inc++ },${ inc++ }, 255)`;
             offscreenCanvasContext.fillRect(i, 0, 1, 1);
         }
         const readData = offscreenCanvasContext.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
@@ -3400,12 +3400,12 @@ const exported$1 = {
 function setQueryParameters(url, params) {
     const paramStart = url.indexOf('?');
     if (paramStart < 0)
-        return ''.concat(url, '?').concat(new URLSearchParams(params).toString());
+        return `${ url }?${ new URLSearchParams(params).toString() }`;
     const searchParams = new URLSearchParams(url.slice(paramStart));
     for (const key in params) {
         searchParams.set(key, params[key]);
     }
-    return ''.concat(url.slice(0, paramStart), '?').concat(searchParams.toString());
+    return `${ url.slice(0, paramStart) }?${ searchParams.toString() }`;
 }
 function stripQueryParameters(url, params = { persistentParams: [] }) {
     const paramStart = url.indexOf('?');
@@ -3419,7 +3419,7 @@ function stripQueryParameters(url, params = { persistentParams: [] }) {
             nextParams.set(param, value);
     }
     const nextParamsString = nextParams.toString();
-    return ''.concat(url.slice(0, paramStart)).concat(nextParamsString.length > 0 ? '?'.concat(nextParamsString) : '');
+    return `${ url.slice(0, paramStart) }${ nextParamsString.length > 0 ? `?${ nextParamsString }` : '' }`;
 }
 
 const CACHE_NAME = 'mapbox-tiles';
@@ -3641,7 +3641,7 @@ class AJAXError extends Error {
         this.url = url;
     }
     toString() {
-        return ''.concat(this.name, ': ').concat(this.message, ' (').concat(this.status, '): ').concat(this.url);
+        return `${ this.name }: ${ this.message } (${ this.status }): ${ this.url }`;
     }
 }
 const getReferrer = isWorker() ? () => self.worker.referrer : () => (location.protocol === 'blob:' ? parent : self).location.href;
@@ -3686,7 +3686,7 @@ function makeFetchRequest(requestParameters, callback) {
             if (error.name === 'AbortError') {
                 return;
             }
-            callback(new Error(''.concat(error.message, ' ').concat(requestParameters.url)));
+            callback(new Error(`${ error.message } ${ requestParameters.url }`));
         });
     };
     const finishRequest = (response, cacheableResponse, requestTime) => {
@@ -3808,7 +3808,7 @@ function arrayBufferToImageBitmap(data, callback) {
     createImageBitmap(blob).then(imgBitmap => {
         callback(null, imgBitmap);
     }).catch(e => {
-        callback(new Error('Could not load image because of '.concat(e.message, '. Please make sure to use a supported image type such as PNG or JPEG. Note that SVGs are not supported.')));
+        callback(new Error(`Could not load image because of ${ e.message }. Please make sure to use a supported image type such as PNG or JPEG. Note that SVGs are not supported.`));
     });
 }
 let imageQueue, numImageRequests;
@@ -4160,7 +4160,7 @@ class ImageId {
         return new ImageId(id);
     }
     static toString(id) {
-        return id.iconsetId ? ''.concat(id.name).concat(separator).concat(id.iconsetId) : id.name;
+        return id.iconsetId ? `${ id.name }${ separator }${ id.iconsetId }` : id.name;
     }
     static parse(str) {
         const [name, iconsetId] = str.split(separator);
@@ -5281,7 +5281,7 @@ class Color {
             this.b,
             this.a
         ];
-        return 'rgba('.concat(Math.round(r * 255), ',').concat(Math.round(g * 255), ',').concat(Math.round(b * 255), ',').concat(a, ')');
+        return `rgba(${ Math.round(r * 255) },${ Math.round(g * 255) },${ Math.round(b * 255) },${ a })`;
     }
     toNonPremultipliedRenderColor(lut) {
         const {r, g, b, a} = this;
@@ -5514,7 +5514,7 @@ class Scope {
         if (this.parent) {
             return this.parent.get(name);
         }
-        throw new Error(''.concat(name, ' not found in scope.'));
+        throw new Error(`${ name } not found in scope.`);
     }
     has(name) {
         if (this.bindings[name])
@@ -5544,7 +5544,7 @@ function array(itemType, N) {
 function toString$1(type) {
     if (type.kind === 'array') {
         const itemType = toString$1(type.itemType);
-        return typeof type.N === 'number' ? 'array<'.concat(itemType, ', ').concat(type.N, '>') : type.itemType.kind === 'value' ? 'array' : 'array<'.concat(itemType, '>');
+        return typeof type.N === 'number' ? `array<${ itemType }, ${ type.N }>` : type.itemType.kind === 'value' ? 'array' : `array<${ itemType }>`;
     } else {
         return type.kind;
     }
@@ -5576,7 +5576,7 @@ function checkSubtype(expected, t) {
             }
         }
     }
-    return 'Expected '.concat(toString$1(expected), ' but found ').concat(toString$1(t), ' instead.');
+    return `Expected ${ toString$1(expected) } but found ${ toString$1(t) } instead.`;
 }
 function isValidType(provided, allowedTypes) {
     return allowedTypes.some(t => t.kind === provided.kind);
@@ -5778,7 +5778,7 @@ class ResolvedImage {
         if (this.primaryId && this.secondaryId) {
             const primaryName = this.primaryId.name;
             const secondaryName = this.secondaryId.name;
-            return '['.concat(primaryName, ',').concat(secondaryName, ']');
+            return `[${ primaryName },${ secondaryName }]`;
         }
         return this.primaryId.name;
     }
@@ -5819,15 +5819,15 @@ function validateRGBA(r, g, b, a) {
             g,
             b
         ];
-        return 'Invalid rgba value ['.concat(value.join(', '), ']: \'r\', \'g\', and \'b\' must be between 0 and 255.');
+        return `Invalid rgba value [${ value.join(', ') }]: 'r', 'g', and 'b' must be between 0 and 255.`;
     }
     if (!(typeof a === 'undefined' || typeof a === 'number' && a >= 0 && a <= 1)) {
-        return 'Invalid rgba value ['.concat([
+        return `Invalid rgba value [${ [
             r,
             g,
             b,
             a
-        ].join(', '), ']: \'a\' must be between 0 and 1.');
+        ].join(', ') }]: 'a' must be between 0 and 1.`;
     }
     return null;
 }
@@ -5843,7 +5843,7 @@ function validateHSLA(h, s, l, a) {
             s,
             l
         ];
-        return 'Invalid hsla value ['.concat(value.join(', '), ']: \'h\' must be between 0 and 360.');
+        return `Invalid hsla value [${ value.join(', ') }]: 'h' must be between 0 and 360.`;
     }
     if (!(typeof s === 'number' && s >= 0 && s <= 100 && typeof l === 'number' && l >= 0 && l <= 100)) {
         const value = typeof a === 'number' ? [
@@ -5856,15 +5856,15 @@ function validateHSLA(h, s, l, a) {
             s,
             l
         ];
-        return 'Invalid hsla value ['.concat(value.join(', '), ']: \'s\', and \'l\' must be between 0 and 100.');
+        return `Invalid hsla value [${ value.join(', ') }]: 's', and 'l' must be between 0 and 100.`;
     }
     if (!(typeof a === 'undefined' || typeof a === 'number' && a >= 0 && a <= 1)) {
-        return 'Invalid hsla value ['.concat([
+        return `Invalid hsla value [${ [
             h,
             s,
             l,
             a
-        ].join(', '), ']: \'a\' must be between 0 and 1.');
+        ].join(', ') }]: 'a' must be between 0 and 1.`;
     }
     return null;
 }
@@ -5959,9 +5959,9 @@ class Literal {
     }
     static parse(args, context) {
         if (args.length !== 2)
-            return context.error('\'literal\' expression requires exactly one argument, but found '.concat(args.length - 1, ' instead.'));
+            return context.error(`'literal' expression requires exactly one argument, but found ${ args.length - 1 } instead.`);
         if (!isValue(args[1]))
-            return context.error('invalid value');
+            return context.error(`invalid value`);
         const value = args[1];
         let type = typeOf(value);
         const expected = context.expectedType;
@@ -6017,7 +6017,7 @@ class Assertion {
     }
     static parse(args, context) {
         if (args.length < 2)
-            return context.error('Expected at least one argument.');
+            return context.error(`Expected at least one argument.`);
         let i = 1;
         let type;
         const name = args[0];
@@ -6061,7 +6061,7 @@ class Assertion {
             if (!error) {
                 return value;
             } else if (i === this.args.length - 1) {
-                throw new RuntimeError('The expression '.concat(JSON.stringify(this.args[i].serialize()), ' evaluated to ').concat(toString$1(typeOf(value)), ' but was expected to be of type ').concat(toString$1(this.type), '.'));
+                throw new RuntimeError(`The expression ${ JSON.stringify(this.args[i].serialize()) } evaluated to ${ toString$1(typeOf(value)) } but was expected to be of type ${ toString$1(this.type) }.`);
             }
         }
         return null;
@@ -6096,11 +6096,11 @@ class FormatExpression {
     }
     static parse(args, context) {
         if (args.length < 2) {
-            return context.error('Expected at least one argument.');
+            return context.error(`Expected at least one argument.`);
         }
         const firstArg = args[1];
         if (!Array.isArray(firstArg) && typeof firstArg === 'object') {
-            return context.error('First argument must be an image or text section.');
+            return context.error(`First argument must be an image or text section.`);
         }
         const sections = [];
         let nextTokenMayBeObject = false;
@@ -6136,7 +6136,7 @@ class FormatExpression {
                     return null;
                 const kind = content.type.kind;
                 if (kind !== 'string' && kind !== 'value' && kind !== 'null' && kind !== 'resolvedImage')
-                    return context.error('Formatted text type must be \'string\', \'value\', \'image\' or \'null\'.');
+                    return context.error(`Formatted text type must be 'string', 'value', 'image' or 'null'.`);
                 nextTokenMayBeObject = true;
                 sections.push({
                     content,
@@ -6218,7 +6218,7 @@ class ImageExpression {
     }
     static parse(args, context) {
         if (args.length < 2) {
-            return context.error('Expected two or more arguments.');
+            return context.error(`Expected two or more arguments.`);
         }
         let nextArgId = 1;
         const imageExpression = [];
@@ -6226,7 +6226,7 @@ class ImageExpression {
             if (nextArgId < args.length) {
                 const imageName = context.parse(args[nextArgId], nextArgId++, StringType);
                 if (!imageName) {
-                    context.error(imageExpression.length ? 'Secondary image variant is not a string.' : 'No image name provided.');
+                    context.error(imageExpression.length ? `Secondary image variant is not a string.` : `No image name provided.`);
                     return false;
                 }
                 imageExpression.push({
@@ -6252,14 +6252,14 @@ class ImageExpression {
                 }
                 if (params) {
                     if (typeof params !== 'object' || params.constructor !== Object) {
-                        optionsContext.error('Image options "params" should be an object');
+                        optionsContext.error(`Image options "params" should be an object`);
                         return false;
                     }
                     const parsedParams = {};
                     const childContext = optionsContext.concat(void 0, 'params');
                     for (const key in params) {
                         if (!key) {
-                            childContext.error('Image parameter name should be non-empty');
+                            childContext.error(`Image parameter name should be non-empty`);
                             return false;
                         }
                         const value = childContext.concat(void 0, key).parse(params[key], void 0, ColorType, void 0, { typeAnnotation: 'coerce' });
@@ -6272,11 +6272,11 @@ class ImageExpression {
                 }
                 if (iconset) {
                     if (typeof iconset !== 'object' || iconset.constructor !== Object) {
-                        optionsContext.error('Image options "iconset" should be an object');
+                        optionsContext.error(`Image options "iconset" should be an object`);
                         return false;
                     }
                     if (!iconset.id) {
-                        optionsContext.error('Image options "iconset" should have an "id" property');
+                        optionsContext.error(`Image options "iconset" should have an "id" property`);
                         return false;
                     }
                     imageExpression[imageExpression.length - 1].options.iconset = iconset;
@@ -6446,7 +6446,7 @@ class Coercion {
     }
     static parse(args, context) {
         if (args.length < 2)
-            return context.error('Expected at least one argument.');
+            return context.error(`Expected at least one argument.`);
         const name = args[0];
         const parsed = [];
         let type = NullType;
@@ -6459,7 +6459,7 @@ class Coercion {
                 if (context.expectedType.kind === 'array') {
                     type = array(context.expectedType.itemType, arrayLength);
                 } else {
-                    return context.error('Expected '.concat(context.expectedType.kind, ' but found array.'));
+                    return context.error(`Expected ${ context.expectedType.kind } but found array.`);
                 }
             } else if (arrayLength > 0 && isValue(args[1][0])) {
                 const value = args[1][0];
@@ -6475,7 +6475,7 @@ class Coercion {
                 } else {
                     const memberType = getType(member);
                     if (memberType !== type.itemType.kind) {
-                        return context.error('Expected '.concat(type.itemType.kind, ' but found ').concat(memberType, '.'));
+                        return context.error(`Expected ${ type.itemType.kind } but found ${ memberType }.`);
                     }
                     parsedMember = context.registry['literal'].parse([
                         'literal',
@@ -6488,7 +6488,7 @@ class Coercion {
             }
         } else {
             if ((name === 'to-boolean' || name === 'to-string') && args.length !== 2)
-                return context.error('Expected one argument.');
+                return context.error(`Expected one argument.`);
             type = types[name];
             for (let i = 1; i < args.length; i++) {
                 const input = context.parse(args[i], i, ValueType);
@@ -6517,7 +6517,7 @@ class Coercion {
                         return c;
                 } else if (Array.isArray(input)) {
                     if (input.length < 3 || input.length > 4) {
-                        error = 'Invalid rbga value '.concat(JSON.stringify(input), ': expected an array containing either three or four numeric values.');
+                        error = `Invalid rbga value ${ JSON.stringify(input) }: expected an array containing either three or four numeric values.`;
                     } else {
                         error = validateRGBA(input[0], input[1], input[2], input[3]);
                     }
@@ -6526,7 +6526,7 @@ class Coercion {
                     }
                 }
             }
-            throw new RuntimeError(error || 'Could not parse color from value \''.concat(typeof input === 'string' ? input : String(JSON.stringify(input)), '\''));
+            throw new RuntimeError(error || `Could not parse color from value '${ typeof input === 'string' ? input : String(JSON.stringify(input)) }'`);
         } else if (this.type.kind === 'number') {
             let value = null;
             for (const arg of this.args) {
@@ -6538,7 +6538,7 @@ class Coercion {
                     continue;
                 return num;
             }
-            throw new RuntimeError('Could not convert '.concat(JSON.stringify(value), ' to number.'));
+            throw new RuntimeError(`Could not convert ${ JSON.stringify(value) } to number.`);
         } else if (this.type.kind === 'formatted') {
             return Formatted.fromString(toString(this.args[0].evaluate(ctx)));
         } else if (this.type.kind === 'resolvedImage') {
@@ -6569,7 +6569,7 @@ class Coercion {
         if (this.type.kind === 'resolvedImage') {
             return new ImageExpression(this.args[0]).serialize();
         }
-        const serialized = this.type.kind === 'array' ? [] : ['to-'.concat(this.type.kind)];
+        const serialized = this.type.kind === 'array' ? [] : [`to-${ this.type.kind }`];
         this.eachChild(child => {
             serialized.push(child.serialize());
         });
@@ -6670,7 +6670,7 @@ class CompoundExpression {
         const op = args[0];
         const definition = CompoundExpression.definitions[op];
         if (!definition) {
-            return context.error('Unknown expression "'.concat(op, '". If you wanted a literal array, use ["literal", [...]].'), 0);
+            return context.error(`Unknown expression "${ op }". If you wanted a literal array, use ["literal", [...]].`, 0);
         }
         const type = Array.isArray(definition) ? definition[0] : definition.type;
         const availableOverloads = Array.isArray(definition) ? [[
@@ -6704,7 +6704,7 @@ class CompoundExpression {
             }
             if (Array.isArray(params)) {
                 if (params.length !== parsedArgs.length) {
-                    signatureContext.error('Expected '.concat(params.length, ' arguments, but found ').concat(parsedArgs.length, ' instead.'));
+                    signatureContext.error(`Expected ${ params.length } arguments, but found ${ parsedArgs.length } instead.`);
                     continue;
                 }
             }
@@ -6729,7 +6729,7 @@ class CompoundExpression {
                     return null;
                 actualTypes.push(toString$1(parsed.type));
             }
-            context.error('Expected arguments of type '.concat(signatures, ', but found (').concat(actualTypes.join(', '), ') instead.'));
+            context.error(`Expected arguments of type ${ signatures }, but found (${ actualTypes.join(', ') }) instead.`);
         }
         return null;
     }
@@ -6742,9 +6742,9 @@ class CompoundExpression {
 }
 function stringifySignature(signature) {
     if (Array.isArray(signature)) {
-        return '('.concat(signature.map(toString$1).join(', '), ')');
+        return `(${ signature.map(toString$1).join(', ') })`;
     } else {
-        return '('.concat(toString$1(signature.type), '...)');
+        return `(${ toString$1(signature.type) }...)`;
     }
 }
 
@@ -6757,10 +6757,10 @@ class CollatorExpression {
     }
     static parse(args, context) {
         if (args.length !== 2)
-            return context.error('Expected one argument.');
+            return context.error(`Expected one argument.`);
         const options = args[1];
         if (typeof options !== 'object' || Array.isArray(options))
-            return context.error('Collator options argument must be an object.');
+            return context.error(`Collator options argument must be an object.`);
         const caseSensitive = options['case-sensitive'] === void 0 ? context.parse(false, 1, BooleanType) : context.parseObjectValue(options['case-sensitive'], 1, 'case-sensitive', BooleanType);
         if (!caseSensitive)
             return null;
@@ -7229,7 +7229,7 @@ class Within {
     }
     static parse(args, context) {
         if (args.length !== 2)
-            return context.error('\'within\' expression requires exactly one argument, but found '.concat(args.length - 1, ' instead.'));
+            return context.error(`'within' expression requires exactly one argument, but found ${ args.length - 1 } instead.`);
         if (isValue(args[1])) {
             const geojson = args[1];
             if (geojson.type === 'FeatureCollection') {
@@ -7248,7 +7248,7 @@ class Within {
                 return new Within(geojson, geojson);
             }
         }
-        return context.error('\'within\' expression requires valid geojson object that contains polygon geometry type.');
+        return context.error(`'within' expression requires valid geojson object that contains polygon geometry type.`);
     }
     evaluate(ctx) {
         if (ctx.geometry() != null && ctx.canonicalID() != null) {
@@ -8317,7 +8317,7 @@ class Distance {
     }
     static parse(args, context) {
         if (args.length !== 2) {
-            return context.error('\'distance\' expression requires either one argument, but found \' '.concat(args.length - 1, ' instead.'));
+            return context.error(`'distance' expression requires either one argument, but found ' ${ args.length - 1 } instead.`);
         }
         if (isValue(args[1])) {
             const geojson = args[1];
@@ -8481,11 +8481,11 @@ class Config {
             type = ValueType;
         }
         if (args.length < 2 || args.length > 3) {
-            return context.error('Invalid number of arguments for \'config\' expression.');
+            return context.error(`Invalid number of arguments for 'config' expression.`);
         }
         const configKey = context.parse(args[1], 1);
         if (!(configKey instanceof Literal)) {
-            return context.error('Key name of \'config\' expression must be a string literal.');
+            return context.error(`Key name of 'config' expression must be a string literal.`);
         }
         let featureConstant = true;
         let configScopeValue;
@@ -8493,7 +8493,7 @@ class Config {
         if (args.length >= 3) {
             const configScope = context.parse(args[2], 2);
             if (!(configScope instanceof Literal)) {
-                return context.error('Scope of \'config\' expression must be a string literal.');
+                return context.error(`Scope of 'config' expression must be a string literal.`);
             }
             configScopeValue = toString(configScope.value);
         }
@@ -8567,10 +8567,10 @@ class Var {
     }
     static parse(args, context) {
         if (args.length !== 2 || typeof args[1] !== 'string')
-            return context.error('\'var\' expression requires exactly one string literal argument.');
+            return context.error(`'var' expression requires exactly one string literal argument.`);
         const name = args[1];
         if (!context.scope.has(name)) {
-            return context.error('Unknown variable "'.concat(name, '". Make sure "').concat(name, '" has been bound in an enclosing "let" expression before using it.'), 1);
+            return context.error(`Unknown variable "${ name }". Make sure "${ name }" has been bound in an enclosing "let" expression before using it.`, 1);
         }
         return new Var(name, context.scope.get(name));
     }
@@ -8597,9 +8597,9 @@ class ParsingContext {
         this.path = path;
         this.key = path.map(part => {
             if (typeof part === 'string') {
-                return '[\''.concat(part, '\']');
+                return `['${ part }']`;
             }
-            return '['.concat(part, ']');
+            return `[${ part }]`;
         }).join('');
         this.scope = scope;
         this.errors = errors;
@@ -8650,7 +8650,7 @@ class ParsingContext {
         }
         if (Array.isArray(expr)) {
             if (expr.length === 0) {
-                return this.error('Expected an array with at least one element. If you wanted a literal array, use ["literal", []].');
+                return this.error(`Expected an array with at least one element. If you wanted a literal array, use ["literal", []].`);
             }
             const Expr = typeof expr[0] === 'string' ? this.registry[expr[0]] : void 0;
             if (Expr) {
@@ -8684,11 +8684,11 @@ class ParsingContext {
                 expr
             ], this);
         } else if (typeof expr === 'undefined') {
-            return this.error('\'undefined\' value invalid. Use null instead.');
+            return this.error(`'undefined' value invalid. Use null instead.`);
         } else if (typeof expr === 'object') {
-            return this.error('Bare objects invalid. Use ["literal", {...}] instead.');
+            return this.error(`Bare objects invalid. Use ["literal", {...}] instead.`);
         } else {
-            return this.error('Expected an array, but found '.concat(typeof expr, ' instead.'));
+            return this.error(`Expected an array, but found ${ typeof expr } instead.`);
         }
     }
     /**
@@ -8713,7 +8713,7 @@ class ParsingContext {
    * @private
    */
     error(error, ...keys) {
-        const key = ''.concat(this.key).concat(keys.map(k => '['.concat(k, ']')).join(''));
+        const key = `${ this.key }${ keys.map(k => `[${ k }]`).join('') }`;
         this.errors.push(new ParsingError(key, error));
     }
     /**
@@ -8806,10 +8806,10 @@ class Step {
     }
     static parse(args, context) {
         if (args.length - 1 < 4) {
-            return context.error('Expected at least 4 arguments, but found only '.concat(args.length - 1, '.'));
+            return context.error(`Expected at least 4 arguments, but found only ${ args.length - 1 }.`);
         }
         if ((args.length - 1) % 2 !== 0) {
-            return context.error('Expected an even number of arguments.');
+            return context.error(`Expected an even number of arguments.`);
         }
         const input = context.parse(args[1], 1, NumberType);
         if (!input)
@@ -8999,14 +8999,14 @@ class Interpolate {
     static parse(args, context) {
         let [operator, interpolation, input, ...rest] = args;
         if (!Array.isArray(interpolation) || interpolation.length === 0) {
-            return context.error('Expected an interpolation type expression.', 1);
+            return context.error(`Expected an interpolation type expression.`, 1);
         }
         if (interpolation[0] === 'linear') {
             interpolation = { name: 'linear' };
         } else if (interpolation[0] === 'exponential') {
             const base = interpolation[1];
             if (typeof base !== 'number')
-                return context.error('Exponential interpolation requires a numeric base.', 1, 1);
+                return context.error(`Exponential interpolation requires a numeric base.`, 1, 1);
             interpolation = {
                 name: 'exponential',
                 base
@@ -9021,13 +9021,13 @@ class Interpolate {
                 controlPoints
             };
         } else {
-            return context.error('Unknown interpolation type '.concat(String(interpolation[0])), 1, 0);
+            return context.error(`Unknown interpolation type ${ String(interpolation[0]) }`, 1, 0);
         }
         if (args.length - 1 < 4) {
-            return context.error('Expected at least 4 arguments, but found only '.concat(args.length - 1, '.'));
+            return context.error(`Expected at least 4 arguments, but found only ${ args.length - 1 }.`);
         }
         if (args.length - 1 > 3 && (args.length - 1) % 2 !== 0) {
-            return context.error('Expected an even number of arguments.');
+            return context.error(`Expected an even number of arguments.`);
         }
         input = context.parse(input, 2, NumberType);
         if (!input)
@@ -9060,7 +9060,7 @@ class Interpolate {
             ]);
         }
         if (outputType.kind !== 'number' && outputType.kind !== 'color' && !(outputType.kind === 'array' && outputType.itemType.kind === 'number' && typeof outputType.N === 'number')) {
-            return context.error('Type '.concat(toString$1(outputType), ' is not interpolatable.'));
+            return context.error(`Type ${ toString$1(outputType) } is not interpolatable.`);
         }
         return new Interpolate(outputType, operator, interpolation, input, stops);
     }
@@ -9223,15 +9223,15 @@ class Let {
     }
     static parse(args, context) {
         if (args.length < 4)
-            return context.error('Expected at least 3 arguments, but found '.concat(args.length - 1, ' instead.'));
+            return context.error(`Expected at least 3 arguments, but found ${ args.length - 1 } instead.`);
         const bindings = [];
         for (let i = 1; i < args.length - 1; i += 2) {
             const name = args[i];
             if (typeof name !== 'string') {
-                return context.error('Expected string, but found '.concat(typeof name, ' instead.'), i);
+                return context.error(`Expected string, but found ${ typeof name } instead.`, i);
             }
             if (/[^a-zA-Z0-9_]/.test(name)) {
-                return context.error('Variable names must contain only alphanumeric characters or \'_\'.', i);
+                return context.error(`Variable names must contain only alphanumeric characters or '_'.`, i);
             }
             const value = context.parse(args[i + 1], i + 1);
             if (!value)
@@ -9267,7 +9267,7 @@ class At {
     }
     static parse(args, context) {
         if (args.length !== 3)
-            return context.error('Expected 2 arguments, but found '.concat(args.length - 1, ' instead.'));
+            return context.error(`Expected 2 arguments, but found ${ args.length - 1 } instead.`);
         const index = context.parse(args[1], 1, NumberType);
         const input = context.parse(args[2], 2, array(context.expectedType || ValueType));
         if (!index || !input)
@@ -9279,13 +9279,13 @@ class At {
         const index = this.index.evaluate(ctx);
         const array2 = this.input.evaluate(ctx);
         if (index < 0) {
-            throw new RuntimeError('Array index out of bounds: negative index');
+            throw new RuntimeError(`Array index out of bounds: negative index`);
         }
         if (index >= array2.length) {
-            throw new RuntimeError('Array index out of bounds: index exceeds array size');
+            throw new RuntimeError(`Array index out of bounds: index exceeds array size`);
         }
         if (index !== Math.floor(index)) {
-            throw new RuntimeError('Array index must be an integer. Use at-interpolated for fractional indices');
+            throw new RuntimeError(`Array index must be an integer. Use at-interpolated for fractional indices`);
         }
         return array2[index];
     }
@@ -9313,7 +9313,7 @@ class AtInterpolated {
     }
     static parse(args, context) {
         if (args.length !== 3)
-            return context.error('Expected 2 arguments, but found '.concat(args.length - 1, ' instead.'));
+            return context.error(`Expected 2 arguments, but found ${ args.length - 1 } instead.`);
         const index = context.parse(args[1], 1, NumberType);
         const input = context.parse(args[2], 2, array(context.expectedType || ValueType));
         if (!index || !input)
@@ -9325,10 +9325,10 @@ class AtInterpolated {
         const index = this.index.evaluate(ctx);
         const array2 = this.input.evaluate(ctx);
         if (index < 0) {
-            throw new RuntimeError('Array index out of bounds: '.concat(index, ' < 0.'));
+            throw new RuntimeError(`Array index out of bounds: ${ index } < 0.`);
         }
         if (index > array2.length - 1) {
-            throw new RuntimeError('Array index out of bounds: '.concat(index, ' > ').concat(array2.length - 1, '.'));
+            throw new RuntimeError(`Array index out of bounds: ${ index } > ${ array2.length - 1 }.`);
         }
         if (index === Math.floor(index)) {
             return array2[index];
@@ -9338,7 +9338,7 @@ class AtInterpolated {
         const lowerValue = array2[lowerIndex];
         const upperValue = array2[upperIndex];
         if (typeof lowerValue !== 'number' || typeof upperValue !== 'number') {
-            throw new RuntimeError('Cannot interpolate between non-number values at index '.concat(index, '.'));
+            throw new RuntimeError(`Cannot interpolate between non-number values at index ${ index }.`);
         }
         const fraction = index - lowerIndex;
         return lowerValue * (1 - fraction) + upperValue * fraction;
@@ -9367,7 +9367,7 @@ class In {
     }
     static parse(args, context) {
         if (args.length !== 3) {
-            return context.error('Expected 2 arguments, but found '.concat(args.length - 1, ' instead.'));
+            return context.error(`Expected 2 arguments, but found ${ args.length - 1 } instead.`);
         }
         const needle = context.parse(args[1], 1, ValueType);
         const haystack = context.parse(args[2], 2, ValueType);
@@ -9380,7 +9380,7 @@ class In {
                 NullType,
                 ValueType
             ])) {
-            return context.error('Expected first argument to be of type boolean, string, number or null, but found '.concat(toString$1(needle.type), ' instead'));
+            return context.error(`Expected first argument to be of type boolean, string, number or null, but found ${ toString$1(needle.type) } instead`);
         }
         return new In(needle, haystack);
     }
@@ -9395,13 +9395,13 @@ class In {
                 'number',
                 'null'
             ])) {
-            throw new RuntimeError('Expected first argument to be of type boolean, string, number or null, but found '.concat(toString$1(typeOf(needle)), ' instead.'));
+            throw new RuntimeError(`Expected first argument to be of type boolean, string, number or null, but found ${ toString$1(typeOf(needle)) } instead.`);
         }
         if (!isValidNativeType(haystack, [
                 'string',
                 'array'
             ])) {
-            throw new RuntimeError('Expected second argument to be of type array or string, but found '.concat(toString$1(typeOf(haystack)), ' instead.'));
+            throw new RuntimeError(`Expected second argument to be of type array or string, but found ${ toString$1(typeOf(haystack)) } instead.`);
         }
         return haystack.indexOf(needle) >= 0;
     }
@@ -9430,7 +9430,7 @@ class IndexOf {
     }
     static parse(args, context) {
         if (args.length <= 2 || args.length >= 5) {
-            return context.error('Expected 3 or 4 arguments, but found '.concat(args.length - 1, ' instead.'));
+            return context.error(`Expected 3 or 4 arguments, but found ${ args.length - 1 } instead.`);
         }
         const needle = context.parse(args[1], 1, ValueType);
         const haystack = context.parse(args[2], 2, ValueType);
@@ -9443,7 +9443,7 @@ class IndexOf {
                 NullType,
                 ValueType
             ])) {
-            return context.error('Expected first argument to be of type boolean, string, number or null, but found '.concat(toString$1(needle.type), ' instead'));
+            return context.error(`Expected first argument to be of type boolean, string, number or null, but found ${ toString$1(needle.type) } instead`);
         }
         if (args.length === 4) {
             const fromIndex = context.parse(args[3], 3, NumberType);
@@ -9464,13 +9464,13 @@ class IndexOf {
                 'number',
                 'null'
             ])) {
-            throw new RuntimeError('Expected first argument to be of type boolean, string, number or null, but found '.concat(toString$1(typeOf(needle)), ' instead.'));
+            throw new RuntimeError(`Expected first argument to be of type boolean, string, number or null, but found ${ toString$1(typeOf(needle)) } instead.`);
         }
         if (!isValidNativeType(haystack, [
                 'string',
                 'array'
             ])) {
-            throw new RuntimeError('Expected second argument to be of type array or string, but found '.concat(toString$1(typeOf(haystack)), ' instead.'));
+            throw new RuntimeError(`Expected second argument to be of type array or string, but found ${ toString$1(typeOf(haystack)) } instead.`);
         }
         if (this.fromIndex) {
             const fromIndex = this.fromIndex.evaluate(ctx);
@@ -9517,9 +9517,9 @@ class Match {
     }
     static parse(args, context) {
         if (args.length < 5)
-            return context.error('Expected at least 4 arguments, but found only '.concat(args.length - 1, '.'));
+            return context.error(`Expected at least 4 arguments, but found only ${ args.length - 1 }.`);
         if (args.length % 2 !== 1)
-            return context.error('Expected an even number of arguments.');
+            return context.error(`Expected an even number of arguments.`);
         let inputType;
         let outputType;
         if (context.expectedType && context.expectedType.kind !== 'value') {
@@ -9539,11 +9539,11 @@ class Match {
             }
             for (const label of labels) {
                 if (typeof label !== 'number' && typeof label !== 'string') {
-                    return labelContext.error('Branch labels must be numbers or strings.');
+                    return labelContext.error(`Branch labels must be numbers or strings.`);
                 } else if (typeof label === 'number' && Math.abs(label) > Number.MAX_SAFE_INTEGER) {
-                    return labelContext.error('Branch labels must be integers no larger than '.concat(Number.MAX_SAFE_INTEGER, '.'));
+                    return labelContext.error(`Branch labels must be integers no larger than ${ Number.MAX_SAFE_INTEGER }.`);
                 } else if (typeof label === 'number' && Math.floor(label) !== label) {
-                    return labelContext.error('Numeric branch labels must be integer values.');
+                    return labelContext.error(`Numeric branch labels must be integer values.`);
                 } else if (!inputType) {
                     inputType = typeOf(label);
                 } else if (labelContext.checkSubtype(inputType, typeOf(label))) {
@@ -9627,9 +9627,9 @@ class Case {
     }
     static parse(args, context) {
         if (args.length < 4)
-            return context.error('Expected at least 3 arguments, but found only '.concat(args.length - 1, '.'));
+            return context.error(`Expected at least 3 arguments, but found only ${ args.length - 1 }.`);
         if (args.length % 2 !== 0)
-            return context.error('Expected an odd number of arguments.');
+            return context.error(`Expected an odd number of arguments.`);
         let outputType;
         if (context.expectedType && context.expectedType.kind !== 'value') {
             outputType = context.expectedType;
@@ -9690,7 +9690,7 @@ class Slice {
     }
     static parse(args, context) {
         if (args.length <= 2 || args.length >= 5) {
-            return context.error('Expected 3 or 4 arguments, but found '.concat(args.length - 1, ' instead.'));
+            return context.error(`Expected 3 or 4 arguments, but found ${ args.length - 1 } instead.`);
         }
         const input = context.parse(args[1], 1, ValueType);
         const beginIndex = context.parse(args[2], 2, NumberType);
@@ -9701,7 +9701,7 @@ class Slice {
                 StringType,
                 ValueType
             ])) {
-            return context.error('Expected first argument to be of type array or string, but found '.concat(toString$1(input.type), ' instead'));
+            return context.error(`Expected first argument to be of type array or string, but found ${ toString$1(input.type) } instead`);
         }
         if (args.length === 4) {
             const endIndex = context.parse(args[3], 3, NumberType);
@@ -9720,7 +9720,7 @@ class Slice {
                 'string',
                 'array'
             ])) {
-            throw new RuntimeError('Expected first argument to be of type array or string, but found '.concat(toString$1(typeOf(input)), ' instead.'));
+            throw new RuntimeError(`Expected first argument to be of type array or string, but found ${ toString$1(typeOf(input)) } instead.`);
         }
         if (this.endIndex) {
             const endIndex = this.endIndex.evaluate(ctx);
@@ -9764,7 +9764,7 @@ class Split {
     }
     static parse(args, context) {
         if (args.length !== 3) {
-            return context.error('Expected 2 arguments, but found '.concat(args.length - 1, ' instead.'));
+            return context.error(`Expected 2 arguments, but found ${ args.length - 1 } instead.`);
         }
         const str = context.parse(args[1], 1, StringType);
         const delimiter = context.parse(args[2], 2, StringType);
@@ -9848,22 +9848,22 @@ function makeComparison(op, compareBasic, compareWithCollator) {
         }
         static parse(args, context) {
             if (args.length !== 3 && args.length !== 4)
-                return context.error('Expected two or three arguments.');
+                return context.error(`Expected two or three arguments.`);
             const op2 = args[0];
             let lhs = context.parse(args[1], 1, ValueType);
             if (!lhs)
                 return null;
             if (!isComparableType(op2, lhs.type)) {
-                return context.concat(1).error('"'.concat(op2, '" comparisons are not supported for type \'').concat(toString$1(lhs.type), '\'.'));
+                return context.concat(1).error(`"${ op2 }" comparisons are not supported for type '${ toString$1(lhs.type) }'.`);
             }
             let rhs = context.parse(args[2], 2, ValueType);
             if (!rhs)
                 return null;
             if (!isComparableType(op2, rhs.type)) {
-                return context.concat(2).error('"'.concat(op2, '" comparisons are not supported for type \'').concat(toString$1(rhs.type), '\'.'));
+                return context.concat(2).error(`"${ op2 }" comparisons are not supported for type '${ toString$1(rhs.type) }'.`);
             }
             if (lhs.type.kind !== rhs.type.kind && lhs.type.kind !== 'value' && rhs.type.kind !== 'value') {
-                return context.error('Cannot compare types \''.concat(toString$1(lhs.type), '\' and \'').concat(toString$1(rhs.type), '\'.'));
+                return context.error(`Cannot compare types '${ toString$1(lhs.type) }' and '${ toString$1(rhs.type) }'.`);
             }
             if (isOrderComparison) {
                 if (lhs.type.kind === 'value' && rhs.type.kind !== 'value') {
@@ -9875,7 +9875,7 @@ function makeComparison(op, compareBasic, compareWithCollator) {
             let collator = null;
             if (args.length === 4) {
                 if (lhs.type.kind !== 'string' && rhs.type.kind !== 'string' && lhs.type.kind !== 'value' && rhs.type.kind !== 'value') {
-                    return context.error('Cannot use collator to compare non-string types.');
+                    return context.error(`Cannot use collator to compare non-string types.`);
                 }
                 collator = context.parse(args[3], 3, CollatorType);
                 if (!collator)
@@ -9890,7 +9890,7 @@ function makeComparison(op, compareBasic, compareWithCollator) {
                 const lt2 = typeOf(lhs);
                 const rt = typeOf(rhs);
                 if (lt2.kind !== rt.kind || !(lt2.kind === 'string' || lt2.kind === 'number')) {
-                    throw new RuntimeError('Expected arguments for "'.concat(op, '" to be (string, string) or (number, number), but found (').concat(lt2.kind, ', ').concat(rt.kind, ') instead.'));
+                    throw new RuntimeError(`Expected arguments for "${ op }" to be (string, string) or (number, number), but found (${ lt2.kind }, ${ rt.kind }) instead.`);
                 }
             }
             if (this.collator && !isOrderComparison && this.hasUntypedArgument) {
@@ -9941,13 +9941,13 @@ class NumberFormat {
     }
     static parse(args, context) {
         if (args.length !== 3)
-            return context.error('Expected two arguments.');
+            return context.error(`Expected two arguments.`);
         const number = context.parse(args[1], 1, NumberType);
         if (!number)
             return null;
         const options = args[2];
         if (typeof options !== 'object' || Array.isArray(options))
-            return context.error('NumberFormat options argument must be an object.');
+            return context.error(`NumberFormat options argument must be an object.`);
         let locale = null;
         if (options['locale']) {
             locale = context.parseObjectValue(options['locale'], 2, 'locale', StringType);
@@ -10046,12 +10046,12 @@ class Length {
     }
     static parse(args, context) {
         if (args.length !== 2)
-            return context.error('Expected 1 argument, but found '.concat(args.length - 1, ' instead.'));
+            return context.error(`Expected 1 argument, but found ${ args.length - 1 } instead.`);
         const input = context.parse(args[1], 1);
         if (!input)
             return null;
         if (input.type.kind !== 'array' && input.type.kind !== 'string' && input.type.kind !== 'value')
-            return context.error('Expected argument of type string or array, but found '.concat(toString$1(input.type), ' instead.'));
+            return context.error(`Expected argument of type string or array, but found ${ toString$1(input.type) } instead.`);
         return new Length(input);
     }
     evaluate(ctx) {
@@ -10061,7 +10061,7 @@ class Length {
         } else if (Array.isArray(input)) {
             return input.length;
         } else {
-            throw new RuntimeError('Expected value to be of type string or array, but found '.concat(toString$1(typeOf(input)), ' instead.'));
+            throw new RuntimeError(`Expected value to be of type string or array, but found ${ toString$1(typeOf(input)) } instead.`);
         }
     }
     eachChild(fn) {
@@ -10149,10 +10149,10 @@ function hsla(ctx, [h, s, l, a]) {
     const error = validateHSLA(h, s, l, alpha);
     if (error)
         throw new RuntimeError(error);
-    const colorFunction = 'hsla('.concat(h, ', ').concat(s, '%, ').concat(l, '%, ').concat(alpha, ')');
+    const colorFunction = `hsla(${ h }, ${ s }%, ${ l }%, ${ alpha })`;
     const color = Color.parse(colorFunction);
     if (!color)
-        throw new RuntimeError('Failed to parse HSLA color: '.concat(colorFunction));
+        throw new RuntimeError(`Failed to parse HSLA color: ${ colorFunction }`);
     return color;
 }
 function has(key, obj) {
@@ -10813,7 +10813,7 @@ CompoundExpression.register(expressions, {
             } else if (typeof seed === 'number') {
                 seedVal = seed;
             } else {
-                throw new RuntimeError('Invalid seed input: '.concat(seed));
+                throw new RuntimeError(`Invalid seed input: ${ seed }`);
             }
             const random = mulberry32(seedVal)();
             return min + random * (max - min);
@@ -10912,7 +10912,7 @@ function createFunction(parameters, propertySpec) {
         }
     }
     if (parameters.colorSpace && parameters.colorSpace !== 'rgb' && !colorSpaces[parameters.colorSpace]) {
-        throw new Error('Unknown color space: '.concat(parameters.colorSpace));
+        throw new Error(`Unknown color space: ${ parameters.colorSpace }`);
     }
     let innerFun;
     let hashedStops;
@@ -10932,7 +10932,7 @@ function createFunction(parameters, propertySpec) {
     } else if (type === 'identity') {
         innerFun = evaluateIdentityFunction;
     } else {
-        throw new Error('Unknown function type "'.concat(type, '"'));
+        throw new Error(`Unknown function type "${ type }"`);
     }
     if (zoomAndFeatureDependent) {
         const featureFunctions = {};
@@ -11139,14 +11139,14 @@ class StyleExpression {
                 return this._defaultValue;
             }
             if (this._enumValues && !(val in this._enumValues)) {
-                throw new RuntimeError('Expected value to be one of '.concat(Object.keys(this._enumValues).map(v => JSON.stringify(v)).join(', '), ', but found ').concat(JSON.stringify(val), ' instead.'));
+                throw new RuntimeError(`Expected value to be one of ${ Object.keys(this._enumValues).map(v => JSON.stringify(v)).join(', ') }, but found ${ JSON.stringify(val) } instead.`);
             }
             return val;
         } catch (e) {
             if (!this._warningHistory[e.message]) {
                 this._warningHistory[e.message] = true;
                 if (typeof console !== 'undefined') {
-                    console.warn('Failed to evaluate expression "'.concat(JSON.stringify(this.expression.serialize()), '". ').concat(e.message));
+                    console.warn(`Failed to evaluate expression "${ JSON.stringify(this.expression.serialize()) }". ${ e.message }`);
                 }
             }
             return this._defaultValue;
@@ -11274,7 +11274,7 @@ function normalizePropertyExpression(value, specification, scope, options, iconI
     } else if (isExpression(value) || Array.isArray(value) && value.length > 0) {
         const expression = createPropertyExpression(value, specification, scope, options, iconImageUseTheme);
         if (expression.result === 'error') {
-            throw new Error(expression.value.map(err => ''.concat(err.key, ': ').concat(err.message)).join(', '));
+            throw new Error(expression.value.map(err => `${ err.key }: ${ err.message }`).join(', '));
         }
         return expression.value;
     } else {
@@ -11535,7 +11535,7 @@ register(ZoomConstantExpression, 'ZoomConstantExpression');
 register(CompoundExpression, 'CompoundExpression', { omit: ['_evaluate'] });
 for (const name in expressions) {
     if (!registry[expressions[name]._classRegistryKey])
-        register(expressions[name], 'Expression'.concat(name));
+        register(expressions[name], `Expression${ name }`);
 }
 function isArrayBuffer(val) {
     return val && typeof ArrayBuffer !== 'undefined' && (val instanceof ArrayBuffer || val.constructor && val.constructor.name === 'ArrayBuffer');
@@ -11632,7 +11632,7 @@ function serialize(input, transferables) {
         const klass = input.constructor;
         const name = klass._classRegistryKey;
         if (!name) {
-            throw new Error('Can\'t serialize object of unregistered class "'.concat(klass.name, '".'));
+            throw new Error(`Can't serialize object of unregistered class "${ klass.name }".`);
         }
         const properties = klass.serialize ? // (Temporary workaround) allow a class to provide static
         // `serialize()` and `deserialize()` methods to bypass the generic
@@ -11663,7 +11663,7 @@ function serialize(input, transferables) {
         }
         return properties;
     }
-    throw new Error('can\'t serialize object of type '.concat(typeof input));
+    throw new Error(`can't serialize object of type ${ typeof input }`);
 }
 function deserialize(input) {
     if (input === null || input === void 0 || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp || isArrayBuffer(input) || isImageBitmap(input) || ArrayBuffer.isView(input) || input instanceof ImageData) {
@@ -11733,7 +11733,7 @@ function deserialize(input) {
         }
         const {klass} = registry[name];
         if (!klass) {
-            throw new Error('Can\'t deserialize unregistered class "'.concat(name, '".'));
+            throw new Error(`Can't deserialize unregistered class "${ name }".`);
         }
         if (klass.deserialize) {
             return klass.deserialize(input);
@@ -11747,7 +11747,7 @@ function deserialize(input) {
         }
         return result;
     }
-    throw new Error('can\'t deserialize object of type '.concat(typeof input));
+    throw new Error(`can't deserialize object of type ${ typeof input }`);
 }
 
 const unicodeBlockLookup = {
@@ -12525,7 +12525,7 @@ class Transitionable {
             }
             const transition = this.getTransition(property);
             if (transition !== void 0) {
-                result[''.concat(property, '-transition')] = transition;
+                result[`${ property }-transition`] = transition;
             }
         }
         return result;
@@ -12805,7 +12805,7 @@ register(DataDrivenProperty, 'DataDrivenProperty');
 register(DataConstantProperty, 'DataConstantProperty');
 register(ColorRampProperty, 'ColorRampProperty');
 
-var spec = JSON.parse('{"$version":8,"$root":{"version":{"type":"enum","values":[8]},"fragment":{"type":"boolean"},"name":{"type":"string"},"metadata":{"type":"*"},"center":{"type":"array","value":"number"},"zoom":{"type":"number"},"bearing":{"type":"number","default":0,"period":360},"pitch":{"type":"number","default":0},"light":{"type":"light"},"lights":{"type":"array","value":"light-3d"},"terrain":{"type":"terrain","optional":true},"fog":{"type":"fog"},"snow":{"type":"snow"},"rain":{"type":"rain"},"camera":{"type":"camera"},"color-theme":{"type":"colorTheme"},"indoor":{"type":"indoor"},"imports":{"type":"array","value":"import"},"iconsets":{"type":"iconsets"},"schema":{"type":"schema"},"sources":{"type":"sources"},"sprite":{"type":"string"},"glyphs":{"type":"string","default":"mapbox://fonts/mapbox/{fontstack}/{range}.pbf"},"transition":{"type":"transition"},"projection":{"type":"projection"},"layers":{"type":"array","value":"layer"},"models":{"type":"models"},"featuresets":{"type":"featuresets"}},"featuresets":{"*":{"type":"featureset"}},"featureset":{"metadata":{"type":"*"},"selectors":{"type":"array","value":"selector"}},"selector":{"layer":{"type":"string"},"properties":{"type":"selectorProperty"},"featureNamespace":{"type":"string"},"_uniqueFeatureID":{"type":"boolean"}},"selectorProperty":{"*":{"type":"*"}},"model":{"type":"string"},"import":{"id":{"type":"string"},"url":{"type":"string"},"config":{"type":"config"},"data":{"type":"$root"},"color-theme":{"type":"colorTheme","optional":true}},"config":{"*":{"type":"*"}},"schema":{"*":{"type":"option"}},"option":{"default":{"type":"*","expression":{}},"type":{"type":"enum","values":{"string":1,"number":1,"boolean":1,"color":1}},"array":{"type":"boolean"},"minValue":{"type":"number"},"maxValue":{"type":"number"},"stepValue":{"type":"number"},"values":{"type":"array","value":"*"},"metadata":{"type":"*"}},"models":{"*":{"type":"model"}},"light-3d":{"id":{"type":"string"},"properties":{"type":"properties"},"type":{"type":"enum","values":{"ambient":{},"directional":{},"flat":{}}}},"properties":["properties_light_directional","properties_light_ambient","properties_light_flat"],"properties_light_directional":{"direction":{"type":"array","default":[210,30],"minimum":[0,0],"maximum":[360,90],"length":2,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"color":{"type":"color","default":"#ffffff","expression":{"interpolated":true,"parameters":["zoom"]},"use-theme":true,"transition":true},"intensity":{"type":"number","default":0.5,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true},"cast-shadows":{"type":"boolean","default":false},"shadow-quality":{"type":"number","default":1,"minimum":0,"maximum":1,"expression":{"parameters":["zoom"]}},"shadow-intensity":{"type":"number","default":1,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true}},"properties_light_ambient":{"color":{"type":"color","default":"#ffffff","expression":{"interpolated":true,"parameters":["zoom"]},"use-theme":true,"transition":true},"intensity":{"type":"number","default":0.5,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true}},"properties_light_flat":{"anchor":{"type":"enum","default":"viewport","values":{"map":1,"viewport":1},"expression":{"parameters":["zoom"]}},"position":{"type":"array","default":[1.15,210,30],"length":3,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"color":{"type":"color","default":"#ffffff","expression":{"interpolated":true,"parameters":["zoom"]},"use-theme":true,"transition":true},"intensity":{"type":"number","default":0.5,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true}},"iconsets":{"*":{"type":"iconset"}},"iconset":["iconset_sprite","iconset_source"],"iconset_sprite":{"type":{"type":"enum","values":{"sprite":1}},"url":{"type":"string"}},"iconset_source":{"type":{"type":"enum","values":{"source":1}},"source":{"type":"string"}},"sources":{"*":{"type":"source"}},"source":["source_vector","source_raster","source_raster_dem","source_raster_array","source_geojson","source_video","source_image","source_model"],"source_vector":{"type":{"type":"enum","values":{"vector":1}},"url":{"type":"string"},"tiles":{"type":"array","value":"string"},"bounds":{"type":"array","value":"number","length":4,"default":[-180,-85.051129,180,85.051129]},"extra_bounds":{"type":"array","value":{"type":"array","value":"number","length":4}},"scheme":{"type":"enum","values":{"xyz":1,"tms":1},"default":"xyz"},"minzoom":{"type":"number","default":0},"maxzoom":{"type":"number","default":22},"attribution":{"type":"string"},"promoteId":{"type":"promoteId"},"volatile":{"type":"boolean","default":false},"*":{"type":"*"}},"source_raster":{"type":{"type":"enum","values":{"raster":1}},"url":{"type":"string"},"tiles":{"type":"array","value":"string"},"bounds":{"type":"array","value":"number","length":4,"default":[-180,-85.051129,180,85.051129]},"extra_bounds":{"type":"array","value":{"type":"array","value":"number","length":4}},"minzoom":{"type":"number","default":0},"maxzoom":{"type":"number","default":22},"tileSize":{"type":"number","default":512},"scheme":{"type":"enum","values":{"xyz":1,"tms":1},"default":"xyz"},"attribution":{"type":"string"},"volatile":{"type":"boolean","default":false},"*":{"type":"*"}},"source_raster_dem":{"type":{"type":"enum","values":{"raster-dem":1}},"url":{"type":"string"},"tiles":{"type":"array","value":"string"},"bounds":{"type":"array","value":"number","length":4,"default":[-180,-85.051129,180,85.051129]},"extra_bounds":{"type":"array","value":{"type":"array","value":"number","length":4}},"minzoom":{"type":"number","default":0},"maxzoom":{"type":"number","default":22},"tileSize":{"type":"number","default":512},"attribution":{"type":"string"},"encoding":{"type":"enum","values":{"terrarium":1,"mapbox":1},"default":"mapbox"},"volatile":{"type":"boolean","default":false},"*":{"type":"*"}},"source_raster_array":{"type":{"type":"enum","values":{"raster-array":1}},"url":{"type":"string"},"tiles":{"type":"array","value":"string"},"bounds":{"type":"array","value":"number","length":4,"default":[-180,-85.051129,180,85.051129]},"extra_bounds":{"type":"array","value":{"type":"array","value":"number","length":4}},"minzoom":{"type":"number","default":0},"maxzoom":{"type":"number","default":22},"tileSize":{"type":"number","default":512},"attribution":{"type":"string"},"rasterLayers":{"type":"*"},"volatile":{"type":"boolean","default":false},"*":{"type":"*"}},"source_geojson":{"type":{"type":"enum","values":{"geojson":1}},"data":{"type":"*"},"maxzoom":{"type":"number","default":18},"minzoom":{"type":"number","default":0},"attribution":{"type":"string"},"buffer":{"type":"number","default":128,"maximum":512,"minimum":0},"filter":{"type":"*"},"tolerance":{"type":"number","default":0.375},"cluster":{"type":"boolean","default":false},"clusterRadius":{"type":"number","default":50,"minimum":0},"clusterMaxZoom":{"type":"number"},"clusterMinPoints":{"type":"number"},"clusterProperties":{"type":"*"},"lineMetrics":{"type":"boolean","default":false},"generateId":{"type":"boolean","default":false},"promoteId":{"type":"promoteId"},"dynamic":{"type":"boolean","default":false}},"source_video":{"type":{"type":"enum","values":{"video":1}},"urls":{"type":"array","value":"string"},"coordinates":{"type":"array","length":4,"value":{"type":"array","length":2,"value":"number"}}},"source_image":{"type":{"type":"enum","values":{"image":1}},"url":{"type":"string"},"coordinates":{"type":"array","length":4,"value":{"type":"array","length":2,"value":"number"}}},"modelNodeOverride":{"orientation":{"type":"array","value":"number","length":3,"default":[0,0,0],"period":360}},"modelNodeOverrides":{"*":{"type":"modelNodeOverride"}},"modelMaterialOverride":{"model-color":{"type":"color"},"model-color-mix-intensity":{"type":"number"},"model-opacity":{"type":"number"},"model-emissive-strength":{"type":"number"}},"modelMaterialOverrides":{"*":{"type":"modelMaterialOverride"}},"modelSourceModel":{"uri":{"type":"string"},"position":{"type":"array","value":"number","length":2,"default":[0,0],"minimum":[-180,-90],"maximum":[180,90]},"orientation":{"type":"array","value":"number","length":3,"default":[0,0,0],"period":360},"nodeOverrides":{"type":"modelNodeOverrides"},"materialOverrides":{"type":"modelMaterialOverrides"},"nodeOverrideNames":{"type":"array","value":"string"},"materialOverrideNames":{"type":"array","value":"string"},"featureProperties":{"type":"*"}},"modelSourceModels":{"*":{"type":"modelSourceModel"}},"source_model":{"type":{"type":"enum","values":{"model":1,"batched-model":1}},"maxzoom":{"type":"number","default":18},"minzoom":{"type":"number","default":0},"tiles":{"type":"array","value":"string"},"models":{"type":"modelSourceModels"}},"layer":{"id":{"type":"string"},"type":{"type":"enum","values":{"fill":{},"line":{},"symbol":{},"circle":{},"heatmap":{},"fill-extrusion":{},"building":{},"raster":{},"raster-particle":{},"hillshade":{},"model":{},"background":{},"sky":{},"slot":{},"clip":{}}},"metadata":{"type":"*"},"source":{"type":"string"},"source-layer":{"type":"string"},"slot":{"type":"string"},"minzoom":{"type":"number","minimum":0,"maximum":24},"maxzoom":{"type":"number","minimum":0,"maximum":24},"filter":{"type":"filter"},"layout":{"type":"layout"},"paint":{"type":"paint"},"appearances":{"type":"array","value":"appearance","supported-layer-types":["symbol"]}},"appearance":{"condition":{"type":"boolean","expression":{"interpolated":true,"parameters":["zoom","pitch","feature","feature-state","measure-light","distance-from-center"]},"property-type":"data-driven"},"name":{"type":"string"},"properties":{"type":"*"}},"layout":["layout_clip","layout_fill","layout_line","layout_circle","layout_heatmap","layout_fill-extrusion","layout_building","layout_symbol","layout_raster","layout_raster-particle","layout_hillshade","layout_background","layout_sky","layout_model"],"layout_background":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}}},"layout_sky":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}}},"layout_model":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}},"model-id":{"type":"string","default":"","property-type":"data-driven","expression":{"parameters":["zoom","feature"]}}},"layout_clip":{"clip-layer-types":{"type":"array","value":"enum","values":{"model":1,"symbol":1},"default":[],"expression":{}},"clip-layer-scope":{"type":"array","value":"string","default":[],"expression":{}}},"layout_fill":{"fill-sort-key":{"type":"number","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}},"fill-elevation-reference":{"type":"enum","values":{"none":1,"hd-road-base":1,"hd-road-markup":1},"default":"none","expression":{}},"fill-construct-bridge-guard-rail":{"type":"boolean","default":"true","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"}},"layout_circle":{"circle-sort-key":{"type":"number","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"circle-elevation-reference":{"type":"enum","values":{"none":1,"hd-road-markup":1},"default":"none","expression":{}},"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}}},"layout_heatmap":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}}},"layout_fill-extrusion":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}},"fill-extrusion-edge-radius":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{}}},"layout_building":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}},"building-facade":{"type":"boolean","default":false,"expression":{"parameters":["feature"]},"property-type":"data-driven"},"building-facade-floors":{"type":"number","minimum":1,"maximum":200,"default":3,"property-type":"data-driven","expression":{"parameters":["feature"]}},"building-facade-unit-width":{"type":"number","minimum":1,"maximum":20,"default":3.1,"property-type":"data-driven","expression":{"parameters":["feature"]}},"building-facade-window":{"type":"array","length":2,"value":"number","minimum":0.1,"maximum":1,"default":[0.9,0.9],"property-type":"data-driven","expression":{"parameters":["feature"]}},"building-roof-shape":{"type":"enum","values":{"flat":1,"hipped":1,"gabled":1,"parapet":1,"mansard":1,"skillion":1,"pyramidal":1},"default":"flat","expression":{"parameters":["feature"]},"property-type":"data-driven"},"building-height":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{},"property-type":"data-driven"},"building-base":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{},"property-type":"data-driven"},"building-flood-light-wall-radius":{"property-type":"data-driven","type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["feature","feature-state"]}},"building-flood-light-ground-radius":{"property-type":"data-driven","type":"number","default":0,"transition":true,"expression":{"interpolated":true,"parameters":["feature","feature-state"]}},"building-flip-roof-orientation":{"property-type":"data-driven","type":"boolean","default":false,"transition":true,"expression":{"interpolated":true,"parameters":["feature","feature-state"]}}},"layout_line":{"line-cap":{"type":"enum","values":{"butt":1,"round":1,"square":1},"default":"butt","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"line-join":{"type":"enum","values":{"bevel":1,"round":1,"miter":1,"none":1},"default":"miter","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"line-miter-limit":{"type":"number","default":2,"expression":{"interpolated":true,"parameters":["zoom"]}},"line-round-limit":{"type":"number","default":1.05,"expression":{"interpolated":true,"parameters":["zoom"]}},"line-sort-key":{"type":"number","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"line-z-offset":{"type":"number","default":0,"expression":{"parameters":["zoom","feature","line-progress"]},"property-type":"data-driven"},"line-elevation-reference":{"type":"enum","values":{"none":1,"sea":1,"ground":1,"hd-road-markup":1},"default":"none","expression":{}},"line-cross-slope":{"type":"number","expression":{}},"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}},"line-width-unit":{"type":"enum","values":{"pixels":1,"meters":1},"default":"pixels","expression":{"parameters":["zoom"]}}},"layout_symbol":{"symbol-placement":{"type":"enum","values":{"point":1,"line":1,"line-center":1},"default":"point","expression":{"parameters":["zoom"]}},"symbol-spacing":{"type":"number","default":250,"minimum":1,"expression":{"interpolated":true,"parameters":["zoom"]}},"symbol-avoid-edges":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"symbol-sort-key":{"type":"number","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"symbol-z-order":{"type":"enum","values":{"auto":1,"viewport-y":1,"source":1},"default":"auto","expression":{"parameters":["zoom"]}},"symbol-z-elevate":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"symbol-elevation-reference":{"type":"enum","values":{"sea":1,"ground":1,"hd-road-markup":1},"default":"ground","expression":{"parameters":["zoom"]}},"icon-allow-overlap":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"icon-ignore-placement":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"icon-optional":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"icon-rotation-alignment":{"type":"enum","values":{"map":1,"viewport":1,"auto":1},"default":"auto","expression":{"parameters":["zoom"]}},"icon-size":{"type":"number","default":1,"minimum":0,"appearance":true,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"icon-size-scale-range":{"type":"array","value":"number","length":2,"default":[0.8,2],"minimum":[0.1,0.1],"maximum":[10,10],"expression":{}},"icon-text-fit":{"type":"enum","values":{"none":1,"width":1,"height":1,"both":1},"default":"none","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"icon-text-fit-padding":{"type":"array","value":"number","length":4,"default":[0,0,0,0],"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"icon-image":{"type":"resolvedImage","tokens":true,"appearance":true,"use-theme":true,"expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"icon-rotate":{"type":"number","default":0,"period":360,"appearance":true,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"icon-padding":{"type":"number","default":2,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom"]}},"icon-keep-upright":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"icon-offset":{"type":"array","value":"number","length":2,"default":[0,0],"appearance":true,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"icon-anchor":{"type":"enum","values":{"center":1,"left":1,"right":1,"top":1,"bottom":1,"top-left":1,"top-right":1,"bottom-left":1,"bottom-right":1},"default":"center","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"icon-pitch-alignment":{"type":"enum","values":{"map":1,"viewport":1,"auto":1},"default":"auto","expression":{"parameters":["zoom"]}},"text-pitch-alignment":{"type":"enum","values":{"map":1,"viewport":1,"auto":1},"default":"auto","expression":{"parameters":["zoom"]}},"text-rotation-alignment":{"type":"enum","values":{"map":1,"viewport":1,"auto":1},"default":"auto","expression":{"parameters":["zoom"]}},"text-field":{"type":"formatted","default":"","tokens":true,"expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-font":{"type":"array","value":"string","default":["Open Sans Regular","Arial Unicode MS Regular"],"expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-size":{"type":"number","default":16,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-size-scale-range":{"type":"array","value":"number","length":2,"default":[0.8,2],"minimum":[0.1,0.1],"maximum":[10,10],"expression":{}},"text-max-width":{"type":"number","default":10,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-line-height":{"type":"number","default":1.2,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-letter-spacing":{"type":"number","default":0,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-justify":{"type":"enum","values":{"auto":1,"left":1,"center":1,"right":1},"default":"center","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-radial-offset":{"type":"number","default":0,"property-type":"data-driven","expression":{"interpolated":true,"parameters":["zoom","feature"]}},"text-variable-anchor":{"type":"array","value":"enum","values":{"center":1,"left":1,"right":1,"top":1,"bottom":1,"top-left":1,"top-right":1,"bottom-left":1,"bottom-right":1},"expression":{"parameters":["zoom"]}},"text-anchor":{"type":"enum","values":{"center":1,"left":1,"right":1,"top":1,"bottom":1,"top-left":1,"top-right":1,"bottom-left":1,"bottom-right":1},"default":"center","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-max-angle":{"type":"number","default":45,"expression":{"interpolated":true,"parameters":["zoom"]}},"text-writing-mode":{"type":"array","value":"enum","values":{"horizontal":1,"vertical":1},"expression":{"parameters":["zoom"]}},"text-rotate":{"type":"number","default":0,"period":360,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-padding":{"type":"number","default":2,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom"]}},"text-keep-upright":{"type":"boolean","default":true,"expression":{"parameters":["zoom"]}},"text-transform":{"type":"enum","values":{"none":1,"uppercase":1,"lowercase":1},"default":"none","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-offset":{"type":"array","value":"number","length":2,"default":[0,0],"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-allow-overlap":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"text-ignore-placement":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"text-optional":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}}},"layout_raster":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}}},"layout_raster-particle":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}}},"layout_hillshade":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}}},"filter":{"type":"array","value":"*"},"filter_symbol":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature","pitch","distance-from-center"]}},"filter_fill":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_hillshade":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_raster":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_raster-particle":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_clip":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_model":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_line":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_circle":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_fill-extrusion":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_building":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_heatmap":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_operator":{"type":"enum","values":{"==":1,"!=":1,">":1,">=":1,"<":1,"<=":1,"in":1,"!in":1,"all":1,"any":1,"none":1,"has":1,"!has":1}},"geometry_type":{"type":"enum","values":{"Point":1,"LineString":1,"Polygon":1}},"function":{"expression":{"type":"expression"},"stops":{"type":"array","value":"function_stop"},"base":{"type":"number","default":1,"minimum":0},"property":{"type":"string","default":"$zoom"},"type":{"type":"enum","values":{"identity":1,"exponential":1,"interval":1,"categorical":1},"default":"exponential"},"colorSpace":{"type":"enum","values":{"rgb":1,"lab":1,"hcl":1},"default":"rgb"},"default":{"type":"*"}},"function_stop":{"type":"array","minimum":0,"maximum":24,"value":["number","color"],"length":2},"expression":{"type":"array","value":"*","minimum":1},"fog":{"range":{"type":"array","default":[0.5,10],"minimum":-20,"maximum":20,"length":2,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true}},"color":{"type":"color","default":"#ffffff","expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"use-theme":true,"transition":true},"high-color":{"type":"color","default":"#245cdf","expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"use-theme":true,"transition":true},"space-color":{"type":"color","default":["interpolate",["linear"],["zoom"],4,"#010b19",7,"#367ab9"],"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"use-theme":true,"transition":true},"horizon-blend":{"type":"number","default":["interpolate",["linear"],["zoom"],4,0.2,7,0.1],"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"star-intensity":{"type":"number","default":["interpolate",["linear"],["zoom"],5,0.35,6,0],"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"vertical-range":{"type":"array","default":[0,0],"minimum":0,"length":2,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true}}},"snow":{"density":{"type":"number","default":["interpolate",["linear"],["zoom"],11,0,13,0.85],"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"intensity":{"type":"number","default":1,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"color":{"type":"color","default":"#ffffff","expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"use-theme":true,"transition":true},"opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"vignette":{"type":"number","default":["interpolate",["linear"],["zoom"],11,0,13,0.3],"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"vignette-color":{"type":"color","default":"#ffffff","expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"use-theme":true,"transition":true},"center-thinning":{"type":"number","default":0.4,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"direction":{"type":"array","default":[0,50],"minimum":0,"maximum":360,"length":2,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true}},"flake-size":{"type":"number","default":0.71,"minimum":0,"maximum":5,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true}},"rain":{"density":{"type":"number","default":["interpolate",["linear"],["zoom"],11,0,13,0.5],"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"intensity":{"type":"number","default":1,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"color":{"type":"color","default":["interpolate",["linear"],["measure-light","brightness"],0,"#03113d",0.3,"#a8adbc"],"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"use-theme":true,"transition":true},"opacity":{"type":"number","default":["interpolate",["linear"],["measure-light","brightness"],0,0.88,1,0.7],"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"vignette":{"type":"number","default":["interpolate",["linear"],["zoom"],11,0,13,1],"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"vignette-color":{"type":"color","default":["interpolate",["linear"],["measure-light","brightness"],0,"#001736",0.3,"#464646"],"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"use-theme":true,"transition":true},"center-thinning":{"type":"number","default":0.57,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"direction":{"type":"array","default":[0,80],"minimum":0,"maximum":360,"length":2,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true}},"droplet-size":{"type":"array","default":[2.6,18.2],"minimum":0,"maximum":50,"length":2,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true}},"distortion-strength":{"type":"number","default":0.7,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true}},"camera":{"camera-projection":{"type":"enum","values":{"perspective":1,"orthographic":1},"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]},"default":"perspective"}},"colorTheme":{"data":{"type":"string","expression":{}}},"indoor_source":{"sourceId":{"type":"string"},"sourceLayers":{"type":"array","value":"string"}},"indoor":{"*":{"type":"indoor_source"}},"light":{"anchor":{"type":"enum","default":"viewport","values":{"map":1,"viewport":1},"expression":{"parameters":["zoom"]}},"position":{"type":"array","default":[1.15,210,30],"length":3,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"color":{"type":"color","default":"#ffffff","expression":{"interpolated":true,"parameters":["zoom"]},"use-theme":true,"transition":true},"intensity":{"type":"number","default":0.5,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true}},"projection":{"name":{"type":"enum","values":{"albers":1,"equalEarth":1,"equirectangular":1,"lambertConformalConic":1,"mercator":1,"naturalEarth":1,"winkelTripel":1,"globe":1},"default":"mercator"},"center":{"type":"array","length":2,"value":"number","minimum":[-180,-90],"maximum":[180,90]},"parallels":{"type":"array","length":2,"value":"number","minimum":[-90,-90],"maximum":[90,90]}},"terrain":{"source":{"type":"string"},"exaggeration":{"type":"number","default":1,"minimum":0,"maximum":1000,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true}},"paint":["paint_fill","paint_line","paint_circle","paint_heatmap","paint_fill-extrusion","paint_building","paint_symbol","paint_raster","paint_raster-particle","paint_hillshade","paint_background","paint_sky","paint_model"],"paint_fill":{"fill-antialias":{"type":"boolean","default":true,"expression":{"parameters":["zoom"]}},"fill-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"fill-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"fill-outline-color":{"type":"color","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"fill-translate":{"type":"array","value":"number","length":2,"default":[0,0],"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"fill-translate-anchor":{"type":"enum","values":{"map":1,"viewport":1},"default":"map","expression":{"parameters":["zoom"]}},"fill-pattern":{"type":"resolvedImage","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"fill-pattern-cross-fade":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"fill-emissive-strength":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"fill-z-offset":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"fill-bridge-guard-rail-color":{"type":"color","default":"rgba(241, 236, 225, 255)","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light","feature"]},"property-type":"data-driven"},"fill-tunnel-structure-color":{"type":"color","default":"rgba(241, 236, 225, 255)","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light","feature"]},"property-type":"data-driven"}},"paint_fill-extrusion":{"fill-extrusion-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"fill-extrusion-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"fill-extrusion-translate":{"type":"array","value":"number","length":2,"default":[0,0],"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"fill-extrusion-translate-anchor":{"type":"enum","values":{"map":1,"viewport":1},"default":"map","expression":{"parameters":["zoom"]}},"fill-extrusion-pattern":{"type":"resolvedImage","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"fill-extrusion-pattern-cross-fade":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"fill-extrusion-height":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state"]},"property-type":"data-driven"},"fill-extrusion-base":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state"]},"property-type":"data-driven"},"fill-extrusion-height-alignment":{"type":"enum","values":{"terrain":1,"flat":1},"default":"flat"},"fill-extrusion-base-alignment":{"type":"enum","values":{"terrain":1,"flat":1},"default":"terrain"},"fill-extrusion-vertical-gradient":{"type":"boolean","default":true,"expression":{"parameters":["zoom"]}},"fill-extrusion-ambient-occlusion-intensity":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true},"fill-extrusion-ambient-occlusion-radius":{"type":"number","default":3,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true},"fill-extrusion-ambient-occlusion-wall-radius":{"type":"number","default":3,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true},"fill-extrusion-ambient-occlusion-ground-radius":{"type":"number","default":3,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true},"fill-extrusion-ambient-occlusion-ground-attenuation":{"type":"number","default":0.69,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"fill-extrusion-flood-light-color":{"type":"color","default":"#ffffff","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"fill-extrusion-flood-light-intensity":{"type":"number","default":0,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"fill-extrusion-flood-light-wall-radius":{"property-type":"data-driven","type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["feature","feature-state"]}},"fill-extrusion-flood-light-ground-radius":{"property-type":"data-driven","type":"number","default":0,"transition":true,"expression":{"interpolated":true,"parameters":["feature","feature-state"]}},"fill-extrusion-flood-light-ground-attenuation":{"type":"number","default":0.69,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"fill-extrusion-vertical-scale":{"type":"number","default":1,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"fill-extrusion-rounded-roof":{"type":"boolean","default":true,"expression":{"parameters":["zoom"]}},"fill-extrusion-cutoff-fade-range":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{}},"fill-extrusion-emissive-strength":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light","feature-state"]},"property-type":"data-driven"},"fill-extrusion-line-width":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"fill-extrusion-cast-shadows":{"type":"boolean","default":true}},"paint_building":{"building-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"building-ambient-occlusion-intensity":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{"parameters":[]},"transition":true},"building-ambient-occlusion-ground-intensity":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true},"building-ambient-occlusion-ground-radius":{"type":"number","default":3,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true},"building-ambient-occlusion-ground-attenuation":{"type":"number","default":0.69,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"building-vertical-scale":{"type":"number","default":1,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"building-cast-shadows":{"type":"boolean","default":true},"building-color":{"type":"color","default":"rgba(193, 154, 127, 1)","use-theme":true,"expression":{"interpolated":true,"parameters":["feature","feature-state","measure-light"]},"property-type":"data-driven"},"building-emissive-strength":{"type":"number","default":0,"minimum":0,"maximum":5,"expression":{"interpolated":true,"parameters":["feature","feature-state","measure-light"]},"property-type":"data-driven"},"building-facade-emissive-chance":{"type":"number","default":0.35,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["measure-light","zoom"]}},"building-cutoff-fade-range":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{}},"building-flood-light-color":{"type":"color","default":"#ffffff","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"building-flood-light-intensity":{"type":"number","default":0,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"building-flood-light-ground-attenuation":{"type":"number","default":0.69,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}}},"paint_line":{"line-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"line-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"line-translate":{"type":"array","value":"number","length":2,"default":[0,0],"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"line-translate-anchor":{"type":"enum","values":{"map":1,"viewport":1},"default":"map","expression":{"parameters":["zoom"]}},"line-width":{"type":"number","default":1,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light","line-progress"]},"property-type":"data-driven"},"line-gap-width":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"line-offset":{"type":"number","default":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"line-blur":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"line-dasharray":{"type":"array","value":"number","minimum":0,"expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"line-pattern":{"type":"resolvedImage","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"line-pattern-cross-fade":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"line-gradient":{"type":"color","use-theme":true,"expression":{"interpolated":true,"parameters":["line-progress"]}},"line-trim-offset":{"type":"array","value":"number","length":2,"default":[0,0],"minimum":[0,0],"maximum":[1,1]},"line-trim-fade-range":{"type":"array","value":"number","length":2,"default":[0,0],"minimum":[0,0],"maximum":[1,1],"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"line-trim-color":{"type":"color","default":"transparent","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"line-emissive-strength":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"line-border-width":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state"]},"property-type":"data-driven"},"line-border-color":{"type":"color","default":"rgba(0, 0, 0, 0)","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state"]},"property-type":"data-driven"},"line-occlusion-opacity":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true}},"paint_circle":{"circle-radius":{"type":"number","default":5,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"circle-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"circle-blur":{"type":"number","default":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"circle-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"circle-translate":{"type":"array","value":"number","length":2,"default":[0,0],"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"circle-translate-anchor":{"type":"enum","values":{"map":1,"viewport":1},"default":"map","expression":{"parameters":["zoom"]}},"circle-pitch-scale":{"type":"enum","values":{"map":1,"viewport":1},"default":"map","expression":{"parameters":["zoom"]}},"circle-pitch-alignment":{"type":"enum","values":{"map":1,"viewport":1},"default":"viewport","expression":{"parameters":["zoom"]}},"circle-stroke-width":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"circle-stroke-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"circle-stroke-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"circle-emissive-strength":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}}},"paint_heatmap":{"heatmap-radius":{"type":"number","default":30,"minimum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"heatmap-weight":{"type":"number","default":1,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"heatmap-intensity":{"type":"number","default":1,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"heatmap-color":{"type":"color","default":["interpolate",["linear"],["heatmap-density"],0,"rgba(0, 0, 255, 0)",0.1,"royalblue",0.3,"cyan",0.5,"lime",0.7,"yellow",1,"red"],"use-theme":true,"expression":{"interpolated":true,"parameters":["heatmap-density"]}},"heatmap-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}}},"paint_symbol":{"icon-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"icon-occlusion-opacity":{"type":"number","minimum":0,"maximum":1,"default":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"icon-emissive-strength":{"type":"number","default":1,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light","feature-state"]},"property-type":"data-driven"},"text-emissive-strength":{"type":"number","default":1,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light","feature-state"]},"property-type":"data-driven"},"icon-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"icon-halo-color":{"type":"color","default":"rgba(0, 0, 0, 0)","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"icon-halo-width":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"icon-halo-blur":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"icon-translate":{"type":"array","value":"number","length":2,"default":[0,0],"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"icon-translate-anchor":{"type":"enum","values":{"map":1,"viewport":1},"default":"map","expression":{"parameters":["zoom"]}},"icon-image-cross-fade":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"text-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"text-occlusion-opacity":{"type":"number","minimum":0,"maximum":1,"default":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"text-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"overridable":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"text-halo-color":{"type":"color","default":"rgba(0, 0, 0, 0)","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"text-halo-width":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"text-halo-blur":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"text-translate":{"type":"array","value":"number","length":2,"default":[0,0],"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"text-translate-anchor":{"type":"enum","values":{"map":1,"viewport":1},"default":"map","expression":{"parameters":["zoom"]}},"icon-color-saturation":{"type":"number","default":0,"minimum":-1,"maximum":1,"expression":{}},"icon-color-contrast":{"type":"number","default":0,"minimum":-1,"maximum":1,"expression":{}},"icon-color-brightness-min":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{}},"icon-color-brightness-max":{"type":"number","default":1,"minimum":0,"maximum":1,"expression":{}},"symbol-z-offset":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"}},"paint_raster":{"raster-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-color":{"type":"color","use-theme":true,"expression":{"interpolated":true,"parameters":["raster-value"]}},"raster-color-mix":{"type":"array","default":[0.2126,0.7152,0.0722,0],"length":4,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-color-range":{"type":"array","length":2,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-hue-rotate":{"type":"number","default":0,"period":360,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-brightness-min":{"type":"number","default":0,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-brightness-max":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-saturation":{"type":"number","default":0,"minimum":-1,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-contrast":{"type":"number","default":0,"minimum":-1,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-resampling":{"type":"enum","values":{"linear":1,"nearest":1},"default":"linear","expression":{"parameters":["zoom"]}},"raster-fade-duration":{"type":"number","default":300,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-emissive-strength":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"raster-array-band":{"type":"string"},"raster-elevation":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}}},"paint_raster-particle":{"raster-particle-array-band":{"type":"string"},"raster-particle-count":{"type":"number","default":512,"minimum":1},"raster-particle-color":{"type":"color","use-theme":true,"expression":{"interpolated":true,"parameters":["raster-particle-speed"]}},"raster-particle-max-speed":{"type":"number","default":1,"minimum":1},"raster-particle-speed-factor":{"type":"number","default":0.2,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-particle-fade-opacity-factor":{"type":"number","default":0.98,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-particle-reset-rate-factor":{"type":"number","default":0.8,"minimum":0,"maximum":1},"raster-particle-elevation":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}}},"paint_hillshade":{"hillshade-illumination-direction":{"type":"number","default":335,"minimum":0,"maximum":359,"expression":{"interpolated":true,"parameters":["zoom"]}},"hillshade-illumination-anchor":{"type":"enum","values":{"map":1,"viewport":1},"default":"viewport","expression":{"parameters":["zoom"]}},"hillshade-exaggeration":{"type":"number","default":0.5,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"hillshade-shadow-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"hillshade-highlight-color":{"type":"color","default":"#FFFFFF","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"hillshade-accent-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"hillshade-emissive-strength":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}}},"paint_background":{"background-pitch-alignment":{"type":"enum","values":{"map":1,"viewport":1},"default":"map","expression":{"parameters":[]}},"background-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"background-pattern":{"type":"resolvedImage","expression":{"parameters":["zoom"]}},"background-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"background-emissive-strength":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}}},"paint_sky":{"sky-type":{"type":"enum","values":{"gradient":1,"atmosphere":1},"default":"atmosphere","expression":{"parameters":["zoom"]}},"sky-atmosphere-sun":{"type":"array","value":"number","length":2,"minimum":[0,0],"maximum":[360,180],"expression":{"parameters":["zoom"]}},"sky-atmosphere-sun-intensity":{"type":"number","default":10,"minimum":0,"maximum":100},"sky-gradient-center":{"type":"array","value":"number","default":[0,0],"length":2,"minimum":[0,0],"maximum":[360,180],"expression":{"parameters":["zoom"]}},"sky-gradient-radius":{"type":"number","default":90,"minimum":0,"maximum":180,"expression":{"parameters":["zoom"]}},"sky-gradient":{"type":"color","default":["interpolate",["linear"],["sky-radial-progress"],0.8,"#87ceeb",1,"white"],"use-theme":true,"expression":{"interpolated":true,"parameters":["sky-radial-progress"]}},"sky-atmosphere-halo-color":{"type":"color","default":"white","use-theme":true},"sky-atmosphere-color":{"type":"color","default":"white","use-theme":true},"sky-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}}},"paint_model":{"model-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["feature","feature-state","zoom"]},"property-type":"data-driven"},"model-rotation":{"type":"array","value":"number","length":3,"default":[0,0,0],"period":360,"property-type":"data-driven","expression":{"interpolated":true,"parameters":["feature","feature-state","zoom"]},"transition":true},"model-scale":{"type":"array","value":"number","length":3,"default":[1,1,1],"property-type":"data-driven","expression":{"interpolated":true,"parameters":["feature","feature-state","zoom"]},"transition":true},"model-translation":{"type":"array","value":"number","length":3,"default":[0,0,0],"property-type":"data-driven","expression":{"interpolated":true,"parameters":["feature","feature-state","zoom"]},"transition":true},"model-color":{"type":"color","default":"#ffffff","property-type":"data-driven","expression":{"interpolated":true,"parameters":["feature","feature-state","measure-light","zoom"]},"use-theme":true,"transition":true},"model-color-mix-intensity":{"type":"number","property-type":"data-driven","default":0,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["feature","feature-state","measure-light"]},"transition":true},"model-type":{"type":"enum","values":{"common-3d":1,"location-indicator":1},"default":"common-3d"},"model-cast-shadows":{"type":"boolean","default":true},"model-receive-shadows":{"type":"boolean","default":true},"model-ambient-occlusion-intensity":{"type":"number","default":1,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true},"model-emissive-strength":{"type":"number","property-type":"data-driven","default":0,"minimum":0,"maximum":5,"expression":{"interpolated":true,"parameters":["feature","feature-state","measure-light"]},"transition":true},"model-roughness":{"type":"number","default":1,"minimum":0,"maximum":1,"property-type":"data-driven","expression":{"interpolated":true,"parameters":["feature","feature-state"]},"transition":true},"model-height-based-emissive-strength-multiplier":{"type":"array","default":[1,1,1,1,0],"length":5,"value":"number","property-type":"data-driven","expression":{"interpolated":true,"parameters":["feature","feature-state","measure-light"]},"transition":true},"model-cutoff-fade-range":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{}},"model-front-cutoff":{"type":"array","value":"number","expression":{"interpolated":true,"parameters":["zoom"]},"length":3,"default":[0,0,1],"minimum":[0,0,0],"maximum":[1,1,1]},"model-elevation-reference":{"type":"enum","values":{"sea":1,"ground":1,"hd-road-markup":1},"default":"ground","expression":{}}},"transition":{"duration":{"type":"number","default":300,"minimum":0},"delay":{"type":"number","default":0,"minimum":0}},"promoteId":{"*":{"type":"*"}}}');
+var spec = JSON.parse('{"$version":8,"$root":{"version":{"type":"enum","values":[8]},"fragment":{"type":"boolean"},"name":{"type":"string"},"metadata":{"type":"*"},"center":{"type":"array","value":"number"},"zoom":{"type":"number"},"bearing":{"type":"number","default":0,"period":360},"pitch":{"type":"number","default":0},"light":{"type":"light"},"lights":{"type":"array","value":"light-3d"},"terrain":{"type":"terrain","optional":true},"fog":{"type":"fog"},"snow":{"type":"snow"},"rain":{"type":"rain"},"camera":{"type":"camera"},"color-theme":{"type":"colorTheme"},"indoor":{"type":"indoor"},"imports":{"type":"array","value":"import"},"iconsets":{"type":"iconsets"},"schema":{"type":"schema"},"sources":{"type":"sources"},"sprite":{"type":"string"},"glyphs":{"type":"string","default":"mapbox://fonts/mapbox/{fontstack}/{range}.pbf"},"transition":{"type":"transition"},"projection":{"type":"projection"},"layers":{"type":"array","value":"layer"},"models":{"type":"models"},"featuresets":{"type":"featuresets"}},"featuresets":{"*":{"type":"featureset"}},"featureset":{"metadata":{"type":"*"},"selectors":{"type":"array","value":"selector"}},"selector":{"layer":{"type":"string"},"properties":{"type":"selectorProperty"},"featureNamespace":{"type":"string"},"_uniqueFeatureID":{"type":"boolean"}},"selectorProperty":{"*":{"type":"*"}},"model":{"type":"string"},"import":{"id":{"type":"string"},"url":{"type":"string"},"config":{"type":"config"},"data":{"type":"$root"},"color-theme":{"type":"colorTheme","optional":true}},"config":{"*":{"type":"*"}},"schema":{"*":{"type":"option"}},"option":{"default":{"type":"*","expression":{}},"type":{"type":"enum","values":{"string":1,"number":1,"boolean":1,"color":1}},"array":{"type":"boolean"},"minValue":{"type":"number"},"maxValue":{"type":"number"},"stepValue":{"type":"number"},"values":{"type":"array","value":"*"},"metadata":{"type":"*"}},"models":{"*":{"type":"model"}},"light-3d":{"id":{"type":"string"},"properties":{"type":"properties"},"type":{"type":"enum","values":{"ambient":{},"directional":{},"flat":{}}}},"properties":["properties_light_directional","properties_light_ambient","properties_light_flat"],"properties_light_directional":{"direction":{"type":"array","default":[210,30],"minimum":[0,0],"maximum":[360,90],"length":2,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"color":{"type":"color","default":"#ffffff","expression":{"interpolated":true,"parameters":["zoom"]},"use-theme":true,"transition":true},"intensity":{"type":"number","default":0.5,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true},"cast-shadows":{"type":"boolean","default":false},"shadow-quality":{"type":"number","default":1,"minimum":0,"maximum":1,"expression":{"parameters":["zoom"]}},"shadow-intensity":{"type":"number","default":1,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true}},"properties_light_ambient":{"color":{"type":"color","default":"#ffffff","expression":{"interpolated":true,"parameters":["zoom"]},"use-theme":true,"transition":true},"intensity":{"type":"number","default":0.5,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true}},"properties_light_flat":{"anchor":{"type":"enum","default":"viewport","values":{"map":1,"viewport":1},"expression":{"parameters":["zoom"]}},"position":{"type":"array","default":[1.15,210,30],"length":3,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"color":{"type":"color","default":"#ffffff","expression":{"interpolated":true,"parameters":["zoom"]},"use-theme":true,"transition":true},"intensity":{"type":"number","default":0.5,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true}},"iconsets":{"*":{"type":"iconset"}},"iconset":["iconset_sprite","iconset_source"],"iconset_sprite":{"type":{"type":"enum","values":{"sprite":1}},"url":{"type":"string"}},"iconset_source":{"type":{"type":"enum","values":{"source":1}},"source":{"type":"string"}},"sources":{"*":{"type":"source"}},"source":["source_vector","source_raster","source_raster_dem","source_raster_array","source_geojson","source_video","source_image","source_model"],"source_vector":{"type":{"type":"enum","values":{"vector":1}},"url":{"type":"string"},"tiles":{"type":"array","value":"string"},"bounds":{"type":"array","value":"number","length":4,"default":[-180,-85.051129,180,85.051129]},"extra_bounds":{"type":"array","value":{"type":"array","value":"number","length":4}},"scheme":{"type":"enum","values":{"xyz":1,"tms":1},"default":"xyz"},"minzoom":{"type":"number","default":0},"maxzoom":{"type":"number","default":22},"attribution":{"type":"string"},"promoteId":{"type":"promoteId"},"volatile":{"type":"boolean","default":false},"*":{"type":"*"}},"source_raster":{"type":{"type":"enum","values":{"raster":1}},"url":{"type":"string"},"tiles":{"type":"array","value":"string"},"bounds":{"type":"array","value":"number","length":4,"default":[-180,-85.051129,180,85.051129]},"extra_bounds":{"type":"array","value":{"type":"array","value":"number","length":4}},"minzoom":{"type":"number","default":0},"maxzoom":{"type":"number","default":22},"tileSize":{"type":"number","default":512},"scheme":{"type":"enum","values":{"xyz":1,"tms":1},"default":"xyz"},"attribution":{"type":"string"},"volatile":{"type":"boolean","default":false},"*":{"type":"*"}},"source_raster_dem":{"type":{"type":"enum","values":{"raster-dem":1}},"url":{"type":"string"},"tiles":{"type":"array","value":"string"},"bounds":{"type":"array","value":"number","length":4,"default":[-180,-85.051129,180,85.051129]},"extra_bounds":{"type":"array","value":{"type":"array","value":"number","length":4}},"minzoom":{"type":"number","default":0},"maxzoom":{"type":"number","default":22},"tileSize":{"type":"number","default":512},"attribution":{"type":"string"},"encoding":{"type":"enum","values":{"terrarium":1,"mapbox":1},"default":"mapbox"},"volatile":{"type":"boolean","default":false},"*":{"type":"*"}},"source_raster_array":{"type":{"type":"enum","values":{"raster-array":1}},"url":{"type":"string"},"tiles":{"type":"array","value":"string"},"bounds":{"type":"array","value":"number","length":4,"default":[-180,-85.051129,180,85.051129]},"extra_bounds":{"type":"array","value":{"type":"array","value":"number","length":4}},"minzoom":{"type":"number","default":0},"maxzoom":{"type":"number","default":22},"tileSize":{"type":"number","default":512},"attribution":{"type":"string"},"rasterLayers":{"type":"*"},"volatile":{"type":"boolean","default":false},"*":{"type":"*"}},"source_geojson":{"type":{"type":"enum","values":{"geojson":1}},"data":{"type":"*"},"maxzoom":{"type":"number","default":18},"minzoom":{"type":"number","default":0},"attribution":{"type":"string"},"buffer":{"type":"number","default":128,"maximum":512,"minimum":0},"filter":{"type":"*"},"tolerance":{"type":"number","default":0.375},"cluster":{"type":"boolean","default":false},"clusterRadius":{"type":"number","default":50,"minimum":0},"clusterMaxZoom":{"type":"number"},"clusterMinPoints":{"type":"number"},"clusterProperties":{"type":"*"},"lineMetrics":{"type":"boolean","default":false},"generateId":{"type":"boolean","default":false},"promoteId":{"type":"promoteId"},"dynamic":{"type":"boolean","default":false}},"source_video":{"type":{"type":"enum","values":{"video":1}},"urls":{"type":"array","value":"string"},"coordinates":{"type":"array","length":4,"value":{"type":"array","length":2,"value":"number"}}},"source_image":{"type":{"type":"enum","values":{"image":1}},"url":{"type":"string"},"coordinates":{"type":"array","length":4,"value":{"type":"array","length":2,"value":"number"}}},"modelNodeOverride":{"orientation":{"type":"array","value":"number","length":3,"default":[0,0,0],"period":360}},"modelNodeOverrides":{"*":{"type":"modelNodeOverride"}},"modelMaterialOverride":{"model-color":{"type":"color"},"model-color-mix-intensity":{"type":"number"},"model-opacity":{"type":"number"},"model-emissive-strength":{"type":"number"}},"modelMaterialOverrides":{"*":{"type":"modelMaterialOverride"}},"modelSourceModel":{"uri":{"type":"string"},"position":{"type":"array","value":"number","length":2,"default":[0,0],"minimum":[-180,-90],"maximum":[180,90]},"orientation":{"type":"array","value":"number","length":3,"default":[0,0,0],"period":360},"nodeOverrides":{"type":"modelNodeOverrides"},"materialOverrides":{"type":"modelMaterialOverrides"},"nodeOverrideNames":{"type":"array","value":"string"},"materialOverrideNames":{"type":"array","value":"string"},"featureProperties":{"type":"*"}},"modelSourceModels":{"*":{"type":"modelSourceModel"}},"source_model":{"type":{"type":"enum","values":{"model":1,"batched-model":1}},"maxzoom":{"type":"number","default":18},"minzoom":{"type":"number","default":0},"tiles":{"type":"array","value":"string"},"models":{"type":"modelSourceModels"}},"layer":{"id":{"type":"string"},"type":{"type":"enum","values":{"fill":{},"line":{},"symbol":{},"circle":{},"heatmap":{},"fill-extrusion":{},"building":{},"raster":{},"raster-particle":{},"hillshade":{},"model":{},"background":{},"sky":{},"slot":{},"clip":{}}},"metadata":{"type":"*"},"source":{"type":"string"},"source-layer":{"type":"string"},"slot":{"type":"string"},"minzoom":{"type":"number","minimum":0,"maximum":24},"maxzoom":{"type":"number","minimum":0,"maximum":24},"filter":{"type":"filter"},"layout":{"type":"layout"},"paint":{"type":"paint"},"appearances":{"type":"array","value":"appearance","supported-layer-types":["symbol"]}},"appearance":{"condition":{"type":"boolean","expression":{"interpolated":true,"parameters":["zoom","pitch","feature","feature-state","measure-light","distance-from-center"]},"property-type":"data-driven"},"name":{"type":"string"},"properties":{"type":"*"}},"layout":["layout_clip","layout_fill","layout_line","layout_circle","layout_heatmap","layout_fill-extrusion","layout_building","layout_symbol","layout_raster","layout_raster-particle","layout_hillshade","layout_background","layout_sky","layout_model"],"layout_background":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}}},"layout_sky":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}}},"layout_model":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}},"model-id":{"type":"string","default":"","property-type":"data-driven","expression":{"parameters":["zoom","feature"]}}},"layout_clip":{"clip-layer-types":{"type":"array","value":"enum","values":{"model":1,"symbol":1},"default":[],"expression":{}},"clip-layer-scope":{"type":"array","value":"string","default":[],"expression":{}}},"layout_fill":{"fill-sort-key":{"type":"number","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}},"fill-elevation-reference":{"type":"enum","values":{"none":1,"hd-road-base":1,"hd-road-markup":1},"default":"none","expression":{}},"fill-construct-bridge-guard-rail":{"type":"boolean","default":"true","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"}},"layout_circle":{"circle-sort-key":{"type":"number","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"circle-elevation-reference":{"type":"enum","values":{"none":1,"hd-road-markup":1},"default":"none","expression":{}},"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}}},"layout_heatmap":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}}},"layout_fill-extrusion":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}},"fill-extrusion-edge-radius":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{}}},"layout_building":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}},"building-facade":{"type":"boolean","default":false,"expression":{"parameters":["feature"]},"property-type":"data-driven"},"building-facade-floors":{"type":"number","minimum":1,"maximum":200,"default":3,"property-type":"data-driven","expression":{"parameters":["feature"]}},"building-facade-unit-width":{"type":"number","minimum":1,"maximum":20,"default":3.1,"property-type":"data-driven","expression":{"parameters":["feature"]}},"building-facade-window":{"type":"array","length":2,"value":"number","minimum":0.1,"maximum":1,"default":[0.9,0.9],"property-type":"data-driven","expression":{"parameters":["feature"]}},"building-roof-shape":{"type":"enum","values":{"flat":1,"hipped":1,"gabled":1,"parapet":1,"mansard":1,"skillion":1,"pyramidal":1},"default":"flat","expression":{"parameters":["feature"]},"property-type":"data-driven"},"building-height":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{},"property-type":"data-driven"},"building-base":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{},"property-type":"data-driven"},"building-flood-light-wall-radius":{"property-type":"data-driven","type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["feature","feature-state"]}},"building-flood-light-ground-radius":{"property-type":"data-driven","type":"number","default":0,"transition":true,"expression":{"interpolated":true,"parameters":["feature","feature-state"]}},"building-flip-roof-orientation":{"property-type":"data-driven","type":"boolean","default":false,"transition":true,"expression":{"interpolated":true,"parameters":["feature","feature-state"]}}},"layout_line":{"line-cap":{"type":"enum","values":{"butt":1,"round":1,"square":1},"default":"butt","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"line-join":{"type":"enum","values":{"bevel":1,"round":1,"miter":1,"none":1},"default":"miter","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"line-miter-limit":{"type":"number","default":2,"expression":{"interpolated":true,"parameters":["zoom"]}},"line-round-limit":{"type":"number","default":1.05,"expression":{"interpolated":true,"parameters":["zoom"]}},"line-sort-key":{"type":"number","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"line-z-offset":{"type":"number","default":0,"expression":{"parameters":["zoom","feature","line-progress"]},"property-type":"data-driven"},"line-elevation-reference":{"type":"enum","values":{"none":1,"sea":1,"ground":1,"hd-road-markup":1},"default":"none","expression":{}},"line-cross-slope":{"type":"number","expression":{}},"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}},"line-width-unit":{"type":"enum","values":{"pixels":1,"meters":1},"default":"pixels","expression":{"parameters":["zoom"]}}},"layout_symbol":{"symbol-placement":{"type":"enum","values":{"point":1,"line":1,"line-center":1},"default":"point","expression":{"parameters":["zoom"]}},"symbol-spacing":{"type":"number","default":250,"minimum":1,"expression":{"interpolated":true,"parameters":["zoom"]}},"symbol-avoid-edges":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"symbol-sort-key":{"type":"number","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"symbol-z-order":{"type":"enum","values":{"auto":1,"viewport-y":1,"source":1},"default":"auto","expression":{"parameters":["zoom"]}},"symbol-z-elevate":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"symbol-elevation-reference":{"type":"enum","values":{"sea":1,"ground":1,"hd-road-markup":1},"default":"ground","expression":{"parameters":["zoom"]}},"icon-allow-overlap":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"icon-ignore-placement":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"icon-optional":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"icon-rotation-alignment":{"type":"enum","values":{"map":1,"viewport":1,"auto":1},"default":"auto","expression":{"parameters":["zoom"]}},"icon-size":{"type":"number","default":1,"minimum":0,"appearance":true,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"icon-size-scale-range":{"type":"array","value":"number","length":2,"default":[0.8,2],"minimum":[0.1,0.1],"maximum":[10,10],"expression":{}},"icon-text-fit":{"type":"enum","values":{"none":1,"width":1,"height":1,"both":1},"default":"none","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"icon-text-fit-padding":{"type":"array","value":"number","length":4,"default":[0,0,0,0],"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"icon-image":{"type":"resolvedImage","tokens":true,"appearance":true,"use-theme":true,"expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"icon-rotate":{"type":"number","default":0,"period":360,"appearance":true,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"icon-padding":{"type":"number","default":2,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom"]}},"icon-keep-upright":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"icon-offset":{"type":"array","value":"number","length":2,"default":[0,0],"appearance":true,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"icon-anchor":{"type":"enum","values":{"center":1,"left":1,"right":1,"top":1,"bottom":1,"top-left":1,"top-right":1,"bottom-left":1,"bottom-right":1},"default":"center","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"icon-pitch-alignment":{"type":"enum","values":{"map":1,"viewport":1,"auto":1},"default":"auto","expression":{"parameters":["zoom"]}},"text-pitch-alignment":{"type":"enum","values":{"map":1,"viewport":1,"auto":1},"default":"auto","expression":{"parameters":["zoom"]}},"text-rotation-alignment":{"type":"enum","values":{"map":1,"viewport":1,"auto":1},"default":"auto","expression":{"parameters":["zoom"]}},"text-field":{"type":"formatted","default":"","tokens":true,"expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-font":{"type":"array","value":"string","default":["Open Sans Regular","Arial Unicode MS Regular"],"expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-size":{"type":"number","default":16,"minimum":0,"appearance":true,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-size-scale-range":{"type":"array","value":"number","length":2,"default":[0.8,2],"minimum":[0.1,0.1],"maximum":[10,10],"expression":{}},"text-max-width":{"type":"number","default":10,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-line-height":{"type":"number","default":1.2,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-letter-spacing":{"type":"number","default":0,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-justify":{"type":"enum","values":{"auto":1,"left":1,"center":1,"right":1},"default":"center","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-radial-offset":{"type":"number","default":0,"property-type":"data-driven","expression":{"interpolated":true,"parameters":["zoom","feature"]}},"text-variable-anchor":{"type":"array","value":"enum","values":{"center":1,"left":1,"right":1,"top":1,"bottom":1,"top-left":1,"top-right":1,"bottom-left":1,"bottom-right":1},"expression":{"parameters":["zoom"]}},"text-anchor":{"type":"enum","values":{"center":1,"left":1,"right":1,"top":1,"bottom":1,"top-left":1,"top-right":1,"bottom-left":1,"bottom-right":1},"default":"center","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-max-angle":{"type":"number","default":45,"expression":{"interpolated":true,"parameters":["zoom"]}},"text-writing-mode":{"type":"array","value":"enum","values":{"horizontal":1,"vertical":1},"expression":{"parameters":["zoom"]}},"text-rotate":{"type":"number","default":0,"period":360,"appearance":true,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-padding":{"type":"number","default":2,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom"]}},"text-keep-upright":{"type":"boolean","default":true,"expression":{"parameters":["zoom"]}},"text-transform":{"type":"enum","values":{"none":1,"uppercase":1,"lowercase":1},"default":"none","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-offset":{"type":"array","value":"number","length":2,"default":[0,0],"appearance":true,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"text-allow-overlap":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"text-ignore-placement":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"text-optional":{"type":"boolean","default":false,"expression":{"parameters":["zoom"]}},"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}}},"layout_raster":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}}},"layout_raster-particle":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}}},"layout_hillshade":{"visibility":{"type":"enum","values":{"visible":1,"none":1},"default":"visible","expression":{}}},"filter":{"type":"array","value":"*"},"filter_symbol":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature","pitch","distance-from-center"]}},"filter_fill":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_hillshade":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_raster":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_raster-particle":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_clip":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_model":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_line":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_circle":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_fill-extrusion":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_building":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_heatmap":{"type":"boolean","default":false,"property-type":"data-driven","expression":{"parameters":["zoom","feature"]}},"filter_operator":{"type":"enum","values":{"==":1,"!=":1,">":1,">=":1,"<":1,"<=":1,"in":1,"!in":1,"all":1,"any":1,"none":1,"has":1,"!has":1}},"geometry_type":{"type":"enum","values":{"Point":1,"LineString":1,"Polygon":1}},"function":{"expression":{"type":"expression"},"stops":{"type":"array","value":"function_stop"},"base":{"type":"number","default":1,"minimum":0},"property":{"type":"string","default":"$zoom"},"type":{"type":"enum","values":{"identity":1,"exponential":1,"interval":1,"categorical":1},"default":"exponential"},"colorSpace":{"type":"enum","values":{"rgb":1,"lab":1,"hcl":1},"default":"rgb"},"default":{"type":"*"}},"function_stop":{"type":"array","minimum":0,"maximum":24,"value":["number","color"],"length":2},"expression":{"type":"array","value":"*","minimum":1},"fog":{"range":{"type":"array","default":[0.5,10],"minimum":-20,"maximum":20,"length":2,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true}},"color":{"type":"color","default":"#ffffff","expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"use-theme":true,"transition":true},"high-color":{"type":"color","default":"#245cdf","expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"use-theme":true,"transition":true},"space-color":{"type":"color","default":["interpolate",["linear"],["zoom"],4,"#010b19",7,"#367ab9"],"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"use-theme":true,"transition":true},"horizon-blend":{"type":"number","default":["interpolate",["linear"],["zoom"],4,0.2,7,0.1],"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"star-intensity":{"type":"number","default":["interpolate",["linear"],["zoom"],5,0.35,6,0],"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"vertical-range":{"type":"array","default":[0,0],"minimum":0,"length":2,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true}}},"snow":{"density":{"type":"number","default":["interpolate",["linear"],["zoom"],11,0,13,0.85],"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"intensity":{"type":"number","default":1,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"color":{"type":"color","default":"#ffffff","expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"use-theme":true,"transition":true},"opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"vignette":{"type":"number","default":["interpolate",["linear"],["zoom"],11,0,13,0.3],"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"vignette-color":{"type":"color","default":"#ffffff","expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"use-theme":true,"transition":true},"center-thinning":{"type":"number","default":0.4,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"direction":{"type":"array","default":[0,50],"minimum":0,"maximum":360,"length":2,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true}},"flake-size":{"type":"number","default":0.71,"minimum":0,"maximum":5,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true}},"rain":{"density":{"type":"number","default":["interpolate",["linear"],["zoom"],11,0,13,0.5],"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"intensity":{"type":"number","default":1,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"color":{"type":"color","default":["interpolate",["linear"],["measure-light","brightness"],0,"#03113d",0.3,"#a8adbc"],"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"use-theme":true,"transition":true},"opacity":{"type":"number","default":["interpolate",["linear"],["measure-light","brightness"],0,0.88,1,0.7],"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"vignette":{"type":"number","default":["interpolate",["linear"],["zoom"],11,0,13,1],"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"vignette-color":{"type":"color","default":["interpolate",["linear"],["measure-light","brightness"],0,"#001736",0.3,"#464646"],"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"use-theme":true,"transition":true},"center-thinning":{"type":"number","default":0.57,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true},"direction":{"type":"array","default":[0,80],"minimum":0,"maximum":360,"length":2,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true}},"droplet-size":{"type":"array","default":[2.6,18.2],"minimum":0,"maximum":50,"length":2,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true}},"distortion-strength":{"type":"number","default":0.7,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"],"relaxZoomRestriction":true},"transition":true}},"camera":{"camera-projection":{"type":"enum","values":{"perspective":1,"orthographic":1},"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]},"default":"perspective"}},"colorTheme":{"data":{"type":"string","expression":{}}},"indoor_source":{"sourceId":{"type":"string"},"sourceLayers":{"type":"array","value":"string"}},"indoor":{"*":{"type":"indoor_source"}},"light":{"anchor":{"type":"enum","default":"viewport","values":{"map":1,"viewport":1},"expression":{"parameters":["zoom"]}},"position":{"type":"array","default":[1.15,210,30],"length":3,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"color":{"type":"color","default":"#ffffff","expression":{"interpolated":true,"parameters":["zoom"]},"use-theme":true,"transition":true},"intensity":{"type":"number","default":0.5,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true}},"projection":{"name":{"type":"enum","values":{"albers":1,"equalEarth":1,"equirectangular":1,"lambertConformalConic":1,"mercator":1,"naturalEarth":1,"winkelTripel":1,"globe":1},"default":"mercator"},"center":{"type":"array","length":2,"value":"number","minimum":[-180,-90],"maximum":[180,90]},"parallels":{"type":"array","length":2,"value":"number","minimum":[-90,-90],"maximum":[90,90]}},"terrain":{"source":{"type":"string"},"exaggeration":{"type":"number","default":1,"minimum":0,"maximum":1000,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true}},"paint":["paint_fill","paint_line","paint_circle","paint_heatmap","paint_fill-extrusion","paint_building","paint_symbol","paint_raster","paint_raster-particle","paint_hillshade","paint_background","paint_sky","paint_model"],"paint_fill":{"fill-antialias":{"type":"boolean","default":true,"expression":{"parameters":["zoom"]}},"fill-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"fill-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"fill-outline-color":{"type":"color","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"fill-translate":{"type":"array","value":"number","length":2,"default":[0,0],"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"fill-translate-anchor":{"type":"enum","values":{"map":1,"viewport":1},"default":"map","expression":{"parameters":["zoom"]}},"fill-pattern":{"type":"resolvedImage","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"fill-pattern-cross-fade":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"fill-emissive-strength":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"fill-z-offset":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"},"fill-bridge-guard-rail-color":{"type":"color","default":"rgba(241, 236, 225, 255)","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light","feature"]},"property-type":"data-driven"},"fill-tunnel-structure-color":{"type":"color","default":"rgba(241, 236, 225, 255)","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light","feature"]},"property-type":"data-driven"}},"paint_fill-extrusion":{"fill-extrusion-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"fill-extrusion-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"fill-extrusion-translate":{"type":"array","value":"number","length":2,"default":[0,0],"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"fill-extrusion-translate-anchor":{"type":"enum","values":{"map":1,"viewport":1},"default":"map","expression":{"parameters":["zoom"]}},"fill-extrusion-pattern":{"type":"resolvedImage","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"fill-extrusion-pattern-cross-fade":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"fill-extrusion-height":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state"]},"property-type":"data-driven"},"fill-extrusion-base":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state"]},"property-type":"data-driven"},"fill-extrusion-height-alignment":{"type":"enum","values":{"terrain":1,"flat":1},"default":"flat"},"fill-extrusion-base-alignment":{"type":"enum","values":{"terrain":1,"flat":1},"default":"terrain"},"fill-extrusion-vertical-gradient":{"type":"boolean","default":true,"expression":{"parameters":["zoom"]}},"fill-extrusion-ambient-occlusion-intensity":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true},"fill-extrusion-ambient-occlusion-radius":{"type":"number","default":3,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true},"fill-extrusion-ambient-occlusion-wall-radius":{"type":"number","default":3,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true},"fill-extrusion-ambient-occlusion-ground-radius":{"type":"number","default":3,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true},"fill-extrusion-ambient-occlusion-ground-attenuation":{"type":"number","default":0.69,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"fill-extrusion-flood-light-color":{"type":"color","default":"#ffffff","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"fill-extrusion-flood-light-intensity":{"type":"number","default":0,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"fill-extrusion-flood-light-wall-radius":{"property-type":"data-driven","type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["feature","feature-state"]}},"fill-extrusion-flood-light-ground-radius":{"property-type":"data-driven","type":"number","default":0,"transition":true,"expression":{"interpolated":true,"parameters":["feature","feature-state"]}},"fill-extrusion-flood-light-ground-attenuation":{"type":"number","default":0.69,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"fill-extrusion-vertical-scale":{"type":"number","default":1,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"fill-extrusion-rounded-roof":{"type":"boolean","default":true,"expression":{"parameters":["zoom"]}},"fill-extrusion-cutoff-fade-range":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{}},"fill-extrusion-emissive-strength":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light","feature-state"]},"property-type":"data-driven"},"fill-extrusion-line-width":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"fill-extrusion-cast-shadows":{"type":"boolean","default":true}},"paint_building":{"building-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"building-ambient-occlusion-intensity":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{"parameters":[]},"transition":true},"building-ambient-occlusion-ground-intensity":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true},"building-ambient-occlusion-ground-radius":{"type":"number","default":3,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true},"building-ambient-occlusion-ground-attenuation":{"type":"number","default":0.69,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"building-vertical-scale":{"type":"number","default":1,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"building-cast-shadows":{"type":"boolean","default":true},"building-color":{"type":"color","default":"rgba(193, 154, 127, 1)","use-theme":true,"expression":{"interpolated":true,"parameters":["feature","feature-state","measure-light"]},"property-type":"data-driven"},"building-emissive-strength":{"type":"number","default":0,"minimum":0,"maximum":5,"expression":{"interpolated":true,"parameters":["feature","feature-state","measure-light"]},"property-type":"data-driven"},"building-facade-emissive-chance":{"type":"number","default":0.35,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["measure-light","zoom"]}},"building-cutoff-fade-range":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{}},"building-flood-light-color":{"type":"color","default":"#ffffff","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"building-flood-light-intensity":{"type":"number","default":0,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"building-flood-light-ground-attenuation":{"type":"number","default":0.69,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}}},"paint_line":{"line-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"line-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"line-translate":{"type":"array","value":"number","length":2,"default":[0,0],"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"line-translate-anchor":{"type":"enum","values":{"map":1,"viewport":1},"default":"map","expression":{"parameters":["zoom"]}},"line-width":{"type":"number","default":1,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light","line-progress"]},"property-type":"data-driven"},"line-gap-width":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"line-offset":{"type":"number","default":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"line-blur":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"line-dasharray":{"type":"array","value":"number","minimum":0,"expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"line-pattern":{"type":"resolvedImage","expression":{"parameters":["zoom","feature"]},"property-type":"data-driven"},"line-pattern-cross-fade":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"line-gradient":{"type":"color","use-theme":true,"expression":{"interpolated":true,"parameters":["line-progress"]}},"line-trim-offset":{"type":"array","value":"number","length":2,"default":[0,0],"minimum":[0,0],"maximum":[1,1]},"line-trim-fade-range":{"type":"array","value":"number","length":2,"default":[0,0],"minimum":[0,0],"maximum":[1,1],"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"line-trim-color":{"type":"color","default":"transparent","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"line-emissive-strength":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"line-border-width":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state"]},"property-type":"data-driven"},"line-border-color":{"type":"color","default":"rgba(0, 0, 0, 0)","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state"]},"property-type":"data-driven"},"line-occlusion-opacity":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true}},"paint_circle":{"circle-radius":{"type":"number","default":5,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"circle-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"circle-blur":{"type":"number","default":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"circle-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"circle-translate":{"type":"array","value":"number","length":2,"default":[0,0],"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"circle-translate-anchor":{"type":"enum","values":{"map":1,"viewport":1},"default":"map","expression":{"parameters":["zoom"]}},"circle-pitch-scale":{"type":"enum","values":{"map":1,"viewport":1},"default":"map","expression":{"parameters":["zoom"]}},"circle-pitch-alignment":{"type":"enum","values":{"map":1,"viewport":1},"default":"viewport","expression":{"parameters":["zoom"]}},"circle-stroke-width":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"circle-stroke-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"circle-stroke-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"circle-emissive-strength":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}}},"paint_heatmap":{"heatmap-radius":{"type":"number","default":30,"minimum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"heatmap-weight":{"type":"number","default":1,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"heatmap-intensity":{"type":"number","default":1,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"heatmap-color":{"type":"color","default":["interpolate",["linear"],["heatmap-density"],0,"rgba(0, 0, 255, 0)",0.1,"royalblue",0.3,"cyan",0.5,"lime",0.7,"yellow",1,"red"],"use-theme":true,"expression":{"interpolated":true,"parameters":["heatmap-density"]}},"heatmap-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}}},"paint_symbol":{"icon-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"icon-occlusion-opacity":{"type":"number","minimum":0,"maximum":1,"default":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"icon-emissive-strength":{"type":"number","default":1,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light","feature-state"]},"property-type":"data-driven"},"text-emissive-strength":{"type":"number","default":1,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light","feature-state"]},"property-type":"data-driven"},"icon-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"icon-halo-color":{"type":"color","default":"rgba(0, 0, 0, 0)","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"icon-halo-width":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"icon-halo-blur":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"icon-translate":{"type":"array","value":"number","length":2,"default":[0,0],"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"icon-translate-anchor":{"type":"enum","values":{"map":1,"viewport":1},"default":"map","expression":{"parameters":["zoom"]}},"icon-image-cross-fade":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"text-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"text-occlusion-opacity":{"type":"number","minimum":0,"maximum":1,"default":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"text-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"overridable":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"text-halo-color":{"type":"color","default":"rgba(0, 0, 0, 0)","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"text-halo-width":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"text-halo-blur":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature","feature-state","measure-light"]},"property-type":"data-driven"},"text-translate":{"type":"array","value":"number","length":2,"default":[0,0],"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"text-translate-anchor":{"type":"enum","values":{"map":1,"viewport":1},"default":"map","expression":{"parameters":["zoom"]}},"icon-color-saturation":{"type":"number","default":0,"minimum":-1,"maximum":1,"expression":{}},"icon-color-contrast":{"type":"number","default":0,"minimum":-1,"maximum":1,"expression":{}},"icon-color-brightness-min":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{}},"icon-color-brightness-max":{"type":"number","default":1,"minimum":0,"maximum":1,"expression":{}},"symbol-z-offset":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","feature"]},"property-type":"data-driven"}},"paint_raster":{"raster-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-color":{"type":"color","use-theme":true,"expression":{"interpolated":true,"parameters":["raster-value"]}},"raster-color-mix":{"type":"array","default":[0.2126,0.7152,0.0722,0],"length":4,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-color-range":{"type":"array","length":2,"value":"number","transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-hue-rotate":{"type":"number","default":0,"period":360,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-brightness-min":{"type":"number","default":0,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-brightness-max":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-saturation":{"type":"number","default":0,"minimum":-1,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-contrast":{"type":"number","default":0,"minimum":-1,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-resampling":{"type":"enum","values":{"linear":1,"nearest":1},"default":"linear","expression":{"parameters":["zoom"]}},"raster-fade-duration":{"type":"number","default":300,"minimum":0,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-emissive-strength":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"raster-array-band":{"type":"string"},"raster-elevation":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}}},"paint_raster-particle":{"raster-particle-array-band":{"type":"string"},"raster-particle-count":{"type":"number","default":512,"minimum":1},"raster-particle-color":{"type":"color","use-theme":true,"expression":{"interpolated":true,"parameters":["raster-particle-speed"]}},"raster-particle-max-speed":{"type":"number","default":1,"minimum":1},"raster-particle-speed-factor":{"type":"number","default":0.2,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-particle-fade-opacity-factor":{"type":"number","default":0.98,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"raster-particle-reset-rate-factor":{"type":"number","default":0.8,"minimum":0,"maximum":1},"raster-particle-elevation":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}}},"paint_hillshade":{"hillshade-illumination-direction":{"type":"number","default":335,"minimum":0,"maximum":359,"expression":{"interpolated":true,"parameters":["zoom"]}},"hillshade-illumination-anchor":{"type":"enum","values":{"map":1,"viewport":1},"default":"viewport","expression":{"parameters":["zoom"]}},"hillshade-exaggeration":{"type":"number","default":0.5,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"hillshade-shadow-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"hillshade-highlight-color":{"type":"color","default":"#FFFFFF","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"hillshade-accent-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}},"hillshade-emissive-strength":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}}},"paint_background":{"background-pitch-alignment":{"type":"enum","values":{"map":1,"viewport":1},"default":"map","expression":{"parameters":[]}},"background-color":{"type":"color","default":"#000000","use-theme":true,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"background-pattern":{"type":"resolvedImage","expression":{"parameters":["zoom"]}},"background-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}},"background-emissive-strength":{"type":"number","default":0,"minimum":0,"transition":true,"expression":{"interpolated":true,"parameters":["zoom","measure-light"]}}},"paint_sky":{"sky-type":{"type":"enum","values":{"gradient":1,"atmosphere":1},"default":"atmosphere","expression":{"parameters":["zoom"]}},"sky-atmosphere-sun":{"type":"array","value":"number","length":2,"minimum":[0,0],"maximum":[360,180],"expression":{"parameters":["zoom"]}},"sky-atmosphere-sun-intensity":{"type":"number","default":10,"minimum":0,"maximum":100},"sky-gradient-center":{"type":"array","value":"number","default":[0,0],"length":2,"minimum":[0,0],"maximum":[360,180],"expression":{"parameters":["zoom"]}},"sky-gradient-radius":{"type":"number","default":90,"minimum":0,"maximum":180,"expression":{"parameters":["zoom"]}},"sky-gradient":{"type":"color","default":["interpolate",["linear"],["sky-radial-progress"],0.8,"#87ceeb",1,"white"],"use-theme":true,"expression":{"interpolated":true,"parameters":["sky-radial-progress"]}},"sky-atmosphere-halo-color":{"type":"color","default":"white","use-theme":true},"sky-atmosphere-color":{"type":"color","default":"white","use-theme":true},"sky-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["zoom"]}}},"paint_model":{"model-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"transition":true,"expression":{"interpolated":true,"parameters":["feature","feature-state","zoom"]},"property-type":"data-driven"},"model-rotation":{"type":"array","value":"number","length":3,"default":[0,0,0],"period":360,"property-type":"data-driven","expression":{"interpolated":true,"parameters":["feature","feature-state","zoom"]},"transition":true},"model-scale":{"type":"array","value":"number","length":3,"default":[1,1,1],"property-type":"data-driven","expression":{"interpolated":true,"parameters":["feature","feature-state","zoom"]},"transition":true},"model-translation":{"type":"array","value":"number","length":3,"default":[0,0,0],"property-type":"data-driven","expression":{"interpolated":true,"parameters":["feature","feature-state","zoom"]},"transition":true},"model-color":{"type":"color","default":"#ffffff","property-type":"data-driven","expression":{"interpolated":true,"parameters":["feature","feature-state","measure-light","zoom"]},"use-theme":true,"transition":true},"model-color-mix-intensity":{"type":"number","property-type":"data-driven","default":0,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["feature","feature-state","measure-light"]},"transition":true},"model-type":{"type":"enum","values":{"common-3d":1,"location-indicator":1},"default":"common-3d"},"model-cast-shadows":{"type":"boolean","default":true},"model-receive-shadows":{"type":"boolean","default":true},"model-ambient-occlusion-intensity":{"type":"number","default":1,"minimum":0,"maximum":1,"expression":{"interpolated":true,"parameters":["zoom"]},"transition":true},"model-emissive-strength":{"type":"number","property-type":"data-driven","default":0,"minimum":0,"maximum":5,"expression":{"interpolated":true,"parameters":["feature","feature-state","measure-light"]},"transition":true},"model-roughness":{"type":"number","default":1,"minimum":0,"maximum":1,"property-type":"data-driven","expression":{"interpolated":true,"parameters":["feature","feature-state"]},"transition":true},"model-height-based-emissive-strength-multiplier":{"type":"array","default":[1,1,1,1,0],"length":5,"value":"number","property-type":"data-driven","expression":{"interpolated":true,"parameters":["feature","feature-state","measure-light"]},"transition":true},"model-cutoff-fade-range":{"type":"number","default":0,"minimum":0,"maximum":1,"expression":{}},"model-front-cutoff":{"type":"array","value":"number","expression":{"interpolated":true,"parameters":["zoom"]},"length":3,"default":[0,0,1],"minimum":[0,0,0],"maximum":[1,1,1]},"model-elevation-reference":{"type":"enum","values":{"sea":1,"ground":1,"hd-road-markup":1},"default":"ground","expression":{}}},"transition":{"duration":{"type":"number","default":300,"minimum":0},"delay":{"type":"number","default":0,"minimum":0}},"promoteId":{"*":{"type":"*"}}}');
 
 function unbundle(value) {
     if (value instanceof Number || value instanceof String || value instanceof Boolean) {
@@ -12878,15 +12878,21 @@ function createFilter(filter, scope = '', options = null, layerType = 'fill') {
     try {
         staticFilter = extractStaticFilter(filterExp);
     } catch (e) {
-        console.warn('Failed to extract static filter. Filter will continue working, but at higher memory usage and slower framerate.\nThis is most likely a bug, please report this via https://github.com/mapbox/mapbox-gl-js/issues/new?assignees=&labels=&template=Bug_report.md\nand paste the contents of this message in the report.\nThank you!\nFilter Expression:\n'.concat(JSON.stringify(filterExp, null, 2), '\n        '));
+        console.warn(`Failed to extract static filter. Filter will continue working, but at higher memory usage and slower framerate.
+This is most likely a bug, please report this via https://github.com/mapbox/mapbox-gl-js/issues/new?assignees=&labels=&template=Bug_report.md
+and paste the contents of this message in the report.
+Thank you!
+Filter Expression:
+${ JSON.stringify(filterExp, null, 2) }
+        `);
     }
     let filterFunc = null;
     let filterSpec = null;
     if (layerType !== 'background' && layerType !== 'sky' && layerType !== 'slot') {
-        filterSpec = spec['filter_'.concat(layerType)];
+        filterSpec = spec[`filter_${ layerType }`];
         const compiledStaticFilter = createExpression(staticFilter, filterSpec, scope, options);
         if (compiledStaticFilter.result === 'error') {
-            throw new Error(compiledStaticFilter.value.map(err => ''.concat(err.key, ': ').concat(err.message)).join(', '));
+            throw new Error(compiledStaticFilter.value.map(err => `${ err.key }: ${ err.message }`).join(', '));
         } else {
             filterFunc = (globalProperties, feature, canonical) => compiledStaticFilter.value.evaluate(globalProperties, feature, {}, canonical);
         }
@@ -12896,7 +12902,7 @@ function createFilter(filter, scope = '', options = null, layerType = 'fill') {
     if (staticFilter !== filterExp) {
         const compiledDynamicFilter = createExpression(filterExp, filterSpec, scope, options);
         if (compiledDynamicFilter.result === 'error') {
-            throw new Error(compiledDynamicFilter.value.map(err => ''.concat(err.key, ': ').concat(err.message)).join(', '));
+            throw new Error(compiledDynamicFilter.value.map(err => `${ err.key }: ${ err.message }`).join(', '));
         } else {
             dynamicFilterFunc = (globalProperties, feature, canonical, featureTileCoord, featureDistanceData) => compiledDynamicFilter.value.evaluate(globalProperties, feature, {}, canonical, void 0, void 0, featureTileCoord, featureDistanceData);
             needFeature = !isFeatureConstant(compiledDynamicFilter.value.expression);
@@ -13039,17 +13045,17 @@ function convertComparisonOp(property, value, op) {
     switch (property) {
     case '$type':
         return [
-            'filter-type-'.concat(op),
+            `filter-type-${ op }`,
             value
         ];
     case '$id':
         return [
-            'filter-id-'.concat(op),
+            `filter-id-${ op }`,
             value
         ];
     default:
         return [
-            'filter-'.concat(op),
+            `filter-${ op }`,
             property,
             value
         ];
@@ -13065,7 +13071,7 @@ function convertInOp(property, values) {
     switch (property) {
     case '$type':
         return [
-            'filter-type-in',
+            `filter-type-in`,
             [
                 'literal',
                 values
@@ -13073,7 +13079,7 @@ function convertInOp(property, values) {
         ];
     case '$id':
         return [
-            'filter-id-in',
+            `filter-id-in`,
             [
                 'literal',
                 values
@@ -13106,10 +13112,10 @@ function convertHasOp(property) {
     case '$type':
         return true;
     case '$id':
-        return ['filter-has-id'];
+        return [`filter-has-id`];
     default:
         return [
-            'filter-has',
+            `filter-has`,
             property
         ];
     }
@@ -13128,7 +13134,7 @@ function isFQID(id) {
 function makeFQID(name, scope) {
     if (!scope)
         return name;
-    return ''.concat(name).concat(FQIDSeparator).concat(scope);
+    return `${ name }${ FQIDSeparator }${ scope }`;
 }
 function getNameFromFQID(fqid) {
     const sep = fqid.indexOf(FQIDSeparator);
@@ -13148,7 +13154,10 @@ const getAppearanceProperties = () => properties$2 || (properties$2 = new Proper
     'icon-size': new DataDrivenProperty(spec['layout_symbol']['icon-size']),
     'icon-image': new DataDrivenProperty(spec['layout_symbol']['icon-image']),
     'icon-rotate': new DataDrivenProperty(spec['layout_symbol']['icon-rotate']),
-    'icon-offset': new DataDrivenProperty(spec['layout_symbol']['icon-offset'])
+    'icon-offset': new DataDrivenProperty(spec['layout_symbol']['icon-offset']),
+    'text-size': new DataDrivenProperty(spec['layout_symbol']['text-size']),
+    'text-rotate': new DataDrivenProperty(spec['layout_symbol']['text-rotate']),
+    'text-offset': new DataDrivenProperty(spec['layout_symbol']['text-offset'])
 }));
 
 class SymbolAppearance {
@@ -13251,7 +13260,7 @@ class StyleLayer extends Evented {
             this.source = layer.source;
             this.sourceLayer = layer['source-layer'];
             this.filter = layer.filter;
-            const filterSpec = spec['filter_'.concat(layer.type)];
+            const filterSpec = spec[`filter_${ layer.type }`];
             const compiledStaticFilter = createExpression(this.filter, filterSpec);
             if (compiledStaticFilter.result !== 'error') {
                 this.expressionDependencies.configDependencies = /* @__PURE__ */
@@ -14904,7 +14913,7 @@ class SegmentVector {
     _prepareSegment(numVertices, vertexArrayLength, indexArrayLength, sortKey) {
         let segment = this.segments[this.segments.length - 1];
         if (numVertices > SegmentVector.MAX_VERTEX_ARRAY_LENGTH)
-            warnOnce('Max vertices per segment is '.concat(SegmentVector.MAX_VERTEX_ARRAY_LENGTH, ': bucket requested ').concat(numVertices));
+            warnOnce(`Max vertices per segment is ${ SegmentVector.MAX_VERTEX_ARRAY_LENGTH }: bucket requested ${ numVertices }`);
         if (!segment || segment.vertexLength + numVertices > SegmentVector.MAX_VERTEX_ARRAY_LENGTH || segment.sortKey !== sortKey) {
             segment = {
                 vertexOffset: vertexArrayLength,
@@ -15271,7 +15280,7 @@ function shouldIgnoreLut(lutExpression, feature, featureState, availableImages, 
 class ConstantBinder {
     constructor(value, names, type, context) {
         this.value = value;
-        this.uniformNames = names.map(name => 'u_'.concat(name));
+        this.uniformNames = names.map(name => `u_${ name }`);
         this.type = type;
         this.context = context;
     }
@@ -15291,7 +15300,7 @@ class ConstantBinder {
 }
 class PatternConstantBinder {
     constructor(value, names) {
-        this.uniformNames = names.map(name => 'u_'.concat(name));
+        this.uniformNames = names.map(name => `u_${ name }`);
         this.pattern = null;
         this.patternTransition = null;
         this.pixelRatio = 1;
@@ -15328,7 +15337,7 @@ class SourceExpressionBinder {
         this.type = type;
         this.maxValue = 0;
         this.paintVertexAttributes = names.map(name => ({
-            name: 'a_'.concat(name),
+            name: `a_${ name }`,
             type: 'Float32',
             components: type === 'color' ? 2 : 1,
             offset: 0
@@ -15387,13 +15396,13 @@ class SourceExpressionBinder {
 class CompositeExpressionBinder {
     constructor(expression, names, type, useIntegerZoom, context, PaintVertexArray) {
         this.expression = expression;
-        this.uniformNames = names.map(name => 'u_'.concat(name, '_t'));
+        this.uniformNames = names.map(name => `u_${ name }_t`);
         this.type = type;
         this.useIntegerZoom = useIntegerZoom;
         this.context = context;
         this.maxValue = 0;
         this.paintVertexAttributes = names.map(name => ({
-            name: 'a_'.concat(name),
+            name: `a_${ name }`,
             type: 'Float32',
             components: type === 'color' ? 4 : 2,
             offset: 0
@@ -15541,20 +15550,20 @@ class ProgramConfiguration {
             const type = value.property.specification.type;
             const useIntegerZoom = !!value.property.useIntegerZoom;
             const isPattern = property === 'line-dasharray' || property.endsWith('pattern');
-            const valueUseTheme = layer.paint.get(''.concat(property, '-use-theme'));
+            const valueUseTheme = layer.paint.get(`${ property }-use-theme`);
             const sourceException = property === 'line-dasharray' && layer.layout.get('line-cap').value.kind !== 'constant' || valueUseTheme && valueUseTheme.value.kind !== 'constant';
             if (expression.kind === 'constant' && !sourceException) {
                 this.binders[property] = isPattern ? new PatternConstantBinder(expression.value, names) : new ConstantBinder(expression.value, names, type, context);
-                keys.push('/u_'.concat(property));
+                keys.push(`/u_${ property }`);
             } else if (expression.kind === 'source' || sourceException || isPattern) {
                 const StructArrayLayout = layoutType(property, type, 'source');
                 this.binders[property] = isPattern ? // @ts-expect-error - TS2345 - Argument of type 'PossiblyEvaluatedValue<any>' is not assignable to parameter of type 'CompositeExpression'.
                 new PatternCompositeBinder(expression, names, type, StructArrayLayout, layer.id) : new SourceExpressionBinder(expression, names, type, StructArrayLayout);
-                keys.push('/a_'.concat(property));
+                keys.push(`/a_${ property }`);
             } else {
                 const StructArrayLayout = layoutType(property, type, 'composite');
                 this.binders[property] = new CompositeExpressionBinder(expression, names, type, useIntegerZoom, context, StructArrayLayout);
-                keys.push('/z_'.concat(property));
+                keys.push(`/z_${ property }`);
             }
             if (valueUseTheme) {
                 this.binders[property].lutExpression = valueUseTheme.value;
@@ -15628,7 +15637,7 @@ class ProgramConfiguration {
         for (const property in this.binders) {
             const binder = this.binders[property];
             if (binder instanceof ConstantBinder || binder instanceof PatternConstantBinder) {
-                result.push(...binder.uniformNames.map(name => '#define HAS_UNIFORM_'.concat(name)));
+                result.push(...binder.uniformNames.map(name => `#define HAS_UNIFORM_${ name }`));
             }
         }
         return result;
@@ -15769,7 +15778,7 @@ const attributeNameExceptions = {
     'fill-tunnel-structure-color': ['structure_color']
 };
 function paintAttributeNames(property, type) {
-    return attributeNameExceptions[property] || [property.replace(''.concat(type, '-'), '').replace(/-/g, '_')];
+    return attributeNameExceptions[property] || [property.replace(`${ type }-`, '').replace(/-/g, '_')];
 }
 const propertyExceptions = {
     'line-pattern': {
@@ -15853,7 +15862,7 @@ const earthCircumference = 2 * Math.PI * earthRadius;
 class LngLat {
     constructor(lng, lat) {
         if (isNaN(lng) || isNaN(lat)) {
-            throw new Error('Invalid LngLat object: ('.concat(lng, ', ').concat(lat, ')'));
+            throw new Error(`Invalid LngLat object: (${ lng }, ${ lat })`);
         }
         this.lng = +lng;
         this.lat = +lat;
@@ -15896,7 +15905,7 @@ class LngLat {
    * ll.toString(); // = "LngLat(-73.9749, 40.7736)"
    */
     toString() {
-        return 'LngLat('.concat(this.lng, ', ').concat(this.lat, ')');
+        return `LngLat(${ this.lng }, ${ this.lat })`;
     }
     /**
    * Returns the approximate distance between a pair of coordinates in meters.
@@ -16185,7 +16194,7 @@ class LngLatBounds {
    * llb.toString(); // = "LngLatBounds(LngLat(-73.9876, 40.7661), LngLat(-73.9397, 40.8002))"
    */
     toString() {
-        return 'LngLatBounds('.concat(this._sw.toString(), ', ').concat(this._ne.toString(), ')');
+        return `LngLatBounds(${ this._sw.toString() }, ${ this._ne.toString() })`;
     }
     /**
    * Check if the bounding box is an empty/`null`-type box.
@@ -16943,7 +16952,7 @@ class ElevationFeatureParser {
             const version = feature.properties.version;
             const schema = ElevationFeatureParser.getVersionSchema(version);
             if (schema === void 0) {
-                warnOnce('Unknown elevation feature version number '.concat(version || '(unknown)'));
+                warnOnce(`Unknown elevation feature version number ${ version || '(unknown)' }`);
                 continue;
             }
             const type = feature.properties['type'];
@@ -18474,7 +18483,7 @@ class CanonicalTileID {
         return urls[(this.x + this.y) % urls.length].replace('{prefix}', (this.x % 16).toString(16) + (this.y % 16).toString(16)).replace(/{z}/g, String(this.z)).replace(/{x}/g, String(this.x)).replace(/{y}/g, String(scheme === 'tms' ? Math.pow(2, this.z) - this.y - 1 : this.y)).replace('{quadkey}', quadkey).replace('{bbox-epsg-3857}', bbox);
     }
     toString() {
-        return ''.concat(this.z, '/').concat(this.x, '/').concat(this.y);
+        return `${ this.z }/${ this.x }/${ this.y }`;
     }
 }
 class UnwrappedTileID {
@@ -18568,7 +18577,7 @@ class OverscaledTileID {
         return new UnwrappedTileID(this.wrap, this.canonical);
     }
     toString() {
-        return ''.concat(this.overscaledZ, '/').concat(this.canonical.x, '/').concat(this.canonical.y);
+        return `${ this.overscaledZ }/${ this.canonical.x }/${ this.canonical.y }`;
     }
 }
 function calculateKey(wrap, overscaledZ, z, x, y) {
@@ -20528,7 +20537,7 @@ function hasPattern(type, layers, pixelRatio, options) {
     const patterns = options.patternDependencies;
     let hasPattern2 = false;
     for (const layer of layers) {
-        const patternProperty = layer.paint.get(''.concat(type, '-pattern'));
+        const patternProperty = layer.paint.get(`${ type }-pattern`);
         if (!patternProperty.isConstant()) {
             hasPattern2 = true;
         }
@@ -20542,7 +20551,7 @@ function hasPattern(type, layers, pixelRatio, options) {
 function addPatternDependencies(type, layers, patternFeature, zoom, pixelRatio, options) {
     const patterns = options.patternDependencies;
     for (const layer of layers) {
-        const patternProperty = layer.paint.get(''.concat(type, '-pattern'));
+        const patternProperty = layer.paint.get(`${ type }-pattern`);
         const patternPropertyValue = patternProperty.value;
         if (patternPropertyValue.kind !== 'constant') {
             let pattern = patternPropertyValue.evaluate({ zoom }, patternFeature, {}, options.availableImages);
@@ -20660,7 +20669,7 @@ class MeshBuilder {
         if (tileToMeter2 != null) {
             height *= tileToMeter2;
         }
-        const lookup = ''.concat(vertex[0], ',').concat(vertex[1], ',').concat(vertex[2], ',').concat(normal[0], ',').concat(normal[1], ',').concat(normal[2]);
+        const lookup = `${ vertex[0] },${ vertex[1] },${ vertex[2] },${ normal[0] },${ normal[1] },${ normal[2] }`;
         const result = this.vertexLookup.get(lookup);
         if (result != null) {
             return result;
@@ -21281,8 +21290,7 @@ class ElevatedStructures {
         }
         const aHash = BigInt(ElevatedStructures.computePosHash(pa));
         const bHash = BigInt(ElevatedStructures.computePosHash(pb));
-        return aHash << /* @__PURE__ */
-        BigInt('32') | bHash;
+        return aHash << 32n | bHash;
     }
     static computePosHash(p) {
         const x = p.x & 65535;
@@ -27013,7 +27021,7 @@ class Actor {
                 const workerSource = this.parent.getWorkerSource(task.sourceMapId, keys[0], source, scope);
                 workerSource[keys[1]](params, done);
             } else {
-                done(new Error('Could not find function '.concat(task.type)));
+                done(new Error(`Could not find function ${ task.type }`));
             }
         }
     }
@@ -27043,7 +27051,7 @@ class WorkerPool {
         if (!this.workers) {
             this.workers = [];
             while (this.workers.length < count) {
-                const w = createWorker(''.concat(this.name || '', 'WorkerPool: ').concat(mapId, '-').concat(this.workers.length));
+                const w = createWorker(`${ this.name || '' }WorkerPool: ${ mapId }-${ this.workers.length }`);
                 this.workers.push(w);
             }
         }
@@ -27078,7 +27086,7 @@ class Dispatcher {
         for (let i = 0; i < workers.length; i++) {
             const worker = workers[i];
             const actor = new Dispatcher.Actor(worker, parent, this.id);
-            actor.name = ''.concat(name, ' ').concat(i);
+            actor.name = `${ name } ${ i }`;
             this.actors.push(actor);
         }
         this.ready = false;
@@ -27558,7 +27566,7 @@ function MeshoptDecoder(wasmPromise) {
         target.set(heap.subarray(tp, tp + count * size));
         sbrk(tp - sbrk(0));
         if (res !== 0) {
-            throw new Error('Malformed buffer data: '.concat(res));
+            throw new Error(`Malformed buffer data: ${ res }`);
         }
     }
     const filters = {
@@ -29957,7 +29965,7 @@ class BuildingBucket {
             centroid.y /= pointCount || 1;
             const result = buildingGen.generateMesh(buildingGenFeatures, facades);
             if (typeof result === 'string') {
-                warnOnce('Unable to generate building '.concat(feature.id, ': ').concat(result));
+                warnOnce(`Unable to generate building ${ feature.id }: ${ result }`);
                 disableBuilding(buildingId);
                 continue;
             }
@@ -30905,7 +30913,7 @@ class LineBucket {
             const seaOrGroundReference = elevationReference === 'sea' || elevationReference === 'ground';
             this.elevationType = seaOrGroundReference || !zOffsetZero ? 'offset' : 'none';
             if (this.elevationType === 'offset' && elevationReference === 'none') {
-                warnOnce('line-elevation-reference: ground is used for the layer '.concat(this.layerIds[0], ' because non-zero line-z-offset value was found.'));
+                warnOnce(`line-elevation-reference: ground is used for the layer ${ this.layerIds[0] } because non-zero line-z-offset value was found.`);
             }
         }
         const crossSlope = this.layers[0].layout.get('line-cross-slope');
@@ -31041,8 +31049,8 @@ class LineBucket {
         let startProp;
         let endProp;
         if (multiLineMetricsIndex && multiLineMetricsIndex > 0) {
-            startProp = 'mapbox_clip_start_'.concat(multiLineMetricsIndex);
-            endProp = 'mapbox_clip_end_'.concat(multiLineMetricsIndex);
+            startProp = `mapbox_clip_start_${ multiLineMetricsIndex }`;
+            endProp = `mapbox_clip_end_${ multiLineMetricsIndex }`;
         } else {
             startProp = 'mapbox_clip_start';
             endProp = 'mapbox_clip_end';
@@ -31492,7 +31500,7 @@ class LineBucket {
         if (this.lineClips) {
             this.evaluationGlobals.lineProgress = Math.min(1, (this.totalFeatureLength * this.lineClips.start + distance) / this.totalFeatureLength);
         } else {
-            warnOnce('line-progress evaluation for '.concat(this.layerIds[0], ' requires enabling \'lineMetrics\' for the source.'));
+            warnOnce(`line-progress evaluation for ${ this.layerIds[0] } requires enabling 'lineMetrics' for the source.`);
         }
         let variableWidth = 0;
         if (this.variableWidthValue && this.variableWidthValue.kind !== 'constant') {
@@ -32477,7 +32485,7 @@ function mergeLines (features) {
     }
     function getKey(text, geom, onRight) {
         const point = onRight ? geom[0][geom[0].length - 1] : geom[0][0];
-        return ''.concat(text, ':').concat(point.x, ':').concat(point.y);
+        return `${ text }:${ point.x }:${ point.y }`;
     }
     for (let k = 0; k < features.length; k++) {
         const feature = features[k];
@@ -33608,13 +33616,13 @@ class TaggedString {
     addImageSection(section, pixelRatio) {
         const image = section.image ? section.image.getPrimary() : null;
         if (!image) {
-            warnOnce('Can\'t add FormattedSection with an empty image.');
+            warnOnce(`Can't add FormattedSection with an empty image.`);
             return;
         }
         image.scaleSelf(pixelRatio);
         const nextImageSectionCharCode = this.getNextImageSectionCharCode();
         if (!nextImageSectionCharCode) {
-            warnOnce('Reached maximum number of images '.concat(PUAend - PUAbegin + 2));
+            warnOnce(`Reached maximum number of images ${ PUAend - PUAbegin + 2 }`);
             return;
         }
         this.text += String.fromCodePoint(nextImageSectionCharCode);
@@ -34733,7 +34741,7 @@ register(ImageAtlas, 'ImageAtlas');
 function loadGlyphRange(fontstack, range, urlTemplate, requestManager, callback) {
     const begin = range * 256;
     const end = begin + 255;
-    const request = requestManager.transformRequest(requestManager.normalizeGlyphsURL(urlTemplate).replace('{fontstack}', fontstack).replace('{range}', ''.concat(begin, '-').concat(end)), ResourceType.Glyphs);
+    const request = requestManager.transformRequest(requestManager.normalizeGlyphsURL(urlTemplate).replace('{fontstack}', fontstack).replace('{range}', `${ begin }-${ end }`), ResourceType.Glyphs);
     getArrayBuffer(request, (err, data) => {
         if (err) {
             callback(err);
@@ -35516,8 +35524,8 @@ function findPoleOfInaccessibility (polygonRings, precision = 1, debug = false) 
         numProbes += 4;
     }
     if (debug) {
-        console.log('num probes: '.concat(numProbes));
-        console.log('best distance: '.concat(bestCell.d));
+        console.log(`num probes: ${ numProbes }`);
+        console.log(`best distance: ${ bestCell.d }`);
     }
     return bestCell.p;
 }
@@ -36009,10 +36017,10 @@ function checkCrossFadeImagePositions(primary, secondary, iconPositions) {
         return;
     }
     if (primaryPosition.paddedRect.w !== secondaryPosition.paddedRect.w || primaryPosition.paddedRect.h !== secondaryPosition.paddedRect.h) {
-        warnOnce('Mismatch in icon variant sizes: '.concat(primary.toString(), ' and ').concat(secondary.toString()));
+        warnOnce(`Mismatch in icon variant sizes: ${ primary.toString() } and ${ secondary.toString() }`);
     }
     if (primaryPosition.usvg !== secondaryPosition.usvg) {
-        warnOnce('Mismatch in icon variant image types: '.concat(primary.id, ' and ').concat(secondary.id));
+        warnOnce(`Mismatch in icon variant image types: ${ primary.id } and ${ secondary.id }`);
     }
 }
 function postRasterizationSymbolLayout(bucket, bucketData, showCollisionBoxes, availableImages, canonical, tileZoom, projection, brightness, imageMap, imageAtlas) {
@@ -36185,7 +36193,7 @@ function addTextVertices(bucket, globe, tileAnchor, shapedText, imageMap, layer,
     if (sizeData.kind === 'source') {
         textSizeData = [SIZE_PACK_FACTOR * layer.layout.get('text-size').evaluate(feature, {}, canonical) * sizes.textScaleFactor];
         if (textSizeData[0] > MAX_PACKED_SIZE) {
-            warnOnce(''.concat(bucket.layerIds[0], ': Value for "text-size" is >= ').concat(MAX_GLYPH_ICON_SIZE, '. Reduce your "text-size".'));
+            warnOnce(`${ bucket.layerIds[0] }: Value for "text-size" is >= ${ MAX_GLYPH_ICON_SIZE }. Reduce your "text-size".`);
         }
     } else if (sizeData.kind === 'composite') {
         textSizeData = [
@@ -36193,7 +36201,7 @@ function addTextVertices(bucket, globe, tileAnchor, shapedText, imageMap, layer,
             SIZE_PACK_FACTOR * sizes.compositeTextSizes[1].evaluate(feature, {}, canonical) * sizes.textScaleFactor
         ];
         if (textSizeData[0] > MAX_PACKED_SIZE || textSizeData[1] > MAX_PACKED_SIZE) {
-            warnOnce(''.concat(bucket.layerIds[0], ': Value for "text-size" is >= ').concat(MAX_GLYPH_ICON_SIZE, '. Reduce your "text-size".'));
+            warnOnce(`${ bucket.layerIds[0] }: Value for "text-size" is >= ${ MAX_GLYPH_ICON_SIZE }. Reduce your "text-size".`);
         }
     }
     bucket.addSymbols(bucket.text, glyphQuads, textSizeData, textOffset, textAlongLine, feature, writingMode, globe, tileAnchor, lineArray.lineStartIndex, lineArray.lineLength, placedIconIndex, availableImages, canonical, brightness, false, symbolInstanceIndex, glyphQuads.length);
@@ -36303,7 +36311,7 @@ function addSymbol(bucket, anchor, globe, line, shapedTextOrientations, shapedIc
         if (sizeData.kind === 'source') {
             iconSizeData = [SIZE_PACK_FACTOR * layer.layout.get('icon-size').evaluate(feature, {}, canonical) * sizes.iconScaleFactor];
             if (iconSizeData[0] > MAX_PACKED_SIZE) {
-                warnOnce(''.concat(bucket.layerIds[0], ': Value for "icon-size" is >= ').concat(MAX_GLYPH_ICON_SIZE, '. Reduce your "icon-size".'));
+                warnOnce(`${ bucket.layerIds[0] }: Value for "icon-size" is >= ${ MAX_GLYPH_ICON_SIZE }. Reduce your "icon-size".`);
             }
         } else if (sizeData.kind === 'composite') {
             iconSizeData = [
@@ -36311,7 +36319,7 @@ function addSymbol(bucket, anchor, globe, line, shapedTextOrientations, shapedIc
                 SIZE_PACK_FACTOR * sizes.compositeIconSizes[1].evaluate(feature, {}, canonical) * sizes.iconScaleFactor
             ];
             if (iconSizeData[0] > MAX_PACKED_SIZE || iconSizeData[1] > MAX_PACKED_SIZE) {
-                warnOnce(''.concat(bucket.layerIds[0], ': Value for "icon-size" is >= ').concat(MAX_GLYPH_ICON_SIZE, '. Reduce your "icon-size".'));
+                warnOnce(`${ bucket.layerIds[0] }: Value for "icon-size" is >= ${ MAX_GLYPH_ICON_SIZE }. Reduce your "icon-size".`);
             }
         }
         bucket.addSymbols(bucket.icon, iconQuads, // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -37148,7 +37156,7 @@ function getProjection(config) {
     case 'globe':
         return new Globe(config);
     }
-    throw new Error('Invalid projection name: '.concat(config.name));
+    throw new Error(`Invalid projection name: ${ config.name }`);
 }
 
 const vectorTileFeatureTypes = VectorTileFeature.types;
@@ -37684,8 +37692,10 @@ class SymbolBucket {
                     canonical,
                     featureState: featureStateForThis
                 }));
-                if (featureData.activeAppearance === activeAppearance)
+                if (featureData.activeAppearance === activeAppearance) {
+                    vertexOffset += symbolInstance.numIconVertices;
                     continue;
+                }
                 if (activeAppearance) {
                     featureData.activeAppearance = activeAppearance;
                     const minimalFeature = {
@@ -39032,7 +39042,7 @@ class ImageSource extends Evented {
     }
     setTexture(texture) {
         if (!(texture.handle instanceof WebGLTexture)) {
-            throw new Error('The provided handle is not a WebGLTexture instance');
+            throw new Error(`The provided handle is not a WebGLTexture instance`);
         }
         const context = this.map.painter.context;
         this.texture = new UserManagedTexture(context, texture.handle);
@@ -39593,13 +39603,13 @@ function validateCustomStyleLayer(layerObject) {
     const errors = [];
     const id = layerObject.id;
     if (id === void 0) {
-        errors.push({ message: 'layers.'.concat(id, ': missing required property "id"') });
+        errors.push({ message: `layers.${ id }: missing required property "id"` });
     }
     if (layerObject.render === void 0) {
-        errors.push({ message: 'layers.'.concat(id, ': missing required method "render"') });
+        errors.push({ message: `layers.${ id }: missing required method "render"` });
     }
     if (layerObject.renderingMode && layerObject.renderingMode !== '2d' && layerObject.renderingMode !== '3d') {
-        errors.push({ message: 'layers.'.concat(id, ': property "renderingMode" must be either "2d" or "3d"') });
+        errors.push({ message: `layers.${ id }: property "renderingMode" must be either "2d" or "3d"` });
     }
     return errors;
 }
@@ -39790,7 +39800,7 @@ const LayerTypeMask = {
 
 class ValidationError {
     constructor(key, value, message, identifier) {
-        this.message = (key ? ''.concat(key, ': ') : '') + message;
+        this.message = (key ? `${ key }: ` : '') + message;
         if (identifier)
             this.identifier = identifier;
         if (value !== null && value !== void 0 && value.__line__) {
@@ -39816,10 +39826,10 @@ function validateModel(options) {
         return [];
     }
     if (!isString(url)) {
-        return [new ValidationError(options.key, url, 'string expected, "'.concat(getType(url), '" found'))];
+        return [new ValidationError(options.key, url, `string expected, "${ getType(url) }" found`)];
     }
     if (!isValidUrl(url, true)) {
-        return [new ValidationError(options.key, url, 'invalid url "'.concat(url, '"'))];
+        return [new ValidationError(options.key, url, `invalid url "${ url }"`)];
     }
     return [];
 }
@@ -40137,7 +40147,7 @@ class ModelBucket {
         const modelIdProperty = layer.layout.get('model-id');
         const modelId = modelIdProperty.evaluate(evaluationFeature, {}, this.canonical);
         if (!modelId) {
-            warnOnce('modelId is not evaluated for layer '.concat(layer.id, ' and it is not going to get rendered.'));
+            warnOnce(`modelId is not evaluated for layer ${ layer.id } and it is not going to get rendered.`);
             return modelId;
         }
         if (isValidUrl(modelId, false)) {
@@ -41342,7 +41352,7 @@ class ModelSource extends Evented {
                         model
                     });
                 }).catch(err => {
-                    this.fire(new ErrorEvent(new Error('Could not load model '.concat(modelId, ' from ').concat(modelSpec.uri, ': ').concat(err.message))));
+                    this.fire(new ErrorEvent(new Error(`Could not load model ${ modelId } from ${ modelSpec.uri }: ${ err.message }`)));
                 });
                 modelPromises.push(modelPromise);
             }
@@ -41355,7 +41365,7 @@ class ModelSource extends Evented {
             }));
         }).catch(err => {
             this._loaded = true;
-            this.fire(new ErrorEvent(new Error('Could not load models: '.concat(err.message))));
+            this.fire(new ErrorEvent(new Error(`Could not load models: ${ err.message }`)));
         });
     }
     static applyModelSpecification(model, modelSpec) {
@@ -41781,7 +41791,7 @@ function readIconSetField(tag, obj, pbf) {
 }
 function buildStretchedAreas(metadata, axis) {
     const areas = [];
-    const stretch = metadata['stretch_'.concat(axis)];
+    const stretch = metadata[`stretch_${ axis }`];
     let left = null;
     for (let i = 0; i < stretch.length; i++) {
         if (left === null) {
@@ -41799,7 +41809,7 @@ function buildStretchedAreas(metadata, axis) {
             left = null;
         }
     }
-    metadata['stretch_'.concat(axis, '_areas')] = areas;
+    metadata[`stretch_${ axis }_areas`] = areas;
 }
 function postProcessIcon(icon) {
     if (!icon.usvg_tree.height) {
@@ -42197,7 +42207,7 @@ class ColorReplacements {
             if (variablesMap.has(key)) {
                 replacements.set(variablesMap.get(key).toString(), value);
             } else {
-                console.warn('Ignoring unknown image variable "'.concat(key, '"'));
+                console.warn(`Ignoring unknown image variable "${ key }"`);
             }
         }
         return replacements;
@@ -42533,7 +42543,7 @@ function buildPath(path, path2d) {
                 break;
             }
         default:
-            assert(false, 'Unknown path command "'.concat(path.commands[i], '"'));
+            assert(false, `Unknown path command "${ path.commands[i] }"`);
         }
     }
     return path2d;
@@ -43106,7 +43116,7 @@ class DEMData {
         if (data.height !== data.width)
             throw new RangeError('DEM tiles must be square');
         if (sourceEncoding && sourceEncoding !== 'mapbox' && sourceEncoding !== 'terrarium') {
-            warnOnce('"'.concat(sourceEncoding, '" is not a valid encoding type. Valid types include "mapbox" and "terrarium".'));
+            warnOnce(`"${ sourceEncoding }" is not a valid encoding type. Valid types include "mapbox" and "terrarium".`);
             return;
         }
         this.stride = data.height;
@@ -43375,7 +43385,7 @@ function readUint32ValuesTag(tag, values, pbf) {
 }
 function deltaDecode(data, shape) {
     if (shape.length !== 4) {
-        throw new Error('Expected data of dimension 4 but got '.concat(shape.length, '.'));
+        throw new Error(`Expected data of dimension 4 but got ${ shape.length }.`);
     }
     let axisOffset = shape[3];
     for (let axis = 2; axis >= 1; axis--) {
@@ -43429,7 +43439,7 @@ function bitshuffleDecode(data, pixelFormat) {
         }
         return data;
     default:
-        throw new Error('Invalid pixel format, "'.concat(pixelFormat, '"'));
+        throw new Error(`Invalid pixel format, "${ pixelFormat }"`);
     }
 }
 var u8 = Uint8Array, u16 = Uint16Array, i32 = Int32Array;
@@ -43826,7 +43836,7 @@ function decompress(bytes, codec) {
     }
     const decompressionStreamType = DS_TYPES[codec];
     if (!decompressionStreamType) {
-        throw new Error('Unhandled codec: '.concat(codec));
+        throw new Error(`Unhandled codec: ${ codec }`);
     }
     const ds = new globalThis.DecompressionStream(decompressionStreamType);
     return new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer().then(buf => new Uint8Array(buf));
@@ -43877,7 +43887,7 @@ class MapboxRasterTile {
     getLayer(layerName) {
         const layer = this.layers[layerName];
         if (!layer)
-            throw new MRTError('Layer \''.concat(layerName, '\' not found'));
+            throw new MRTError(`Layer '${ layerName }' not found`);
         return layer;
     }
     /**
@@ -43900,12 +43910,12 @@ class MapboxRasterTile {
         const bytes = new Uint8Array(buf);
         const headerLength = this.getHeaderLength(buf);
         if (bytes.length < headerLength) {
-            throw new MRTError('Expected header with length >= '.concat(headerLength, ' but got buffer of length ').concat(bytes.length));
+            throw new MRTError(`Expected header with length >= ${ headerLength } but got buffer of length ${ bytes.length }`);
         }
         const pbf = new Pbf(bytes.subarray(0, headerLength));
         const meta = readTileHeader(pbf);
         if (!isNaN(this.x) && (this.x !== meta.x || this.y !== meta.y || this.z !== meta.z)) {
-            throw new MRTError('Invalid attempt to parse header '.concat(meta.z, '/').concat(meta.x, '/').concat(meta.y, ' for tile ').concat(this.z, '/').concat(this.x, '/').concat(this.y));
+            throw new MRTError(`Invalid attempt to parse header ${ meta.z }/${ meta.x }/${ meta.y } for tile ${ this.z }/${ this.x }/${ this.y }`);
         }
         this.x = meta.x;
         this.y = meta.y;
@@ -43972,7 +43982,7 @@ class MapboxRasterLayer {
     constructor({version, name, units, tileSize, pixelFormat, buffer, dataIndex}, config) {
         this.version = version;
         if (this.version !== MRT_VERSION) {
-            throw new MRTError('Cannot parse raster layer encoded with MRT version '.concat(version));
+            throw new MRTError(`Cannot parse raster layer encoded with MRT version ${ version }`);
         }
         this.name = name;
         this.units = units;
@@ -44056,7 +44066,7 @@ class MapboxRasterLayer {
             }
             break;
         default:
-            throw new MRTError('Invalid band `'.concat(JSON.stringify(band), '`. Expected string or integer.'));
+            throw new MRTError(`Invalid band \`${ JSON.stringify(band) }\`. Expected string or integer.`);
         }
         return {
             blockIndex: -1,
@@ -44077,7 +44087,7 @@ class MapboxRasterLayer {
         for (const band of bandList) {
             const {blockIndex} = this.getBlockForBand(band);
             if (blockIndex < 0) {
-                throw new MRTError('Invalid band: '.concat(JSON.stringify(band)));
+                throw new MRTError(`Invalid band: ${ JSON.stringify(band) }`);
             }
             const block = this.dataIndex[blockIndex];
             if (!blockIndices.includes(blockIndex)) {
@@ -44088,7 +44098,7 @@ class MapboxRasterLayer {
             lastByte = Math.max(lastByte, block.lastByte);
         }
         if (allBlocks.size > this.cacheSize) {
-            throw new MRTError('Number of blocks to decode ('.concat(allBlocks.size, ') exceeds cache size (').concat(this.cacheSize, ').'));
+            throw new MRTError(`Number of blocks to decode (${ allBlocks.size }) exceeds cache size (${ this.cacheSize }).`);
         }
         return {
             layerName: this.name,
@@ -44123,11 +44133,11 @@ class MapboxRasterLayer {
     getBandView(band) {
         const {blockIndex, blockBandIndex} = this.getBlockForBand(band);
         if (blockIndex < 0) {
-            throw new MRTError('Band not found: '.concat(JSON.stringify(band)));
+            throw new MRTError(`Band not found: ${ JSON.stringify(band) }`);
         }
         const blockData = this._decodedBlocks.get(blockIndex.toString());
         if (!blockData) {
-            throw new MRTError('Data for band '.concat(JSON.stringify(band), ' of layer "').concat(this.name, '" not decoded.'));
+            throw new MRTError(`Data for band ${ JSON.stringify(band) } of layer "${ this.name }" not decoded.`);
         }
         const block = this.dataIndex[blockIndex];
         const bandDataLength = this.bandShape.reduce((a, b) => a * b, 1);
@@ -44202,7 +44212,7 @@ MapboxRasterTile.performDecoding = function (buf, decodingBatch) {
                 break;
             }
         default:
-            throw new MRTError('Unhandled codec: '.concat(codec));
+            throw new MRTError(`Unhandled codec: ${ codec }`);
         }
         return decoded.then(data => {
             for (let i = filters.length - 1; i >= 0; i--) {
@@ -44217,7 +44227,7 @@ MapboxRasterTile.performDecoding = function (buf, decodingBatch) {
                     bitshuffleDecode(data, pixelFormat);
                     break;
                 default:
-                    throw new MRTError('Unhandled filter "'.concat(filters[i], '"'));
+                    throw new MRTError(`Unhandled filter "${ filters[i] }"`);
                 }
             }
             return {
@@ -44579,8 +44589,8 @@ class FeatureIndex {
                         if (expression.result === 'success') {
                             this.promoteIdExpression = expression.value;
                         } else {
-                            const error = expression.value.map(err => ''.concat(err.key, ': ').concat(err.message)).join(', ');
-                            warnOnce('Failed to create expression for promoteId: '.concat(error));
+                            const error = expression.value.map(err => `${ err.key }: ${ err.message }`).join(', ');
+                            warnOnce(`Failed to create expression for promoteId: ${ error }`);
                             return void 0;
                         }
                     }
@@ -45377,20 +45387,20 @@ function stringify(obj) {
     if (Array.isArray(obj)) {
         let str2 = '[';
         for (const val of obj) {
-            str2 += ''.concat(stringify(val), ',');
+            str2 += `${ stringify(val) },`;
         }
-        return ''.concat(str2, ']');
+        return `${ str2 }]`;
     }
     let str = '{';
     for (const key of Object.keys(obj).sort()) {
-        str += ''.concat(key, ':').concat(stringify(obj[key]), ',');
+        str += `${ key }:${ stringify(obj[key]) },`;
     }
-    return ''.concat(str, '}');
+    return `${ str }}`;
 }
 function getKey(layer) {
     let key = '';
     for (const k of index.bw) {
-        key += '/'.concat(stringify(layer[k]));
+        key += `/${ stringify(layer[k]) }`;
     }
     return key;
 }
@@ -45422,7 +45432,7 @@ function groupByLayout(layers, cachedKeys) {
                 if (layer.type === 'line' && layer['paint']) {
                     const lineWidth = layer['paint']['line-width'];
                     if (containsKey(lineWidth, 'line-progress')) {
-                        k += '/'.concat(stringify(layer['paint']['line-width']));
+                        k += `/${ stringify(layer['paint']['line-width']) }`;
                     }
                 }
             }
@@ -45576,7 +45586,7 @@ function parseData(data, sourceLayers, lastActiveFloors, selectedFloorId) {
     for (const layerId of sourceLayers) {
         const sourceLayer = data.layers[layerId];
         if (!sourceLayer) {
-            index.w('indoor source layer not found: '.concat(layerId));
+            index.w(`indoor source layer not found: ${ layerId }`);
             continue;
         }
         for (let index = 0; index < sourceLayer.length; index++) {
@@ -45713,7 +45723,7 @@ function calculateIndoorSourceLayers(sourceLayers, actualSourceLayers) {
     }
     const missingSourceLayers = sourceLayers.difference(actualSourceLayers);
     for (const missingSourceLayer of missingSourceLayers) {
-        index.w('Missing source layer required in indoor specification: '.concat(missingSourceLayer));
+        index.w(`Missing source layer required in indoor specification: ${ missingSourceLayer }`);
     }
     return actualSourceLayers.intersection(actualSourceLayers);
 }
@@ -45803,7 +45813,7 @@ class WorkerTile {
                 continue;
             }
             if (sourceLayer.version === 1) {
-                index.w('Vector tile source "'.concat(this.source, '" layer "').concat(sourceLayerId, '" ') + 'does not use vector tile spec v2 and therefore may have some rendering errors.');
+                index.w(`Vector tile source "${ this.source }" layer "${ sourceLayerId }" does not use vector tile spec v2 and therefore may have some rendering errors.`);
             }
             const sourceLayerIndex = sourceLayerCoder.encode(sourceLayerId);
             const features = [];
@@ -48038,7 +48048,7 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
             if (err || !data) {
                 return callback(err);
             } else if (typeof data !== 'object') {
-                return callback(new Error('Input data given to \''.concat(params.source, '\' is not a valid GeoJSON object.')));
+                return callback(new Error(`Input data given to '${ params.source }' is not a valid GeoJSON object.`));
             } else {
                 try {
                     if (params.filter) {
@@ -48049,7 +48059,7 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
                             transition: false
                         });
                         if (compiled.result === 'error')
-                            throw new Error(compiled.value.map(err2 => ''.concat(err2.key, ': ').concat(err2.message)).join(', '));
+                            throw new Error(compiled.value.map(err2 => `${ err2.key }: ${ err2.message }`).join(', '));
                         data.features = data.features.filter(feature => compiled.value.evaluate({ zoom: 0 }, feature));
                     }
                     if (params.dynamic) {
@@ -48125,11 +48135,11 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
                 try {
                     return callback(null, JSON.parse(params.data));
                 } catch (e) {
-                    return callback(new Error('Input data given to \''.concat(params.source, '\' is not a valid GeoJSON object.')));
+                    return callback(new Error(`Input data given to '${ params.source }' is not a valid GeoJSON object.`));
                 }
             }, 0);
         } else {
-            return callback(new Error('Input data given to \''.concat(params.source, '\' is not a valid GeoJSON object.')));
+            return callback(new Error(`Input data given to '${ params.source }' is not a valid GeoJSON object.`));
         }
     }
     getClusterExpansionZoom(params, callback) {
@@ -48375,7 +48385,7 @@ class MapWorker {
         this.workerSources = {};
         this.self.registerWorkerSource = (name, WorkerSource) => {
             if (this.workerSourceTypes[name]) {
-                throw new Error('Worker source with name "'.concat(name, '" already registered.'));
+                throw new Error(`Worker source with name "${ name }" already registered.`);
             }
             this.workerSourceTypes[name] = WorkerSource;
         };
@@ -48638,7 +48648,7 @@ return MapWorker;
 
 define(['./shared'], (function (index) { 'use strict';
 
-var version = "3.16.0";
+var version = "3.17.0-beta.1";
 
 const LivePerformanceMarkers = {
     create: 'create',
@@ -48672,10 +48682,10 @@ function getCountersPerResourceType(resourceTimers) {
         for (const category in resourceTimers) {
             if (category !== 'other') {
                 for (const timer of resourceTimers[category]) {
-                    const min = ''.concat(category, 'ResolveRangeMin');
-                    const max = ''.concat(category, 'ResolveRangeMax');
-                    const reqCount = ''.concat(category, 'RequestCount');
-                    const reqCachedCount = ''.concat(category, 'RequestCachedCount');
+                    const min = `${ category }ResolveRangeMin`;
+                    const max = `${ category }ResolveRangeMax`;
+                    const reqCount = `${ category }RequestCount`;
+                    const reqCachedCount = `${ category }RequestCachedCount`;
                     obj[min] = Math.min(obj[min] || Infinity, timer.startTime);
                     obj[max] = Math.max(obj[max] || -Infinity, timer.responseEnd);
                     const increment = key => {
@@ -48721,7 +48731,7 @@ function getStyle(resourceTimers) {
             if (index.i(url)) {
                 const split = url.split('/').slice(-2);
                 if (split.length === 2) {
-                    return 'mapbox://styles/'.concat(split[0], '/').concat(split[1]);
+                    return `mapbox://styles/${ split[0] }/${ split[1] }`;
                 }
             }
         }
@@ -49015,36 +49025,36 @@ class RequestManager {
             return url;
         const urlObject = parseUrl(url);
         {
-            urlObject.params.push('sdk=js-'.concat(version));
+            urlObject.params.push(`sdk=js-${ version }`);
         }
-        urlObject.path = '/styles/v1'.concat(urlObject.path);
+        urlObject.path = `/styles/v1${ urlObject.path }`;
         return this._makeAPIURL(urlObject, this._customAccessToken || accessToken);
     }
     normalizeGlyphsURL(url, accessToken) {
         if (!index.h(url))
             return url;
         const urlObject = parseUrl(url);
-        urlObject.path = '/fonts/v1'.concat(urlObject.path);
+        urlObject.path = `/fonts/v1${ urlObject.path }`;
         return this._makeAPIURL(urlObject, this._customAccessToken || accessToken);
     }
     normalizeModelURL(url, accessToken) {
         if (!index.h(url))
             return url;
         const urlObject = parseUrl(url);
-        urlObject.path = '/models/v1'.concat(urlObject.path);
+        urlObject.path = `/models/v1${ urlObject.path }`;
         return this._makeAPIURL(urlObject, this._customAccessToken || accessToken);
     }
     normalizeSourceURL(url, accessToken, language, worldview) {
         if (!index.h(url))
             return url;
         const urlObject = parseUrl(url);
-        urlObject.path = '/v4/'.concat(urlObject.authority, '.json');
+        urlObject.path = `/v4/${ urlObject.authority }.json`;
         urlObject.params.push('secure');
         if (language) {
-            urlObject.params.push('language='.concat(language));
+            urlObject.params.push(`language=${ language }`);
         }
         if (worldview) {
-            urlObject.params.push('worldview='.concat(worldview));
+            urlObject.params.push(`worldview=${ worldview }`);
         }
         return this._makeAPIURL(urlObject, this._customAccessToken || accessToken);
     }
@@ -49053,16 +49063,16 @@ class RequestManager {
         if (!index.h(url)) {
             return formatUrl(urlObject);
         }
-        urlObject.path = '/styles/v1'.concat(urlObject.path, '/iconset.pbf');
+        urlObject.path = `/styles/v1${ urlObject.path }/iconset.pbf`;
         return this._makeAPIURL(urlObject, this._customAccessToken || accessToken);
     }
     normalizeSpriteURL(url, format, extension, accessToken) {
         const urlObject = parseUrl(url);
         if (!index.h(url)) {
-            urlObject.path += ''.concat(format).concat(extension);
+            urlObject.path += `${ format }${ extension }`;
             return formatUrl(urlObject);
         }
-        urlObject.path = '/styles/v1'.concat(urlObject.path, '/sprite').concat(format).concat(extension);
+        urlObject.path = `/styles/v1${ urlObject.path }/sprite${ format }${ extension }`;
         return this._makeAPIURL(urlObject, this._customAccessToken || accessToken);
     }
     normalizeTileURL(tileURL, use2x, rasterTileSize) {
@@ -49076,21 +49086,21 @@ class RequestManager {
         const extension = index.k.supported ? '.webp' : '$1';
         const use2xAs512 = rasterTileSize && urlObject.authority !== 'raster' && rasterTileSize === 512;
         const suffix = use2x || use2xAs512 ? '@2x' : '';
-        urlObject.path = urlObject.path.replace(imageExtensionRe, ''.concat(suffix).concat(extension));
+        urlObject.path = urlObject.path.replace(imageExtensionRe, `${ suffix }${ extension }`);
         if (urlObject.authority === 'raster') {
-            urlObject.path = '/'.concat(index.e.RASTER_URL_PREFIX).concat(urlObject.path);
+            urlObject.path = `/${ index.e.RASTER_URL_PREFIX }${ urlObject.path }`;
         } else if (urlObject.authority === 'rasterarrays') {
-            urlObject.path = '/'.concat(index.e.RASTERARRAYS_URL_PREFIX).concat(urlObject.path);
+            urlObject.path = `/${ index.e.RASTERARRAYS_URL_PREFIX }${ urlObject.path }`;
         } else if (urlObject.authority === '3dtiles') {
-            urlObject.path = '/'.concat(index.e.TILES3D_URL_PREFIX).concat(urlObject.path);
+            urlObject.path = `/${ index.e.TILES3D_URL_PREFIX }${ urlObject.path }`;
         } else {
             const tileURLAPIPrefixRe = /^.+\/v4\//;
             urlObject.path = urlObject.path.replace(tileURLAPIPrefixRe, '/');
-            urlObject.path = '/'.concat(index.e.TILE_URL_VERSION).concat(urlObject.path);
+            urlObject.path = `/${ index.e.TILE_URL_VERSION }${ urlObject.path }`;
         }
         const accessToken = this._customAccessToken || getAccessToken(urlObject.params) || index.e.ACCESS_TOKEN;
         if (index.e.REQUIRE_ACCESS_TOKEN && accessToken && this._skuToken) {
-            urlObject.params.push('sku='.concat(this._skuToken));
+            urlObject.params.push(`sku=${ this._skuToken }`);
         }
         return this._makeAPIURL(urlObject, accessToken);
     }
@@ -49102,21 +49112,21 @@ class RequestManager {
         }
         let result = 'mapbox://';
         if (urlObject.path.match(/^\/raster\/v1\//)) {
-            const rasterPrefix = '/'.concat(index.e.RASTER_URL_PREFIX, '/');
-            result += 'raster/'.concat(urlObject.path.replace(rasterPrefix, ''));
+            const rasterPrefix = `/${ index.e.RASTER_URL_PREFIX }/`;
+            result += `raster/${ urlObject.path.replace(rasterPrefix, '') }`;
         } else if (urlObject.path.match(/^\/rasterarrays\/v1\//)) {
-            const rasterPrefix = '/'.concat(index.e.RASTERARRAYS_URL_PREFIX, '/');
-            result += 'rasterarrays/'.concat(urlObject.path.replace(rasterPrefix, ''));
+            const rasterPrefix = `/${ index.e.RASTERARRAYS_URL_PREFIX }/`;
+            result += `rasterarrays/${ urlObject.path.replace(rasterPrefix, '') }`;
         } else {
-            const tilesPrefix = '/'.concat(index.e.TILE_URL_VERSION, '/');
-            result += 'tiles/'.concat(urlObject.path.replace(tilesPrefix, ''));
+            const tilesPrefix = `/${ index.e.TILE_URL_VERSION }/`;
+            result += `tiles/${ urlObject.path.replace(tilesPrefix, '') }`;
         }
         let params = urlObject.params;
         if (removeAccessToken) {
             params = params.filter(p => !p.match(/^access_token=/));
         }
         if (params.length)
-            result += '?'.concat(params.join('&'));
+            result += `?${ params.join('&') }`;
         return result;
     }
     canonicalizeTileset(tileJSON, sourceURL) {
@@ -49142,19 +49152,19 @@ class RequestManager {
                 urlObject.params.splice(i, 1);
         }
         if (apiUrlObject.path !== '/') {
-            urlObject.path = ''.concat(apiUrlObject.path).concat(urlObject.path);
+            urlObject.path = `${ apiUrlObject.path }${ urlObject.path }`;
         }
         if (!index.e.REQUIRE_ACCESS_TOKEN)
             return formatUrl(urlObject);
         accessToken = accessToken || index.e.ACCESS_TOKEN;
         if (!this._silenceAuthErrors) {
             if (!accessToken)
-                throw new Error('An API access token is required to use Mapbox GL. '.concat(help));
+                throw new Error(`An API access token is required to use Mapbox GL. ${ help }`);
             if (accessToken[0] === 's')
-                throw new Error('Use a public access token (pk.*) with Mapbox GL, not a secret access token (sk.*). '.concat(help));
+                throw new Error(`Use a public access token (pk.*) with Mapbox GL, not a secret access token (sk.*). ${ help }`);
         }
         urlObject.params = urlObject.params.filter(d => d.indexOf('access_token') === -1);
-        urlObject.params.push('access_token='.concat(accessToken || ''));
+        urlObject.params.push(`access_token=${ accessToken || '' }`);
         return formatUrl(urlObject);
     }
 }
@@ -49181,8 +49191,8 @@ function parseUrl(url) {
     };
 }
 function formatUrl(obj) {
-    const params = obj.params.length ? '?'.concat(obj.params.join('&')) : '';
-    return ''.concat(obj.protocol, '://').concat(obj.authority).concat(obj.path).concat(params);
+    const params = obj.params.length ? `?${ obj.params.join('&') }` : '';
+    return `${ obj.protocol }://${ obj.authority }${ obj.path }${ params }`;
 }
 const telemEventKey = 'mapbox.eventData';
 function parseAccessToken(accessToken) {
@@ -49217,7 +49227,7 @@ class TelemetryEvent {
         } else {
             u = index.e.ACCESS_TOKEN || '';
         }
-        return domain ? ''.concat(telemEventKey, '.').concat(domain, ':').concat(u) : ''.concat(telemEventKey, ':').concat(u);
+        return domain ? `${ telemEventKey }.${ domain }:${ u }` : `${ telemEventKey }:${ u }`;
     }
     fetchEventData() {
         const isLocalStorageAvailable = index.s('localStorage');
@@ -49283,7 +49293,7 @@ class TelemetryEvent {
         if (!index.e.EVENTS_URL)
             return;
         const eventsUrlObject = parseUrl(index.e.EVENTS_URL);
-        eventsUrlObject.params.push('access_token='.concat(customAccessToken || index.e.ACCESS_TOKEN || ''));
+        eventsUrlObject.params.push(`access_token=${ customAccessToken || index.e.ACCESS_TOKEN || '' }`);
         const payload = {
             event: this.type,
             created: new Date(timestamp).toISOString()
@@ -49480,8 +49490,8 @@ class MapSessionAPI extends TelemetryEvent {
         if (!index.e.API_URL || !index.e.SESSION_PATH)
             return;
         const authUrlObject = parseUrl(index.e.API_URL + index.e.SESSION_PATH);
-        authUrlObject.params.push('sku='.concat(token || ''));
-        authUrlObject.params.push('access_token='.concat(customAccessToken || index.e.ACCESS_TOKEN || ''));
+        authUrlObject.params.push(`sku=${ token || '' }`);
+        authUrlObject.params.push(`access_token=${ customAccessToken || index.e.ACCESS_TOKEN || '' }`);
         const request = {
             url: formatUrl(authUrlObject),
             headers: {
@@ -49950,15 +49960,15 @@ class ImageManager extends index.E {
     _validate(id, image) {
         let valid = true;
         if (!this._validateStretch(image.stretchX, image.data && image.data.width)) {
-            this.fire(new index.y(new Error('Image "'.concat(id.name, '" has invalid "stretchX" value'))));
+            this.fire(new index.y(new Error(`Image "${ id.name }" has invalid "stretchX" value`)));
             valid = false;
         }
         if (!this._validateStretch(image.stretchY, image.data && image.data.height)) {
-            this.fire(new index.y(new Error('Image "'.concat(id.name, '" has invalid "stretchY" value'))));
+            this.fire(new index.y(new Error(`Image "${ id.name }" has invalid "stretchY" value`)));
             valid = false;
         }
         if (!this._validateContent(image.content, image)) {
-            this.fire(new index.y(new Error('Image "'.concat(id.name, '" has invalid "content" value'))));
+            this.fire(new index.y(new Error(`Image "${ id.name }" has invalid "content" value`)));
             valid = false;
         }
         return valid;
@@ -50119,7 +50129,7 @@ class ImageManager extends index.E {
             }
             const image = imagesInScope.get(id.toString());
             if (!image) {
-                index.w('Image "'.concat(id.name, '" could not be loaded. Please make sure you have added the image with map.addImage() or a "sprite" property in your style. You can provide missing images by listening for the "styleimagemissing" map event.'));
+                index.w(`Image "${ id.name }" could not be loaded. Please make sure you have added the image with map.addImage() or a "sprite" property in your style. You can provide missing images by listening for the "styleimagemissing" map event.`);
                 continue;
             }
             const styleImage = {
@@ -50378,28 +50388,13 @@ class ImageManager extends index.E {
     }
 }
 
-var __getOwnPropSymbols$1 = Object.getOwnPropertySymbols;
-var __hasOwnProp$1 = Object.prototype.hasOwnProperty;
-var __propIsEnum$1 = Object.prototype.propertyIsEnumerable;
-var __objRest$1 = (source, exclude) => {
-    var target = {};
-    for (var prop in source)
-        if (__hasOwnProp$1.call(source, prop) && exclude.indexOf(prop) < 0)
-            target[prop] = source[prop];
-    if (source != null && __getOwnPropSymbols$1)
-        for (var prop of __getOwnPropSymbols$1(source)) {
-            if (exclude.indexOf(prop) < 0 && __propIsEnum$1.call(source, prop))
-                target[prop] = source[prop];
-        }
-    return target;
-};
 function validateImport(options) {
     const key = options.key;
     const {value, styleSpec} = options;
     if (!index.H(value)) {
-        return [new index.V(key, value, 'import must be an object')];
+        return [new index.V(key, value, `import must be an object`)];
     }
-    const _a = value, {data} = _a, importSpec = __objRest$1(_a, ['data']);
+    const {data, ...importSpec} = value;
     Object.defineProperty(importSpec, '__line__', {
         value: value.__line__,
         enumerable: false
@@ -50410,11 +50405,11 @@ function validateImport(options) {
         valueSpec: styleSpec.import
     }));
     if (index.J(importSpec.id) === '') {
-        const key2 = ''.concat(options.key, '.id');
-        errors.push(new index.V(key2, importSpec, 'import id can\'t be an empty string'));
+        const key2 = `${ options.key }.id`;
+        errors.push(new index.V(key2, importSpec, `import id can't be an empty string`));
     }
     if (data) {
-        const key2 = ''.concat(options.key, '.data');
+        const key2 = `${ options.key }.data`;
         errors = errors.concat(validateStyle$1(data, styleSpec, { key: key2 }));
     }
     return errors;
@@ -50428,13 +50423,13 @@ function validateArray(options) {
     const key = options.key;
     const validateArrayElement = options.arrayElementValidator || validate;
     if (!Array.isArray(array)) {
-        return [new index.V(key, array, 'array expected, '.concat(index.K(array), ' found'))];
+        return [new index.V(key, array, `array expected, ${ index.K(array) } found`)];
     }
     if (arraySpec.length && array.length !== arraySpec.length) {
-        return [new index.V(key, array, 'array length '.concat(arraySpec.length, ' expected, length ').concat(array.length, ' found'))];
+        return [new index.V(key, array, `array length ${ arraySpec.length } expected, length ${ array.length } found`)];
     }
     if (arraySpec['min-length'] && array.length < arraySpec['min-length']) {
-        return [new index.V(key, array, 'array length at least '.concat(arraySpec['min-length'], ' expected, length ').concat(array.length, ' found'))];
+        return [new index.V(key, array, `array length at least ${ arraySpec['min-length'] } expected, length ${ array.length } found`)];
     }
     let arrayElementSpec = {
         type: arraySpec.value,
@@ -50459,7 +50454,7 @@ function validateArray(options) {
             valueSpec: arrayElementSpec,
             style,
             styleSpec,
-            key: ''.concat(key, '[').concat(i, ']')
+            key: `${ key }[${ i }]`
         }, true));
     }
     return errors;
@@ -50470,10 +50465,10 @@ function validateNumber(options) {
     const value = options.value;
     const valueSpec = options.valueSpec;
     if (!index.L(value)) {
-        return [new index.V(key, value, 'number expected, '.concat(index.K(value), ' found'))];
+        return [new index.V(key, value, `number expected, ${ index.K(value) } found`)];
     }
     if (value !== value) {
-        return [new index.V(key, value, 'number expected, NaN found')];
+        return [new index.V(key, value, `number expected, NaN found`)];
     }
     if ('minimum' in valueSpec) {
         let specMin = valueSpec.minimum;
@@ -50482,7 +50477,7 @@ function validateNumber(options) {
             specMin = valueSpec.minimum[i];
         }
         if (value < specMin) {
-            return [new index.V(key, value, ''.concat(value, ' is less than the minimum value ').concat(specMin))];
+            return [new index.V(key, value, `${ value } is less than the minimum value ${ specMin }`)];
         }
     }
     if ('maximum' in valueSpec) {
@@ -50492,7 +50487,7 @@ function validateNumber(options) {
             specMax = valueSpec.maximum[i];
         }
         if (value > specMax) {
-            return [new index.V(key, value, ''.concat(value, ' is greater than the maximum value ').concat(specMax))];
+            return [new index.V(key, value, `${ value } is greater than the maximum value ${ specMax }`)];
         }
     }
     return [];
@@ -50506,7 +50501,7 @@ function validateFunction(options) {
     const key = options.key;
     const value = options.value;
     if (!index.H(value)) {
-        return [new index.V(key, value, 'object expected, '.concat(index.K(value), ' found'))];
+        return [new index.V(key, value, `object expected, ${ index.K(value) } found`)];
     }
     const functionValueSpec = options.valueSpec;
     const functionType = index.J(value.type);
@@ -50573,14 +50568,14 @@ function validateFunction(options) {
         const value2 = options2.value;
         const key2 = options2.key;
         if (!Array.isArray(value2)) {
-            return [new index.V(key2, value2, 'array expected, '.concat(index.K(value2), ' found'))];
+            return [new index.V(key2, value2, `array expected, ${ index.K(value2) } found`)];
         }
         if (value2.length !== 2) {
-            return [new index.V(key2, value2, 'array length 2 expected, length '.concat(value2.length, ' found'))];
+            return [new index.V(key2, value2, `array length 2 expected, length ${ value2.length } found`)];
         }
         if (isZoomAndPropertyFunction) {
             if (!index.H(value2[0])) {
-                return [new index.V(key2, value2, 'object expected, '.concat(index.K(value2[0]), ' found'))];
+                return [new index.V(key2, value2, `object expected, ${ index.K(value2[0]) } found`)];
             }
             const stopKey = value2[0];
             if (stopKey.zoom === void 0) {
@@ -50602,7 +50597,7 @@ function validateFunction(options) {
                 stopDomainValues = {};
             }
             errors2 = errors2.concat(validateObject({
-                key: ''.concat(key2, '[0]'),
+                key: `${ key2 }[0]`,
                 value: value2[0],
                 valueSpec: { zoom: {} },
                 style: options2.style,
@@ -50614,17 +50609,17 @@ function validateFunction(options) {
             }));
         } else {
             errors2 = errors2.concat(validateStopDomainValue({
-                key: ''.concat(key2, '[0]'),
+                key: `${ key2 }[0]`,
                 value: value2[0],
                 style: options2.style,
                 styleSpec: options2.styleSpec
             }, value2));
         }
         if (index.Q(index.S(value2[1]))) {
-            return errors2.concat([new index.V(''.concat(key2, '[1]'), value2[1], 'expressions are not allowed in function stops.')]);
+            return errors2.concat([new index.V(`${ key2 }[1]`, value2[1], 'expressions are not allowed in function stops.')]);
         }
         return errors2.concat(validate({
-            key: ''.concat(key2, '[1]'),
+            key: `${ key2 }[1]`,
             value: value2[1],
             valueSpec: functionValueSpec,
             style: options2.style,
@@ -50638,20 +50633,20 @@ function validateFunction(options) {
         if (!stopKeyType) {
             stopKeyType = type;
         } else if (type !== stopKeyType) {
-            return [new index.V(options2.key, reportValue, ''.concat(type, ' stop domain type must match previous stop domain type ').concat(stopKeyType))];
+            return [new index.V(options2.key, reportValue, `${ type } stop domain type must match previous stop domain type ${ stopKeyType }`)];
         }
         if (type !== 'number' && type !== 'string' && type !== 'boolean' && typeof value2 !== 'number' && typeof value2 !== 'string' && typeof value2 !== 'boolean') {
             return [new index.V(options2.key, reportValue, 'stop domain value must be a number, string, or boolean')];
         }
         if (type !== 'number' && functionType !== 'categorical') {
-            let message = 'number expected, '.concat(type, ' found');
+            let message = `number expected, ${ type } found`;
             if (index.N(functionValueSpec) && functionType === void 0) {
                 message += '\nIf you intended to use a categorical function, specify `"type": "categorical"`.';
             }
             return [new index.V(options2.key, reportValue, message)];
         }
         if (functionType === 'categorical' && type === 'number' && (typeof value2 !== 'number' || !isFinite(value2) || Math.floor(value2) !== value2)) {
-            return [new index.V(options2.key, reportValue, 'integer expected, found '.concat(String(value2)))];
+            return [new index.V(options2.key, reportValue, `integer expected, found ${ String(value2) }`)];
         }
         if (functionType !== 'categorical' && type === 'number' && typeof value2 === 'number' && typeof previousStopDomainValue === 'number' && previousStopDomainValue !== void 0 && value2 < previousStopDomainValue) {
             return [new index.V(options2.key, reportValue, 'stop domain values must appear in ascending order')];
@@ -50680,13 +50675,13 @@ function validateExpression(options) {
     const expression = (options.expressionContext === 'property' ? index.W : index.U)(index.S(options.value), options.valueSpec);
     if (expression.result === 'error') {
         return expression.value.map(error => {
-            return new index.V(''.concat(options.key).concat(error.key), options.value, error.message);
+            return new index.V(`${ options.key }${ error.key }`, options.value, error.message);
         });
     }
     const expressionObj = expression.value.expression || expression.value._styleExpression.expression;
     if (options.expressionContext === 'property' && options.propertyKey === 'text-font' && // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
         !expressionObj.outputDefined()) {
-        return [new index.V(options.key, options.value, 'Invalid data expression for "'.concat(options.propertyKey, '". Output values must be contained as literals within the expression.'))];
+        return [new index.V(options.key, options.value, `Invalid data expression for "${ options.propertyKey }". Output values must be contained as literals within the expression.`)];
     }
     if (options.expressionContext === 'property' && options.propertyType === 'layout' && // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         !index.Z(expressionObj)) {
@@ -50730,7 +50725,7 @@ function disallowedFilterParameters(e, options) {
     const errors = [];
     if (e instanceof index._) {
         if (disallowedParameters.has(e.name)) {
-            return [new index.V(options.key, options.value, '["'.concat(e.name, '"] expression is not supported in a filter for a ').concat(options.object.type, ' layer with id: ').concat(options.object.id))];
+            return [new index.V(options.key, options.value, `["${ e.name }"] expression is not supported in a filter for a ${ options.object.type } layer with id: ${ options.object.id }`)];
         }
     }
     e.eachChild(arg => {
@@ -50752,7 +50747,7 @@ function checkDisallowedParameters(e, options) {
     const errors = [];
     if (e instanceof index._) {
         if (!allowedParameters.has(e.name)) {
-            return [new index.V(options.key, options.value, '["'.concat(e.name, '"] is not an allowed parameter'))];
+            return [new index.V(options.key, options.value, `["${ e.name }"] is not an allowed parameter`)];
         }
     }
     e.eachChild(arg => {
@@ -50765,17 +50760,17 @@ function validateBoolean(options) {
     const value = options.value;
     const key = options.key;
     if (!index.$(value)) {
-        return [new index.V(key, value, 'boolean expected, '.concat(index.K(value), ' found'))];
+        return [new index.V(key, value, `boolean expected, ${ index.K(value) } found`)];
     }
     return [];
 }
 
 function validateColor({key, value}) {
     if (!index.a0(value)) {
-        return [new index.V(key, value, 'color expected, '.concat(index.K(value), ' found'))];
+        return [new index.V(key, value, `color expected, ${ index.K(value) } found`)];
     }
     if (index.a1.parseCSSColor(value) === null) {
-        return [new index.V(key, value, 'color expected, "'.concat(value, '" found'))];
+        return [new index.V(key, value, `color expected, "${ value }" found`)];
     }
     return [];
 }
@@ -50787,11 +50782,11 @@ function validateEnum(options) {
     const errors = [];
     if (Array.isArray(valueSpec.values)) {
         if (valueSpec.values.indexOf(index.J(value)) === -1) {
-            errors.push(new index.V(key, value, 'expected one of ['.concat(valueSpec.values.join(', '), '], ').concat(JSON.stringify(value), ' found')));
+            errors.push(new index.V(key, value, `expected one of [${ valueSpec.values.join(', ') }], ${ JSON.stringify(value) } found`));
         }
     } else {
         if (Object.keys(valueSpec.values).indexOf(index.J(value)) === -1) {
-            errors.push(new index.V(key, value, 'expected one of ['.concat(Object.keys(valueSpec.values).join(', '), '], ').concat(JSON.stringify(value), ' found')));
+            errors.push(new index.V(key, value, `expected one of [${ Object.keys(valueSpec.values).join(', ') }], ${ JSON.stringify(value) } found`));
         }
     }
     return errors;
@@ -50803,7 +50798,7 @@ function validateFilter$1(options) {
         return validateExpression(Object.assign({}, options, {
             expressionContext: 'filter',
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            valueSpec: options.styleSpec['filter_'.concat(layerType)]
+            valueSpec: options.styleSpec[`filter_${ layerType }`]
         }));
     } else {
         return validateNonExpressionFilter(options);
@@ -50813,14 +50808,14 @@ function validateNonExpressionFilter(options) {
     const value = options.value;
     const key = options.key;
     if (!Array.isArray(value)) {
-        return [new index.V(key, value, 'array expected, '.concat(index.K(value), ' found'))];
+        return [new index.V(key, value, `array expected, ${ index.K(value) } found`)];
     }
     if (value.length < 1) {
         return [new index.V(key, value, 'filter array must have at least 1 element')];
     }
     const styleSpec = options.styleSpec;
     let errors = validateEnum({
-        key: ''.concat(key, '[0]'),
+        key: `${ key }[0]`,
         value: value[0],
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         valueSpec: styleSpec.filter_operator
@@ -50828,19 +50823,19 @@ function validateNonExpressionFilter(options) {
     const validate = () => {
         if (value.length >= 2) {
             if (!index.a0(value[1])) {
-                errors.push(new index.V(''.concat(key, '[1]'), value[1], 'string expected, '.concat(index.K(value[1]), ' found')));
+                errors.push(new index.V(`${ key }[1]`, value[1], `string expected, ${ index.K(value[1]) } found`));
             }
         }
         for (let i = 2; i < value.length; i++) {
             if (index.J(value[1]) === '$type') {
                 errors = errors.concat(validateEnum({
-                    key: ''.concat(key, '[').concat(i, ']'),
+                    key: `${ key }[${ i }]`,
                     value: value[i],
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                     valueSpec: styleSpec.geometry_type
                 }));
             } else if (!index.a0(value[i]) && !index.L(value[i]) && !index.$(value[i])) {
-                errors.push(new index.V(''.concat(key, '[').concat(i, ']'), value[i], 'string, number, or boolean expected, '.concat(index.K(value[i]), ' found.')));
+                errors.push(new index.V(`${ key }[${ i }]`, value[i], `string, number, or boolean expected, ${ index.K(value[i]) } found.`));
             }
         }
     };
@@ -50850,17 +50845,17 @@ function validateNonExpressionFilter(options) {
     case '>':
     case '>=':
         if (value.length >= 2 && index.J(value[1]) === '$type') {
-            errors.push(new index.V(key, value, '"$type" cannot be use with operator "'.concat(value[0], '"')));
+            errors.push(new index.V(key, value, `"$type" cannot be use with operator "${ value[0] }"`));
         }
         if (value.length !== 3) {
-            errors.push(new index.V(key, value, 'filter array for operator "'.concat(value[0], '" must have 3 elements')));
+            errors.push(new index.V(key, value, `filter array for operator "${ value[0] }" must have 3 elements`));
         }
         validate();
         break;
     case '==':
     case '!=':
         if (value.length !== 3) {
-            errors.push(new index.V(key, value, 'filter array for operator "'.concat(value[0], '" must have 3 elements')));
+            errors.push(new index.V(key, value, `filter array for operator "${ value[0] }" must have 3 elements`));
         }
         validate();
         break;
@@ -50873,7 +50868,7 @@ function validateNonExpressionFilter(options) {
     case 'none':
         for (let i = 1; i < value.length; i++) {
             errors = errors.concat(validateNonExpressionFilter({
-                key: ''.concat(key, '[').concat(i, ']'),
+                key: `${ key }[${ i }]`,
                 value: value[i],
                 style: options.style,
                 styleSpec: options.styleSpec
@@ -50883,9 +50878,9 @@ function validateNonExpressionFilter(options) {
     case 'has':
     case '!has':
         if (value.length !== 2) {
-            errors.push(new index.V(key, value, 'filter array for "'.concat(value[0], '" operator must have 2 elements')));
+            errors.push(new index.V(key, value, `filter array for "${ value[0] }" operator must have 2 elements`));
         } else if (!index.a0(value[1])) {
-            errors.push(new index.V(''.concat(key, '[1]'), value[1], 'string expected, '.concat(index.K(value[1]), ' found')));
+            errors.push(new index.V(`${ key }[1]`, value[1], `string expected, ${ index.K(value[1]) } found`));
         }
         break;
     }
@@ -50899,7 +50894,7 @@ function validateProperty(options, propertyType) {
     const styleSpec = options.styleSpec;
     const value = options.value;
     const propertyKey = options.objectKey;
-    const layerSpec = styleSpec[''.concat(propertyType, '_').concat(options.layerType)];
+    const layerSpec = styleSpec[`${ propertyType }_${ options.layerType }`];
     if (!layerSpec)
         return [];
     const useThemeMatch = propertyKey.match(/^(.*)-use-theme$/);
@@ -50948,12 +50943,13 @@ function validateProperty(options, propertyType) {
     }
     const valueSpec = options.valueSpec || layerSpec[propertyKey];
     if (!valueSpec) {
-        return [new index.a3(key, value, 'unknown property "'.concat(propertyKey, '"'))];
+        return [new index.a3(key, value, `unknown property "${ propertyKey }"`)];
     }
     let tokenMatch;
     if (index.a0(value) && index.N(valueSpec) && !valueSpec.tokens && (tokenMatch = /^{([^}]+)}$/.exec(value))) {
-        const example = '`{ "type": "identity", "property": '.concat(tokenMatch ? JSON.stringify(tokenMatch[1]) : '"_"', ' }`');
-        return [new index.V(key, value, '"'.concat(propertyKey, '" does not support interpolation syntax\n') + 'Use an identity property function instead: '.concat(example, '.'))];
+        const example = `\`{ "type": "identity", "property": ${ tokenMatch ? JSON.stringify(tokenMatch[1]) : '"_"' } }\``;
+        return [new index.V(key, value, `"${ propertyKey }" does not support interpolation syntax
+Use an identity property function instead: ${ example }.`)];
     }
     const errors = [];
     if (options.layerType === 'symbol') {
@@ -50970,7 +50966,7 @@ function validateProperty(options, propertyType) {
             const expressionObj = 'expression' in expressionValue && expressionValue.expression || '_styleExpression' in expressionValue && expressionValue._styleExpression && expressionValue._styleExpression.expression;
             if (expressionObj && !index.X(expressionObj, ['measure-light'])) {
                 if (propertyKey !== 'model-emissive-strength' || (!index.Y(expressionObj) || !index.Z(expressionObj))) {
-                    errors.push(new index.V(key, value, ''.concat(propertyKey, ' does not support measure-light expressions when the model layer source is vector tile or GeoJSON.')));
+                    errors.push(new index.V(key, value, `${ propertyKey } does not support measure-light expressions when the model layer source is vector tile or GeoJSON.`));
                 }
             }
         }
@@ -51010,24 +51006,24 @@ function validateAppearance(options) {
         }
     });
     if (name !== 'hidden' && condition === void 0) {
-        errors.push(new index.V(options.key, 'name', 'Appearance with name different than "hidden" must have a condition'));
+        errors.push(new index.V(options.key, 'name', `Appearance with name different than "hidden" must have a condition`));
     }
     return errors;
 }
 function validateProperties(options) {
     const errors = [];
     const {styleSpec, layer, layerType} = options;
-    const paintProperties = styleSpec['paint_'.concat(layerType)];
-    const layoutProperties = styleSpec['layout_'.concat(layerType)];
+    const paintProperties = styleSpec[`paint_${ layerType }`];
+    const layoutProperties = styleSpec[`layout_${ layerType }`];
     const properties = options.object[options.objectKey];
     for (const propertyKey in properties) {
         const propertyType = propertyKey in paintProperties ? 'paint' : propertyKey in layoutProperties ? 'layout' : void 0;
         if (!propertyType) {
-            errors.push(new index.V(options.key, propertyKey, 'unknown property "'.concat(propertyKey, '" for layer type "').concat(layerType, '"')));
+            errors.push(new index.V(options.key, propertyKey, `unknown property "${ propertyKey }" for layer type "${ layerType }"`));
             continue;
         }
         const propertyValidationOptions = Object.assign({}, options, {
-            key: ''.concat(options.key, '.').concat(propertyKey),
+            key: `${ options.key }.${ propertyKey }`,
             object: properties,
             objectKey: propertyKey,
             layer,
@@ -51067,7 +51063,7 @@ function validateLayer$1(options) {
     const style = options.style;
     const styleSpec = options.styleSpec;
     if (!index.H(layer)) {
-        return [new index.V(key, layer, 'object expected')];
+        return [new index.V(key, layer, `object expected`)];
     }
     if (!layer.type && !layer.ref) {
         errors.push(new index.V(key, layer, 'either "type" or "ref" is required'));
@@ -51079,7 +51075,7 @@ function validateLayer$1(options) {
         for (let i = 0; i < options.arrayIndex; i++) {
             const otherLayer = style.layers[i];
             if (index.J(otherLayer.id) === layerId) {
-                errors.push(new index.V(key, layer.id, 'duplicate layer id "'.concat(layerId, '", previously used at line ').concat(otherLayer.id.__line__)));
+                errors.push(new index.V(key, layer.id, `duplicate layer id "${ layerId }", previously used at line ${ otherLayer.id.__line__ }`));
             }
         }
     }
@@ -51092,7 +51088,7 @@ function validateLayer$1(options) {
             'layout'
         ].forEach(p => {
             if (p in layer) {
-                errors.push(new index.V(key, layer[p], '"'.concat(p, '" is prohibited for ref layers')));
+                errors.push(new index.V(key, layer[p], `"${ p }" is prohibited for ref layers`));
             }
         });
         let parent;
@@ -51102,7 +51098,7 @@ function validateLayer$1(options) {
         });
         if (!parent) {
             if (typeof ref === 'string')
-                errors.push(new index.V(key, layer.ref, 'ref layer "'.concat(ref, '" not found')));
+                errors.push(new index.V(key, layer.ref, `ref layer "${ ref }" not found`));
         } else if (parent.ref) {
             errors.push(new index.V(key, layer.ref, 'ref cannot reference another ref layer'));
         } else {
@@ -51112,29 +51108,29 @@ function validateLayer$1(options) {
         if (!layer.source) {
             errors.push(new index.V(key, layer, 'missing required property "source"'));
         } else if (!index.a0(layer.source)) {
-            errors.push(new index.V(''.concat(key, '.source'), layer.source, '"source" must be a string'));
+            errors.push(new index.V(`${ key }.source`, layer.source, '"source" must be a string'));
         } else {
             const source = style.sources && style.sources[layer.source];
             const sourceType = source && index.J(source.type);
             if (!source) {
-                errors.push(new index.V(key, layer.source, 'source "'.concat(layer.source, '" not found')));
+                errors.push(new index.V(key, layer.source, `source "${ layer.source }" not found`));
             } else if (sourceType === 'vector' && type === 'raster') {
-                errors.push(new index.V(key, layer.source, 'layer "'.concat(layer.id, '" requires a raster source')));
+                errors.push(new index.V(key, layer.source, `layer "${ layer.id }" requires a raster source`));
             } else if (sourceType === 'raster' && type !== 'raster') {
-                errors.push(new index.V(key, layer.source, 'layer "'.concat(layer.id, '" requires a vector source')));
+                errors.push(new index.V(key, layer.source, `layer "${ layer.id }" requires a vector source`));
             } else if (sourceType === 'vector' && !layer['source-layer']) {
-                errors.push(new index.V(key, layer, 'layer "'.concat(layer.id, '" must specify a "source-layer"')));
+                errors.push(new index.V(key, layer, `layer "${ layer.id }" must specify a "source-layer"`));
             } else if (sourceType === 'raster-dem' && type !== 'hillshade') {
                 errors.push(new index.V(key, layer.source, 'raster-dem source can only be used with layer type \'hillshade\'.'));
             } else if (sourceType === 'raster-array' && ![
                     'raster',
                     'raster-particle'
                 ].includes(type)) {
-                errors.push(new index.V(key, layer.source, 'raster-array source can only be used with layer type \'raster\'.'));
+                errors.push(new index.V(key, layer.source, `raster-array source can only be used with layer type 'raster'.`));
             } else if (type === 'line' && layer.paint && (layer.paint['line-gradient'] || layer.paint['line-trim-offset']) && (sourceType === 'geojson' && !source.lineMetrics)) {
-                errors.push(new index.V(key, layer, 'layer "'.concat(layer.id, '" specifies a line-gradient, which requires the GeoJSON source to have `lineMetrics` enabled.')));
+                errors.push(new index.V(key, layer, `layer "${ layer.id }" specifies a line-gradient, which requires the GeoJSON source to have \`lineMetrics\` enabled.`));
             } else if (type === 'raster-particle' && sourceType !== 'raster-array') {
-                errors.push(new index.V(key, layer.source, 'layer "'.concat(layer.id, '" requires a \'raster-array\' source.')));
+                errors.push(new index.V(key, layer.source, `layer "${ layer.id }" requires a 'raster-array' source.`));
             }
         }
     }
@@ -51153,7 +51149,7 @@ function validateLayer$1(options) {
             // the actual requirement is validated above. See https://github.com/mapbox/mapbox-gl-js/issues/5772.
             type() {
                 return validate({
-                    key: ''.concat(key, '.type'),
+                    key: `${ key }.type`,
                     value: layer.type,
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
                     valueSpec: styleSpec.layer.type,
@@ -51219,7 +51215,7 @@ function validateLayer$1(options) {
                     if (name) {
                         if (dedupedNames.has(name)) {
                             const layerId = index.J(layer.id);
-                            validationErrors.push(new index.V(options2.key, name, 'Duplicated appearance name "'.concat(name, '" for layer "').concat(layerId, '"')));
+                            validationErrors.push(new index.V(options2.key, name, `Duplicated appearance name "${ name }" for layer "${ layerId }"`));
                         } else {
                             dedupedNames.add(name);
                         }
@@ -51236,7 +51232,7 @@ function validateString({key, value}) {
     if (index.a0(value)) {
         return [];
     }
-    return [new index.V(key, value, 'string expected, '.concat(index.K(value), ' found'))];
+    return [new index.V(key, value, `string expected, ${ index.K(value) } found`)];
 }
 
 const objectElementValidators = { promoteId: validatePromoteId };
@@ -51246,7 +51242,7 @@ function validateSource$1(options) {
     const styleSpec = options.styleSpec;
     const style = options.style;
     if (!index.H(value)) {
-        return [new index.V(key, value, 'object expected, '.concat(index.K(value), ' found'))];
+        return [new index.V(key, value, `object expected, ${ index.K(value) } found`)];
     }
     if (!('type' in value)) {
         return [new index.V(key, value, '"type" is required')];
@@ -51272,7 +51268,7 @@ function validateSource$1(options) {
             key,
             value,
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            valueSpec: styleSpec['source_'.concat(type.replace('-', '_'))],
+            valueSpec: styleSpec[`source_${ type.replace('-', '_') }`],
             style: options.style,
             styleSpec,
             objectElementValidators
@@ -51290,12 +51286,12 @@ function validateSource$1(options) {
         });
         if ('cluster' in value && 'clusterProperties' in value) {
             if (!index.H(value.clusterProperties)) {
-                return [new index.V(''.concat(key, '.clusterProperties'), value, 'object expected, '.concat(index.K(value), ' found'))];
+                return [new index.V(`${ key }.clusterProperties`, value, `object expected, ${ index.K(value) } found`)];
             }
             for (const prop in value.clusterProperties) {
                 const propValue = value.clusterProperties[prop];
                 if (!Array.isArray(propValue)) {
-                    return [new index.V(''.concat(key, '.clusterProperties.').concat(prop), propValue, 'array expected')];
+                    return [new index.V(`${ key }.clusterProperties.${ prop }`, propValue, 'array expected')];
                 }
                 const [operator, mapExpr] = propValue;
                 const reduceExpr = typeof operator === 'string' ? [
@@ -51307,12 +51303,12 @@ function validateSource$1(options) {
                     ]
                 ] : operator;
                 errors.push(...validateExpression({
-                    key: ''.concat(key, '.').concat(prop, '.map'),
+                    key: `${ key }.${ prop }.map`,
                     value: mapExpr,
                     expressionContext: 'cluster-map'
                 }));
                 errors.push(...validateExpression({
-                    key: ''.concat(key, '.').concat(prop, '.reduce'),
+                    key: `${ key }.${ prop }.reduce`,
                     value: reduceExpr,
                     expressionContext: 'cluster-reduce'
                 }));
@@ -51338,10 +51334,10 @@ function validateSource$1(options) {
             styleSpec
         });
     case 'canvas':
-        return [new index.V(key, null, 'Please use runtime APIs to add canvas sources, rather than including them in stylesheets.', 'source.canvas')];
+        return [new index.V(key, null, `Please use runtime APIs to add canvas sources, rather than including them in stylesheets.`, 'source.canvas')];
     default:
         return validateEnum({
-            key: ''.concat(key, '.type'),
+            key: `${ key }.type`,
             value: value.type,
             valueSpec: { values: getSourceTypeValues(styleSpec) }
         });
@@ -51370,7 +51366,7 @@ function validatePromoteId({key, value}) {
         const expression = index.U(unbundledValue);
         if (expression.result === 'error') {
             expression.value.forEach(err => {
-                errors2.push(new index.V(''.concat(key).concat(err.key), null, ''.concat(err.message)));
+                errors2.push(new index.V(`${ key }${ err.key }`, null, `${ err.message }`));
             });
         }
         const parsed = expression.value.expression;
@@ -51388,17 +51384,17 @@ function validatePromoteId({key, value}) {
             'raster-particle-speed'
         ]);
         if (!onlyFeatureDependent) {
-            errors2.push(new index.V(''.concat(key), null, 'promoteId expression should be only feature dependent'));
+            errors2.push(new index.V(`${ key }`, null, 'promoteId expression should be only feature dependent'));
         }
         return errors2;
     }
     if (!index.H(value)) {
-        return [new index.V(key, value, 'string, expression or object expected, "'.concat(index.K(value), '" found'))];
+        return [new index.V(key, value, `string, expression or object expected, "${ index.K(value) }" found`)];
     }
     const errors = [];
     for (const prop in value) {
         errors.push(...validatePromoteId({
-            key: ''.concat(key, '.').concat(prop),
+            key: `${ key }.${ prop }`,
             value: value[prop]
         }));
     }
@@ -51414,7 +51410,7 @@ function validateLight$1(options) {
         return [];
     }
     if (!index.H(light)) {
-        return [new index.V('light', light, 'object expected, '.concat(index.K(light), ' found'))];
+        return [new index.V('light', light, `object expected, ${ index.K(light) } found`)];
     }
     let errors = [];
     for (const key in light) {
@@ -51447,7 +51443,7 @@ function validateLight$1(options) {
                 styleSpec
             }));
         } else {
-            errors = errors.concat([new index.V(key, light[key], 'unknown property "'.concat(key, '"'))]);
+            errors = errors.concat([new index.V(key, light[key], `unknown property "${ key }"`)]);
         }
     }
     return errors;
@@ -51460,7 +51456,7 @@ function validateLights$1(options) {
     }
     const key = options.key;
     if (!index.H(light)) {
-        return [new index.V(key, light, 'object expected, '.concat(index.K(light), ' found'))];
+        return [new index.V(key, light, `object expected, ${ index.K(light) } found`)];
     }
     let errors = [];
     const styleSpec = options.styleSpec;
@@ -51472,12 +51468,12 @@ function validateLights$1(options) {
             'id'
         ]) {
         if (!(prop in light)) {
-            errors = errors.concat([new index.V(key, light, 'missing property "'.concat(prop, '"'))]);
+            errors = errors.concat([new index.V(key, light, `missing property "${ prop }"`)]);
             return errors;
         }
     }
     if (!index.a0(light.type)) {
-        errors = errors.concat([new index.V(''.concat(key, '.type'), light.type, 'string expected')]);
+        errors = errors.concat([new index.V(`${ key }.type`, light.type, `string expected`)]);
         return errors;
     }
     if (lights) {
@@ -51485,13 +51481,13 @@ function validateLights$1(options) {
             const lightType2 = index.J(light.type);
             const otherLight = lights[i];
             if (index.J(otherLight.type) === lightType2) {
-                errors.push(new index.V(key, light.id, 'duplicate light type "'.concat(light.type, '", previously defined at line ').concat(otherLight.id.__line__)));
+                errors.push(new index.V(key, light.id, `duplicate light type "${ light.type }", previously defined at line ${ otherLight.id.__line__ }`));
             }
         }
     }
-    const lightType = 'properties_light_'.concat(light.type);
+    const lightType = `properties_light_${ light.type }`;
     if (!(lightType in styleSpec)) {
-        errors = errors.concat([new index.V(''.concat(key, '.type'), light, 'Invalid light type '.concat(light.type))]);
+        errors = errors.concat([new index.V(`${ key }.type`, light, `Invalid light type ${ light.type }`)]);
         return errors;
     }
     const lightPropertySpec = styleSpec[lightType];
@@ -51499,7 +51495,7 @@ function validateLights$1(options) {
         if (key2 === 'properties') {
             const properties = light[key2];
             if (!index.H(properties)) {
-                errors = errors.concat([new index.V('properties', properties, 'object expected, '.concat(index.K(properties), ' found'))]);
+                errors = errors.concat([new index.V('properties', properties, `object expected, ${ index.K(properties) } found`)]);
                 return errors;
             }
             for (const propertyKey in properties) {
@@ -51523,7 +51519,7 @@ function validateLights$1(options) {
                         styleSpec
                     }));
                 } else if (!lightPropertySpec[propertyKey]) {
-                    errors = errors.concat([new index.a3(options.key, properties[propertyKey], 'unknown property "'.concat(propertyKey, '"'))]);
+                    errors = errors.concat([new index.a3(options.key, properties[propertyKey], `unknown property "${ propertyKey }"`)]);
                 } else {
                     errors = errors.concat(validate({
                         key: propertyKey,
@@ -51546,7 +51542,7 @@ function validateLights$1(options) {
                     styleSpec
                 }));
             } else {
-                errors = errors.concat([new index.a3(key2, light[key2], 'unknown property "'.concat(key2, '"'))]);
+                errors = errors.concat([new index.a3(key2, light[key2], `unknown property "${ key2 }"`)]);
             }
         }
     }
@@ -51563,7 +51559,7 @@ function validateTerrain$1(options) {
         return [];
     }
     if (!index.H(terrain)) {
-        return [new index.V('terrain', terrain, 'object expected, '.concat(index.K(terrain), ' found'))];
+        return [new index.V('terrain', terrain, `object expected, ${ index.K(terrain) } found`)];
     }
     let errors = [];
     for (const key2 in terrain) {
@@ -51596,20 +51592,20 @@ function validateTerrain$1(options) {
                 styleSpec
             }));
         } else {
-            errors = errors.concat([new index.a3(key2, terrain[key2], 'unknown property "'.concat(key2, '"'))]);
+            errors = errors.concat([new index.a3(key2, terrain[key2], `unknown property "${ key2 }"`)]);
         }
     }
     if (!terrain.source) {
-        errors.push(new index.V(key, terrain, 'terrain is missing required property "source"'));
+        errors.push(new index.V(key, terrain, `terrain is missing required property "source"`));
     } else if (!index.a0(terrain.source)) {
-        errors.push(new index.V(''.concat(key, '.source'), terrain.source, 'source must be a string'));
+        errors.push(new index.V(`${ key }.source`, terrain.source, `source must be a string`));
     } else {
         const source = style.sources && style.sources[terrain.source];
         const sourceType = source && index.J(source.type);
         if (!source) {
-            errors.push(new index.V(''.concat(key, '.source'), terrain.source, 'source "'.concat(terrain.source, '" not found')));
+            errors.push(new index.V(`${ key }.source`, terrain.source, `source "${ terrain.source }" not found`));
         } else if (sourceType !== 'raster-dem') {
-            errors.push(new index.V(''.concat(key, '.source'), terrain.source, 'terrain cannot be used with a source of type '.concat(sourceType, ', it only be used with a "raster-dem" source type')));
+            errors.push(new index.V(`${ key }.source`, terrain.source, `terrain cannot be used with a source of type ${ sourceType }, it only be used with a "raster-dem" source type`));
         }
     }
     return errors;
@@ -51624,7 +51620,7 @@ function validateFog$1(options) {
         return [];
     }
     if (!index.H(fog)) {
-        return [new index.V('fog', fog, 'object expected, '.concat(index.K(fog), ' found'))];
+        return [new index.V('fog', fog, `object expected, ${ index.K(fog) } found`)];
     }
     let errors = [];
     for (const key in fog) {
@@ -51657,7 +51653,7 @@ function validateFog$1(options) {
                 styleSpec
             }));
         } else {
-            errors = errors.concat([new index.a3(key, fog[key], 'unknown property "'.concat(key, '"'))]);
+            errors = errors.concat([new index.a3(key, fog[key], `unknown property "${ key }"`)]);
         }
     }
     return errors;
@@ -51698,7 +51694,7 @@ function validateProjection(options) {
         return errors;
     }
     if (!index.a0(projection)) {
-        return [new index.V('projection', projection, 'object or string expected, '.concat(index.K(projection), ' found'))];
+        return [new index.V('projection', projection, `object or string expected, ${ index.K(projection) } found`)];
     }
     return [];
 }
@@ -51723,7 +51719,7 @@ function validateIconset(options) {
         key,
         value: iconset,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        valueSpec: styleSpec['iconset_'.concat(type)],
+        valueSpec: styleSpec[`iconset_${ type }`],
         style,
         styleSpec
     }));
@@ -51731,9 +51727,9 @@ function validateIconset(options) {
         const source = style.sources && style.sources[iconset.source];
         const sourceType = source && index.J(source.type);
         if (!source) {
-            errors.push(new index.V(key, iconset.source, 'source "'.concat(iconset.source, '" not found')));
+            errors.push(new index.V(key, iconset.source, `source "${ iconset.source }" not found`));
         } else if (sourceType !== 'raster-array') {
-            errors.push(new index.V(key, iconset.source, 'iconset cannot be used with a source of type '.concat(String(sourceType), ', it only be used with a "raster-array" source type')));
+            errors.push(new index.V(key, iconset.source, `iconset cannot be used with a source of type ${ String(sourceType) }, it only be used with a "raster-array" source type`));
         }
     }
     return errors;
@@ -51795,7 +51791,7 @@ function validateObject(options) {
     const style = options.style;
     const styleSpec = options.styleSpec;
     if (!index.H(object)) {
-        return [new index.V(key, object, 'object expected, '.concat(index.K(object), ' found'))];
+        return [new index.V(key, object, `object expected, ${ index.K(object) } found`)];
     }
     let errors = [];
     for (const objectKey in object) {
@@ -51812,11 +51808,11 @@ function validateObject(options) {
             validateElement = validate;
         }
         if (!validateElement) {
-            errors.push(new index.a3(key, object[objectKey], 'unknown property "'.concat(objectKey, '"')));
+            errors.push(new index.a3(key, object[objectKey], `unknown property "${ objectKey }"`));
             continue;
         }
         errors = errors.concat(validateElement({
-            key: (key ? ''.concat(key, '.') : key) + objectKey,
+            key: (key ? `${ key }.` : key) + objectKey,
             value: object[objectKey],
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             valueSpec: elementSpec,
@@ -51832,7 +51828,7 @@ function validateObject(options) {
         }
         const elementSpec = elementSpecs[elementSpecKey];
         if (elementSpec.required && elementSpec['default'] === void 0 && object[elementSpecKey] === void 0) {
-            errors.push(new index.V(key, object, 'missing required property "'.concat(elementSpecKey, '"')));
+            errors.push(new index.V(key, object, `missing required property "${ elementSpecKey }"`));
         }
     }
     return errors;
@@ -51878,7 +51874,7 @@ function validateSnow$1(options) {
         return [];
     }
     if (!index.H(snow)) {
-        return [new index.V('snow', snow, 'object expected, '.concat(index.K(snow), ' found'))];
+        return [new index.V('snow', snow, `object expected, ${ index.K(snow) } found`)];
     }
     let errors = [];
     for (const key in snow) {
@@ -51901,7 +51897,7 @@ function validateSnow$1(options) {
                 styleSpec
             }));
         } else {
-            errors = errors.concat([new index.a3(key, snow[key], 'unknown property "'.concat(key, '"'))]);
+            errors = errors.concat([new index.a3(key, snow[key], `unknown property "${ key }"`)]);
         }
     }
     return errors;
@@ -51916,7 +51912,7 @@ function validateRain$1(options) {
         return [];
     }
     if (!index.H(rain)) {
-        return [new index.V('rain', rain, 'object expected, '.concat(index.K(rain), ' found'))];
+        return [new index.V('rain', rain, `object expected, ${ index.K(rain) } found`)];
     }
     let errors = [];
     for (const key in rain) {
@@ -51939,7 +51935,7 @@ function validateRain$1(options) {
                 styleSpec
             }));
         } else {
-            errors = errors.concat([new index.a3(key, rain[key], 'unknown property "'.concat(key, '"'))]);
+            errors = errors.concat([new index.a3(key, rain[key], `unknown property "${ key }"`)]);
         }
     }
     return errors;
@@ -53004,21 +53000,6 @@ function clampBoundsToTileExtents(bounds) {
     return bounds;
 }
 
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __objRest = (source, exclude) => {
-    var target = {};
-    for (var prop in source)
-        if (__hasOwnProp.call(source, prop) && exclude.indexOf(prop) < 0)
-            target[prop] = source[prop];
-    if (source != null && __getOwnPropSymbols)
-        for (var prop of __getOwnPropSymbols(source)) {
-            if (exclude.indexOf(prop) < 0 && __propIsEnum.call(source, prop))
-                target[prop] = source[prop];
-        }
-    return target;
-};
 function getInlinedTileJSON(data, language, worldview) {
     if (!data) {
         return null;
@@ -53103,7 +53084,7 @@ function loadTileJSON (options, requestManager, language, worldview, callback) {
         return index.m(requestManager.transformRequest(requestManager.normalizeSourceURL(options.url, null, language, worldview), index.R.Source), loaded);
     } else {
         return index.o.frame(() => {
-            const _a = options, {data} = _a, tileJSON = __objRest(_a, ['data']);
+            const {data, ...tileJSON} = options;
             loaded(null, tileJSON);
         });
     }
@@ -53213,9 +53194,9 @@ class VectorTileSource extends index.E {
             this._loaded = true;
             if (err) {
                 if (language)
-                    console.warn('Ensure that your requested language string is a valid BCP-47 code or list of codes. Found: '.concat(language));
+                    console.warn(`Ensure that your requested language string is a valid BCP-47 code or list of codes. Found: ${ language }`);
                 if (worldview)
-                    console.warn('Requested worldview strings must be a valid ISO alpha-2 code. Found: '.concat(worldview));
+                    console.warn(`Requested worldview strings must be a valid ISO alpha-2 code. Found: ${ worldview }`);
                 this.fire(new index.y(err));
             } else if (tileJSON) {
                 Object.assign(this, tileJSON);
@@ -53708,7 +53689,7 @@ function getPointXY([x, y], bandView, {
     }
     const {data, tileSize, buffer, offset, scale, dimension} = bandView;
     if (x < -buffer || x > tileSize + buffer || y < -buffer || y > tileSize + buffer) {
-        throw new Error('Point ('.concat(x, ', ').concat(y, ') out of bounds for tileSize=').concat(tileSize, ', buffer=').concat(buffer));
+        throw new Error(`Point (${ x }, ${ y }) out of bounds for tileSize=${ tileSize }, buffer=${ buffer }`);
     }
     const width = tileSize + 2 * buffer;
     const pointIndex = (y + buffer) * width + (x + buffer);
@@ -54347,7 +54328,7 @@ class GeoJSONSource extends index.E {
         } else {
             options.data = JSON.stringify(data);
         }
-        this._pendingLoad = this.actor.send(''.concat(this.type, '.loadData'), options, (err, result) => {
+        this._pendingLoad = this.actor.send(`${ this.type }.loadData`, options, (err, result) => {
             this._loaded = true;
             this._pendingLoad = null;
             if (err) {
@@ -54529,7 +54510,7 @@ class VideoSource extends index.aT {
         if (this.video) {
             const seekableRange = this.video.seekable;
             if (seconds < seekableRange.start(0) || seconds > seekableRange.end(0)) {
-                this.fire(new index.y(new index.V('sources.'.concat(this.id), null, 'Playback for this video can be set only between the '.concat(seekableRange.start(0), ' and ').concat(seekableRange.end(0), '-second mark.'))));
+                this.fire(new index.y(new index.V(`sources.${ this.id }`, null, `Playback for this video can be set only between the ${ seekableRange.start(0) } and ${ seekableRange.end(0) }-second mark.`)));
             } else
                 this.video.currentTime = seconds;
         }
@@ -54627,17 +54608,17 @@ class CanvasSource extends index.aT {
     constructor(id, options, dispatcher, eventedParent) {
         super(id, options, dispatcher, eventedParent);
         if (!options.coordinates) {
-            this.fire(new index.y(new index.V('sources.'.concat(id), null, 'missing required property "coordinates"')));
+            this.fire(new index.y(new index.V(`sources.${ id }`, null, 'missing required property "coordinates"')));
         } else if (!Array.isArray(options.coordinates) || options.coordinates.length !== 4 || options.coordinates.some(c => !Array.isArray(c) || c.length !== 2 || c.some(l => typeof l !== 'number'))) {
-            this.fire(new index.y(new index.V('sources.'.concat(id), null, '"coordinates" property must be an array of 4 longitude/latitude array pairs')));
+            this.fire(new index.y(new index.V(`sources.${ id }`, null, '"coordinates" property must be an array of 4 longitude/latitude array pairs')));
         }
         if (options.animate && typeof options.animate !== 'boolean') {
-            this.fire(new index.y(new index.V('sources.'.concat(id), null, 'optional "animate" property must be a boolean value')));
+            this.fire(new index.y(new index.V(`sources.${ id }`, null, 'optional "animate" property must be a boolean value')));
         }
         if (!options.canvas) {
-            this.fire(new index.y(new index.V('sources.'.concat(id), null, 'missing required property "canvas"')));
+            this.fire(new index.y(new index.V(`sources.${ id }`, null, 'missing required property "canvas"')));
         } else if (typeof options.canvas !== 'string' && !(options.canvas instanceof HTMLCanvasElement)) {
-            this.fire(new index.y(new index.V('sources.'.concat(id), null, '"canvas" must be either a string representing the ID of the canvas element from which to read, or an HTMLCanvasElement instance')));
+            this.fire(new index.y(new index.V(`sources.${ id }`, null, '"canvas" must be either a string representing the ID of the canvas element from which to read, or an HTMLCanvasElement instance')));
         }
         this.options = options;
         this.animate = options.animate !== void 0 ? options.animate : true;
@@ -54788,10 +54769,10 @@ class CustomSource extends index.E {
         this._loaded = false;
         this.roundZoom = true;
         if (!this._implementation) {
-            this.fire(new index.y(new Error('Missing implementation for '.concat(this.id, ' custom source'))));
+            this.fire(new index.y(new Error(`Missing implementation for ${ this.id } custom source`)));
         }
         if (!this._implementation.loadTile) {
-            this.fire(new index.y(new Error('Missing loadTile implementation for '.concat(this.id, ' custom source'))));
+            this.fire(new index.y(new Error(`Missing loadTile implementation for ${ this.id } custom source`)));
         }
         if (this._implementation.bounds) {
             this.tileBounds = new TileBounds(this._implementation.bounds, this.minzoom, this.maxzoom);
@@ -54895,7 +54876,7 @@ class CustomSource extends index.E {
             }
             if (!isRaster(data)) {
                 tile.state = 'errored';
-                return callback(new Error('Can\'t infer data type for '.concat(this.id, ', only raster data supported at the moment')));
+                return callback(new Error(`Can't infer data type for ${ this.id }, only raster data supported at the moment`));
             }
             this.loadTileData(tile, data);
             tile.state = 'loaded';
@@ -55007,9 +54988,9 @@ class Tiled3DModelSource extends index.E {
             this._loaded = true;
             if (err) {
                 if (language)
-                    console.warn('Ensure that your requested language string is a valid BCP-47 code or list of codes. Found: '.concat(language));
+                    console.warn(`Ensure that your requested language string is a valid BCP-47 code or list of codes. Found: ${ language }`);
                 if (worldview && worldview.length !== 2)
-                    console.warn('Requested worldview strings must be a valid ISO alpha-2 code. Found: '.concat(worldview));
+                    console.warn(`Requested worldview strings must be a valid ISO alpha-2 code. Found: ${ worldview }`);
                 this.fire(new index.y(err));
             } else if (tileJSON) {
                 Object.assign(this, tileJSON);
@@ -55108,7 +55089,7 @@ const sourceTypes = {
 const create = function (id, specification, dispatcher, eventedParent) {
     const source = new sourceTypes[specification.type](id, specification, dispatcher, eventedParent);
     if (source.id !== id) {
-        throw new Error('Expected Source id to be '.concat(id, ' instead of ').concat(source.id));
+        throw new Error(`Expected Source id to be ${ id } instead of ${ source.id }`);
     }
     index.aX([
         'load',
@@ -55128,14 +55109,14 @@ const setType = function (name, type) {
 
 function generateTargetKey(target) {
     if ('layerId' in target) {
-        return 'layer:'.concat(target.layerId);
+        return `layer:${ target.layerId }`;
     } else {
         const {featuresetId, importId} = target;
-        return 'featureset:'.concat(featuresetId).concat(importId ? ':import:'.concat(importId) : '');
+        return `featureset:${ featuresetId }${ importId ? `:import:${ importId }` : '' }`;
     }
 }
 function getFeatureTargetKey(variant, feature, targetId = '') {
-    return ''.concat(targetId, ':').concat(feature.id || '', ':').concat(feature.layer.id, ':').concat(generateTargetKey(variant.target));
+    return `${ targetId }:${ feature.id || '' }:${ feature.layer.id }:${ generateTargetKey(variant.target) }`;
 }
 function shouldSkipFeatureVariant(variant, feature, uniqueFeatureSet, targetId = '') {
     if (variant.uniqueFeatureID) {
@@ -56226,7 +56207,7 @@ class RasterArrayTile extends Tile {
     }
     fetchHeader(fetchLength = FIRST_TRY_HEADER_LENGTH, callback) {
         const mrt = this._mrt = new index.br(MRT_DECODED_BAND_CACHE_SIZE);
-        const headerRequestParams = Object.assign({}, this.requestParams, { headers: { Range: 'bytes=0-'.concat(fetchLength - 1) } });
+        const headerRequestParams = Object.assign({}, this.requestParams, { headers: { Range: `bytes=0-${ fetchLength - 1 }` } });
         this.entireBuffer = null;
         this.request = index.bt(headerRequestParams, (error, dataBuffer, headers) => {
             if (error) {
@@ -56332,7 +56313,7 @@ class RasterArrayTile extends Tile {
             throw err;
         }
         if (!mrtLayer) {
-            callback(new Error('Unknown sourceLayer "'.concat(sourceLayer, '"')));
+            callback(new Error(`Unknown sourceLayer "${ sourceLayer }"`));
             return;
         }
         if (mrtLayer.hasDataForBand(band)) {
@@ -56351,7 +56332,7 @@ class RasterArrayTile extends Tile {
         if (this.entireBuffer) {
             onDataLoaded(null, this.entireBuffer.slice(range.firstByte, range.lastByte + 1));
         } else {
-            const rangeRequestParams = Object.assign({}, this.requestParams, { headers: { Range: 'bytes='.concat(range.firstByte, '-').concat(range.lastByte) } });
+            const rangeRequestParams = Object.assign({}, this.requestParams, { headers: { Range: `bytes=${ range.firstByte }-${ range.lastByte }` } });
             const request = index.bt(rangeRequestParams, onDataLoaded);
             if (layerId !== null) {
                 const fetchQueue = this._fetchQueuePerLayer.get(layerId) || [];
@@ -60121,7 +60102,7 @@ class Placement {
                 placeSymbol(bucket.symbolInstances.get(symbolIndex), symbolIndex, bucket.collisionArrays[symbolIndex]);
             }
             if (bucket.hasAnyZOffset)
-                index.w(''.concat(bucket.layerIds[0], ' layer symbol-z-elevate: symbols are not sorted by elevation if symbol-z-order is evaluated to viewport-y'));
+                index.w(`${ bucket.layerIds[0] } layer symbol-z-elevate: symbols are not sorted by elevation if symbol-z-order is evaluated to viewport-y`);
         } else if (bucket.hasAnyZOffset) {
             const indexes = bucket.getSortedIndexesByZOffset();
             for (let i = 0; i < indexes.length; ++i) {
@@ -64243,7 +64224,7 @@ class ModelManager extends index.E {
             if (err && err.status === 404) {
                 return null;
             }
-            this.fire(new index.y(new Error('Could not load model '.concat(id, ' from ').concat(url, ': ').concat(err.message))));
+            this.fire(new index.y(new Error(`Could not load model ${ id } from ${ url }: ${ err.message }`)));
         });
     }
     load(modelUris, scope, options = { forceReload: false }) {
@@ -64287,7 +64268,7 @@ class ModelManager extends index.E {
             this.numModelsLoading[scope] -= idsToLoad.length;
             this.fire(new index.z('data', { dataType: 'style' }));
         }).catch(err => {
-            this.fire(new index.y(new Error('Could not load models: '.concat(err.message))));
+            this.fire(new index.y(new Error(`Could not load models: ${ err.message }`)));
         });
     }
     isLoaded() {
@@ -64732,7 +64713,7 @@ class Style extends index.E {
             }
             return url;
         }
-        return 'json://'.concat(index.dm(JSON.stringify(loadedStyle)));
+        return `json://${ index.dm(JSON.stringify(loadedStyle)) }`;
     }
     _diffStyle(style, onStarted, onFinished) {
         this.globalId = this._getGlobalId(style);
@@ -64791,7 +64772,7 @@ class Style extends index.E {
     }
     _loadImports(imports, validate, beforeId) {
         if (this.importDepth >= MAX_IMPORT_DEPTH - 1) {
-            index.w('Style doesn\'t support nesting deeper than '.concat(MAX_IMPORT_DEPTH));
+            index.w(`Style doesn't support nesting deeper than ${ MAX_IMPORT_DEPTH }`);
             return Promise.resolve();
         }
         const waitForStyles = [];
@@ -65006,7 +64987,7 @@ class Style extends index.E {
             this._loadColorTheme(data).then(() => {
                 proceedWithStyleLoad();
             }).catch(e => {
-                index.w('Couldn\'t load color theme from the stylesheet: '.concat(e));
+                index.w(`Couldn't load color theme from the stylesheet: ${ e }`);
                 proceedWithStyleLoad();
             });
         } else {
@@ -65393,12 +65374,12 @@ class Style extends index.E {
         }
         const sourceCache = this.getOwnSourceCache(iconset.source);
         if (!sourceCache) {
-            this.fire(new index.y(new Error('Source "'.concat(iconset.source, '" as specified by iconset "').concat(iconsetId, '" does not exist and cannot be used as an iconset source'))));
+            this.fire(new index.y(new Error(`Source "${ iconset.source }" as specified by iconset "${ iconsetId }" does not exist and cannot be used as an iconset source`)));
             return;
         }
         const source = sourceCache.getSource();
         if (source.type !== 'raster-array') {
-            this.fire(new index.y(new Error('Source "'.concat(iconset.source, '" as specified by iconset "').concat(iconsetId, '" is not a "raster-array" source and cannot be used as an iconset source'))));
+            this.fire(new index.y(new Error(`Source "${ iconset.source }" as specified by iconset "${ iconsetId }" is not a "raster-array" source and cannot be used as an iconset source`)));
             return;
         }
         source.partial = false;
@@ -65452,7 +65433,7 @@ class Style extends index.E {
             return;
         }
         if (source.type === 'geojson' || source.vectorLayerIds && source.vectorLayerIds.indexOf(sourceLayer) === -1) {
-            this.fire(new index.y(new Error('Source layer "'.concat(sourceLayer, '" ') + 'does not exist on source "'.concat(source.id, '" ') + 'as specified by style layer "'.concat(layer.id, '"'))));
+            this.fire(new index.y(new Error(`Source layer "${ sourceLayer }" does not exist on source "${ source.id }" as specified by style layer "${ layer.id }"`)));
         }
     }
     loaded() {
@@ -65588,7 +65569,7 @@ class Style extends index.E {
     _checkLayer(layerId) {
         const layer = this.getOwnLayer(layerId);
         if (!layer) {
-            this.fire(new index.y(new Error('The layer \''.concat(layerId, '\' does not exist in the map\'s style.'))));
+            this.fire(new index.y(new Error(`The layer '${ layerId }' does not exist in the map's style.`)));
             return;
         }
         return layer;
@@ -65596,7 +65577,7 @@ class Style extends index.E {
     _checkSource(sourceId) {
         const source = this.getOwnSource(sourceId);
         if (!source) {
-            this.fire(new index.y(new Error('The source \''.concat(sourceId, '\' does not exist in the map\'s style.'))));
+            this.fire(new index.y(new Error(`The source '${ sourceId }' does not exist in the map's style.`)));
             return;
         }
         return source;
@@ -65828,7 +65809,7 @@ class Style extends index.E {
         }
         const unimplementedOps = changes.filter(op => !(op.command in supportedDiffOperations));
         if (unimplementedOps.length > 0) {
-            throw new Error('Unimplemented: '.concat(unimplementedOps.map(op => op.command).join(', '), '.'));
+            throw new Error(`Unimplemented: ${ unimplementedOps.map(op => op.command).join(', ') }.`);
         }
         const changesPromises = [];
         changes.forEach(op => {
@@ -65876,7 +65857,7 @@ class Style extends index.E {
         }
         for (const [id, image] of images.entries()) {
             if (this.getImage(id)) {
-                return this.fire(new index.y(new Error('An image with the name "'.concat(id.name, '" already exists.'))));
+                return this.fire(new index.y(new Error(`An image with the name "${ id.name }" already exists.`)));
             }
             this.imageManager.addImage(id, this.scope, image);
             this._changes.updateImage(id, this.scope);
@@ -65887,7 +65868,7 @@ class Style extends index.E {
     }
     addImage(id, image) {
         if (this.getImage(id)) {
-            return this.fire(new index.y(new Error('An image with the name "'.concat(id.name, '" already exists.'))));
+            return this.fire(new index.y(new Error(`An image with the name "${ id.name }" already exists.`)));
         }
         this.imageManager.addImage(id, this.scope, image);
         this._changes.updateImage(id, this.scope);
@@ -65928,7 +65909,7 @@ class Style extends index.E {
     }
     addModel(id, url, options = {}) {
         this._checkLoaded();
-        if (this._validate(validateModel, 'models.'.concat(id), url, null, options))
+        if (this._validate(validateModel, `models.${ id }`, url, null, options))
             return this;
         this.modelManager.addModel(id, url, this.scope);
         this.fire(new index.z('data', { dataType: 'style' }));
@@ -65954,10 +65935,10 @@ class Style extends index.E {
     addSource(id, source, options = {}) {
         this._checkLoaded();
         if (this.getOwnSource(id) !== void 0) {
-            throw new Error('There is already a source with ID "'.concat(id, '".'));
+            throw new Error(`There is already a source with ID "${ id }".`);
         }
         if (!source.type) {
-            throw new Error('The type property must be defined, but only the following properties were given: '.concat(Object.keys(source).join(', '), '.'));
+            throw new Error(`The type property must be defined, but only the following properties were given: ${ Object.keys(source).join(', ') }.`);
         }
         const builtIns = [
             'vector',
@@ -65967,7 +65948,7 @@ class Style extends index.E {
             'image'
         ];
         const shouldValidate = builtIns.indexOf(source.type) >= 0;
-        if (shouldValidate && this._validate(validateSource, 'sources.'.concat(id), source, null, options))
+        if (shouldValidate && this._validate(validateSource, `sources.${ id }`, source, null, options))
             return;
         if (this.map && this.map._collectResourceTiming)
             source.collectResourceTiming = true;
@@ -66011,16 +65992,16 @@ class Style extends index.E {
         }
         for (const layerId in this._layers) {
             if (this._layers[layerId].source === id) {
-                return this.fire(new index.y(new Error('Source "'.concat(id, '" cannot be removed while layer "').concat(layerId, '" is using it.'))));
+                return this.fire(new index.y(new Error(`Source "${ id }" cannot be removed while layer "${ layerId }" is using it.`)));
             }
         }
         if (this.terrain && this.terrain.scope === this.scope && this.terrain.get().source === id) {
-            return this.fire(new index.y(new Error('Source "'.concat(id, '" cannot be removed while terrain is using it.'))));
+            return this.fire(new index.y(new Error(`Source "${ id }" cannot be removed while terrain is using it.`)));
         }
         if (this.stylesheet.iconsets) {
             const iconset = Object.entries(this.stylesheet.iconsets).find(([_, iconset2]) => iconset2.type === 'source' ? iconset2.source === id : false);
             if (iconset)
-                return this.fire(new index.y(new Error('Source "'.concat(id, '" cannot be removed while iconset "').concat(iconset[0], '" is using it.'))));
+                return this.fire(new index.y(new Error(`Source "${ id }" cannot be removed while iconset "${ iconset[0] }" is using it.`)));
         }
         const sourceCaches = this.getOwnSourceCaches(id);
         for (const sourceCache of sourceCaches) {
@@ -66195,7 +66176,7 @@ class Style extends index.E {
         if (!featuresets)
             return;
         const sourceInfoMap = {};
-        const createKey = (sourceId, sourcelayerId = '') => ''.concat(sourceId, '::').concat(sourcelayerId);
+        const createKey = (sourceId, sourcelayerId = '') => `${ sourceId }::${ sourcelayerId }`;
         this._featuresetSelectors = {};
         for (const featuresetId in featuresets) {
             const featuresetSelectors = this._featuresetSelectors[featuresetId] = [];
@@ -66203,12 +66184,12 @@ class Style extends index.E {
                 if (selector.featureNamespace) {
                     const layer = this.getOwnLayer(selector.layer);
                     if (!layer) {
-                        index.w('Layer is undefined for selector: '.concat(selector.layer));
+                        index.w(`Layer is undefined for selector: ${ selector.layer }`);
                         continue;
                     }
                     const sourceKey = createKey(layer.source, layer.sourceLayer);
                     if (sourceKey in sourceInfoMap && sourceInfoMap[sourceKey] !== selector.featureNamespace) {
-                        index.w('"featureNamespace '.concat(selector.featureNamespace, ' of featureset ').concat(featuresetId, '\'s selector is not associated to the same source, skip this selector'));
+                        index.w(`"featureNamespace ${ selector.featureNamespace } of featureset ${ featuresetId }'s selector is not associated to the same source, skip this selector`);
                         continue;
                     }
                     sourceInfoMap[sourceKey] = selector.featureNamespace;
@@ -66257,7 +66238,7 @@ class Style extends index.E {
         const style = this.getFragmentStyle(fragmentId);
         const featuresets = style.stylesheet.featuresets;
         if (!featuresets || !featuresets[featuresetId]) {
-            this.fire(new index.y(new Error('The featureset \''.concat(featuresetId, '\' does not exist in the map\'s style and cannot be queried.'))));
+            this.fire(new index.y(new Error(`The featureset '${ featuresetId }' does not exist in the map's style and cannot be queried.`)));
             return [];
         }
         const layers = [];
@@ -66316,7 +66297,7 @@ class Style extends index.E {
             defaultExpression = defaultExpressionParsed.value.expression;
         }
         if (!defaultExpression) {
-            this.fire(new index.y(new Error('No schema defined for the config option "'.concat(key, '" in the "').concat(fragmentId, '" fragment.'))));
+            this.fire(new index.y(new Error(`No schema defined for the config option "${ key }" in the "${ fragmentId }" fragment.`)));
             return;
         }
         this.options.set(fqid, Object.assign({}, expressions, {
@@ -66374,7 +66355,7 @@ class Style extends index.E {
         if (!config && !schema)
             return;
         if (!schema) {
-            this.fire(new index.y(new Error('Attempting to set config for a style without schema.')));
+            this.fire(new index.y(new Error(`Attempting to set config for a style without schema.`)));
             return;
         }
         for (const id in schema) {
@@ -66406,7 +66387,7 @@ class Style extends index.E {
                     values
                 });
             } else {
-                this.fire(new index.y(new Error('No schema defined for config option "'.concat(id, '".'))));
+                this.fire(new index.y(new Error(`No schema defined for config option "${ id }".`)));
             }
         }
     }
@@ -66462,7 +66443,7 @@ class Style extends index.E {
         this._checkLoaded();
         const id = layerObject.id;
         if (this._layers[id]) {
-            this.fire(new index.y(new Error('Layer with id "'.concat(id, '" already exists on this map'))));
+            this.fire(new index.y(new Error(`Layer with id "${ id }" already exists on this map`)));
             return;
         }
         let layer;
@@ -66476,7 +66457,7 @@ class Style extends index.E {
                 layerObject = index.dn(layerObject);
                 layerObject = Object.assign(layerObject, { source: id });
             }
-            if (this._validate(validateLayer, 'layers.'.concat(id), layerObject, { arrayIndex: -1 }, options))
+            if (this._validate(validateLayer, `layers.${ id }`, layerObject, { arrayIndex: -1 }, options))
                 return;
             layer = index.dt(layerObject, this.scope, this._styleColorTheme.lut, this.options);
             this._validateLayer(layer);
@@ -66491,14 +66472,14 @@ class Style extends index.E {
         if (before) {
             const beforeIndex = this._order.indexOf(before);
             if (beforeIndex === -1) {
-                this.fire(new index.y(new Error('Layer with id "'.concat(before, '" does not exist on this map.'))));
+                this.fire(new index.y(new Error(`Layer with id "${ before }" does not exist on this map.`)));
                 return;
             }
             const beforeLayer = this._layers[before];
             if (layer.slot === beforeLayer.slot)
                 index$1 = beforeIndex;
             else
-                index.w('Layer with id "'.concat(before, '" has a different slot. Layers can only be rearranged within the same slot.'));
+                index.w(`Layer with id "${ before }" has a different slot. Layers can only be rearranged within the same slot.`);
         }
         this._order.splice(index$1, 0, id);
         this._layerOrderChanged = true;
@@ -66546,14 +66527,14 @@ class Style extends index.E {
         if (before) {
             const beforeIndex = this._order.indexOf(before);
             if (beforeIndex === -1) {
-                this.fire(new index.y(new Error('Layer with id "'.concat(before, '" does not exist on this map.'))));
+                this.fire(new index.y(new Error(`Layer with id "${ before }" does not exist on this map.`)));
                 return;
             }
             const beforeLayer = this._layers[before];
             if (layer.slot === beforeLayer.slot)
                 newIndex = beforeIndex;
             else
-                index.w('Layer with id "'.concat(before, '" has a different slot. Layers can only be rearranged within the same slot.'));
+                index.w(`Layer with id "${ before }" has a different slot. Layers can only be rearranged within the same slot.`);
         }
         this._order.splice(newIndex, 0, id);
         this._changes.setDirty();
@@ -66674,7 +66655,7 @@ class Style extends index.E {
             this._updateLayer(layer);
             return;
         }
-        if (this._validate(validateFilter, 'layers.'.concat(layer.id, '.filter'), filter, { layerType: layer.type }, options)) {
+        if (this._validate(validateFilter, `layers.${ layer.id }.filter`, filter, { layerType: layer.type }, options)) {
             return;
         }
         layer.filter = index.dn(filter);
@@ -66699,7 +66680,7 @@ class Style extends index.E {
         if (index.bx(layer.getLayoutProperty(name), value))
             return;
         if (value !== null && value !== void 0 && !(options && options.validate === false)) {
-            const key = 'layers.'.concat(layerId, '.layout.').concat(name);
+            const key = `layers.${ layerId }.layout.${ name }`;
             const errors = emitValidationErrors(layer, validateLayoutProperty.call(validateStyle, {
                 key,
                 layerType: layer.type,
@@ -66757,7 +66738,7 @@ class Style extends index.E {
         if (index.bx(layer.getPaintProperty(name), value))
             return;
         if (value !== null && value !== void 0 && !(options && options.validate === false)) {
-            const key = 'layers.'.concat(layerId, '.paint.').concat(name);
+            const key = `layers.${ layerId }.paint.${ name }`;
             const errors = emitValidationErrors(layer, validatePaintProperty.call(validateStyle, {
                 key,
                 layerType: layer.type,
@@ -66820,15 +66801,15 @@ class Style extends index.E {
             return;
         const sourceType = source.type;
         if (sourceType === 'geojson' && sourceLayer) {
-            this.fire(new index.y(new Error('GeoJSON sources cannot have a sourceLayer parameter.')));
+            this.fire(new index.y(new Error(`GeoJSON sources cannot have a sourceLayer parameter.`)));
             return;
         }
         if (sourceType === 'vector' && !sourceLayer) {
-            this.fire(new index.y(new Error('The sourceLayer parameter must be provided for vector source types.')));
+            this.fire(new index.y(new Error(`The sourceLayer parameter must be provided for vector source types.`)));
             return;
         }
         if (target.id === void 0) {
-            this.fire(new index.y(new Error('The feature id parameter must be provided.')));
+            this.fire(new index.y(new Error(`The feature id parameter must be provided.`)));
         }
         const sourceCaches = this.getOwnSourceCaches(sourceId);
         for (const sourceCache of sourceCaches) {
@@ -66870,11 +66851,11 @@ class Style extends index.E {
         const sourceType = source.type;
         const sourceLayer = sourceType === 'vector' ? target.sourceLayer : void 0;
         if (sourceType === 'vector' && !sourceLayer) {
-            this.fire(new index.y(new Error('The sourceLayer parameter must be provided for vector source types.')));
+            this.fire(new index.y(new Error(`The sourceLayer parameter must be provided for vector source types.`)));
             return;
         }
         if (key && (typeof target.id !== 'string' && typeof target.id !== 'number')) {
-            this.fire(new index.y(new Error('A feature id is required to remove its specific state property.')));
+            this.fire(new index.y(new Error(`A feature id is required to remove its specific state property.`)));
             return;
         }
         const sourceCaches = this.getOwnSourceCaches(sourceId);
@@ -66902,7 +66883,7 @@ class Style extends index.E {
                     if (state && !finalState) {
                         finalState = state;
                     } else if (!index.bx(finalState, state)) {
-                        this.fire(new index.y(new Error('The same feature id exists in multiple sources in the featureset, but their feature states are not consistent through the sources.')));
+                        this.fire(new index.y(new Error(`The same feature id exists in multiple sources in the featureset, but their feature states are not consistent through the sources.`)));
                         return;
                     }
                 }
@@ -66924,11 +66905,11 @@ class Style extends index.E {
             return;
         const sourceType = source.type;
         if (sourceType === 'vector' && !sourceLayer) {
-            this.fire(new index.y(new Error('The sourceLayer parameter must be provided for vector source types.')));
+            this.fire(new index.y(new Error(`The sourceLayer parameter must be provided for vector source types.`)));
             return;
         }
         if (target.id === void 0) {
-            this.fire(new index.y(new Error('The feature id parameter must be provided.')));
+            this.fire(new index.y(new Error(`The feature id parameter must be provided.`)));
         }
         const sourceCaches = this.getOwnSourceCaches(sourceId);
         return sourceCaches[0].getFeatureState(sourceLayer, target.id);
@@ -67041,11 +67022,11 @@ class Style extends index.E {
     queryRasterValue(sourceId, lnglat, parameters) {
         const source = this.getOwnSource(sourceId);
         if (!source) {
-            this.fire(new index.y(new Error('Source with id "'.concat(sourceId, '" does not exist in the style.'))));
+            this.fire(new index.y(new Error(`Source with id "${ sourceId }" does not exist in the style.`)));
             return Promise.resolve(null);
         }
         if (source.type !== 'raster-array') {
-            this.fire(new index.y(new Error('queryRasterValue support only "raster-array" sources.')));
+            this.fire(new index.y(new Error(`queryRasterValue support only "raster-array" sources.`)));
             return Promise.resolve(null);
         }
         return source.queryRasterArrayValue(lnglat, parameters);
@@ -67082,7 +67063,7 @@ class Style extends index.E {
             for (const layerId of params.layers) {
                 const styleLayer = this._layers[layerId];
                 if (!styleLayer) {
-                    this.fire(new index.y(new Error('The layer \''.concat(layerId, '\' does not exist in the map\'s style and cannot be queried for features.'))));
+                    this.fire(new index.y(new Error(`The layer '${ layerId }' does not exist in the map's style and cannot be queried for features.`)));
                     return [];
                 }
                 addLayerToQuery(styleLayer);
@@ -67182,7 +67163,7 @@ class Style extends index.E {
                     continue;
                 const selectors = style._featuresetSelectors[featuresetId];
                 if (!selectors) {
-                    this.fire(new index.y(new Error('The featureset \''.concat(featuresetId, '\' does not exist in the map\'s style and cannot be queried for features.'))));
+                    this.fire(new index.y(new Error(`The featureset '${ featuresetId }' does not exist in the map's style and cannot be queried for features.`)));
                     continue;
                 }
                 for (const selector of selectors) {
@@ -67239,7 +67220,7 @@ class Style extends index.E {
     }
     addSourceType(name, SourceType, callback) {
         if (Style.getSourceType(name)) {
-            return callback(new Error('A source type called "'.concat(name, '" already exists.')));
+            return callback(new Error(`A source type called "${ name }" already exists.`));
         }
         Style.setSourceType(name, SourceType);
         if (!SourceType.workerSourceURL) {
@@ -67482,13 +67463,13 @@ class Style extends index.E {
             this.fire(new index.z('colorthemeset'));
             updateStyle();
         }).catch(e => {
-            index.w('Couldn\'t set color theme: '.concat(e));
+            index.w(`Couldn't set color theme: ${ e }`);
         });
     }
     setColorTheme(colorTheme) {
         this._checkLoaded();
         if (this._styleColorTheme.colorThemeOverride) {
-            index.w('Note: setColorTheme is called on a style with a color-theme override, the passed color-theme won\'t be visible.');
+            index.w(`Note: setColorTheme is called on a style with a color-theme override, the passed color-theme won't be visible.`);
         }
         this._styleColorTheme.colorTheme = colorTheme;
         this._reloadColorTheme();
@@ -67730,7 +67711,7 @@ class Style extends index.E {
         const imports = this.stylesheet.imports = this.stylesheet.imports || [];
         const index$1 = imports.findIndex(({id}) => id === importSpec.id);
         if (index$1 !== -1) {
-            this.fire(new index.y(new Error('Import with id \''.concat(importSpec.id, '\' already exists in the map\'s style.'))));
+            this.fire(new index.y(new Error(`Import with id '${ importSpec.id }' already exists in the map's style.`)));
             return;
         }
         if (!beforeId) {
@@ -67739,7 +67720,7 @@ class Style extends index.E {
         }
         const beforeIndex = imports.findIndex(({id}) => id === beforeId);
         if (beforeIndex === -1) {
-            this.fire(new index.y(new Error('Import with id "'.concat(beforeId, '" does not exist on this map.'))));
+            this.fire(new index.y(new Error(`Import with id "${ beforeId }" does not exist on this map.`)));
         }
         this.stylesheet.imports = imports.slice(0, beforeIndex).concat(importSpec).concat(imports.slice(beforeIndex));
         return this._loadImports([importSpec], true, beforeId);
@@ -67848,7 +67829,7 @@ class Style extends index.E {
         const imports = this.stylesheet.imports || [];
         const index$1 = imports.findIndex(importSpec => importSpec.id === importId);
         if (index$1 === -1) {
-            this.fire(new index.y(new Error('Import \''.concat(importId, '\' does not exist in the map\'s style and cannot be updated.'))));
+            this.fire(new index.y(new Error(`Import '${ importId }' does not exist in the map's style and cannot be updated.`)));
         }
         return index$1;
     }
@@ -67981,7 +67962,7 @@ class Style extends index.E {
     _isSourceCacheLoaded(source) {
         const sourceCaches = this.getOwnSourceCaches(source);
         if (sourceCaches.length === 0) {
-            this.fire(new index.y(new Error('There is no source with ID \''.concat(source, '\''))));
+            this.fire(new index.y(new Error(`There is no source with ID '${ source }'`)));
             return false;
         }
         return sourceCaches.every(sc => sc.loaded());
@@ -68411,8 +68392,8 @@ compile(preludeRasterArrayFrag, '');
 compile(preludeRasterParticleFrag, '');
 const prelude = compile(preludeFrag, preludeVert);
 const preludeCommonSource = preludeCommon;
-const preludeVertPrecisionQualifiers = 'precision highp float;';
-const preludeFragPrecisionQualifiers = 'precision mediump float;';
+const preludeVertPrecisionQualifiers = `precision highp float;`;
+const preludeFragPrecisionQualifiers = `precision mediump float;`;
 var shaders = {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     background: compile(backgroundFrag, backgroundVert),
@@ -68543,7 +68524,7 @@ function compile(fragmentSource, vertexSource) {
         return '';
     });
     if (vertexSource.includes('flat out')) {
-        console.error('The usage of "flat" qualifier is disallowed, see: https://bugs.webkit.org/show_bug.cgi?id=268071');
+        console.error(`The usage of "flat" qualifier is disallowed, see: https://bugs.webkit.org/show_bug.cgi?id=268071`);
         return;
     }
     let usedDefines = [...commonDefines];
@@ -68554,7 +68535,7 @@ function compile(fragmentSource, vertexSource) {
             ...fragmentIncludes
         ]) {
         if (!includeMap[includePath]) {
-            console.error('Undefined include: '.concat(includePath));
+            console.error(`Undefined include: ${ includePath }`);
         }
         if (!defineMap[includePath]) {
             defineMap[includePath] = [];
@@ -68568,52 +68549,153 @@ function compile(fragmentSource, vertexSource) {
     fragmentSource = fragmentSource.replace(pragmaRegex, (match, operation, precision, type, name) => {
         fragmentPragmas[name] = true;
         if (operation === 'define') {
-            return '\n#ifndef HAS_UNIFORM_u_'.concat(name, '\nin ').concat(precision, ' ').concat(type, ' ').concat(name, ';\n#else\nuniform ').concat(precision, ' ').concat(type, ' u_').concat(name, ';\n#endif\n');
+            return `
+#ifndef HAS_UNIFORM_u_${ name }
+in ${ precision } ${ type } ${ name };
+#else
+uniform ${ precision } ${ type } u_${ name };
+#endif
+`;
         } else if (operation === 'initialize') {
-            return '\n#ifdef HAS_UNIFORM_u_'.concat(name, '\n    ').concat(precision, ' ').concat(type, ' ').concat(name, ' = u_').concat(name, ';\n#endif\n');
+            return `
+#ifdef HAS_UNIFORM_u_${ name }
+    ${ precision } ${ type } ${ name } = u_${ name };
+#endif
+`;
         } else if (operation === 'define-attribute') {
-            return '\n#ifdef HAS_ATTRIBUTE_a_'.concat(name, '\n    in ').concat(precision, ' ').concat(type, ' ').concat(name, ';\n#endif\n');
+            return `
+#ifdef HAS_ATTRIBUTE_a_${ name }
+    in ${ precision } ${ type } ${ name };
+#endif
+`;
         } else if (operation === 'initialize-attribute') {
             return '';
         }
     });
     vertexSource = vertexSource.replace(pragmaRegex, (match, operation, precision, type, name) => {
-        const materialOffsetNameDefineName = 'MATERIAL_ATTRIBUTE_OFFSET_'.concat(name);
+        const materialOffsetNameDefineName = `MATERIAL_ATTRIBUTE_OFFSET_${ name }`;
         const attrType = type === 'float' ? 'vec2' : type;
-        const materialAttribExpression = 'GET_ATTRIBUTE_'.concat(attrType, '(a_').concat(name, ', materialInfo, ').concat(materialOffsetNameDefineName, ')');
+        const materialAttribExpression = `GET_ATTRIBUTE_${ attrType }(a_${ name }, materialInfo, ${ materialOffsetNameDefineName })`;
         const unpackType = name.match(/color/) ? 'color' : attrType;
         if (operation === 'define-attribute-vertex-shader-only') {
-            return '\n#ifdef HAS_ATTRIBUTE_a_'.concat(name, '\nin ').concat(precision, ' ').concat(type, ' a_').concat(name, ';\n#endif\n');
+            return `
+#ifdef HAS_ATTRIBUTE_a_${ name }
+in ${ precision } ${ type } a_${ name };
+#endif
+`;
         } else if (fragmentPragmas[name]) {
             if (operation === 'define') {
-                return '\n#ifndef HAS_UNIFORM_u_'.concat(name, '\nuniform lowp float u_').concat(name, '_t;\n    #if !defined(').concat(materialOffsetNameDefineName, ')\n        in ').concat(precision, ' ').concat(attrType, ' a_').concat(name, ';\n    #endif\nout ').concat(precision, ' ').concat(type, ' ').concat(name, ';\n#else\nuniform ').concat(precision, ' ').concat(type, ' u_').concat(name, ';\n#endif\n');
+                return `
+#ifndef HAS_UNIFORM_u_${ name }
+uniform lowp float u_${ name }_t;
+    #if !defined(${ materialOffsetNameDefineName })
+        in ${ precision } ${ attrType } a_${ name };
+    #endif
+out ${ precision } ${ type } ${ name };
+#else
+uniform ${ precision } ${ type } u_${ name };
+#endif
+`;
             } else if (operation === 'initialize') {
                 if (unpackType === 'vec4') {
-                    return '\n#ifndef HAS_UNIFORM_u_'.concat(name, '\n    ').concat(name, ' = a_').concat(name, ';\n#else\n    ').concat(precision, ' ').concat(type, ' ').concat(name, ' = u_').concat(name, ';\n#endif\n');
+                    return `
+#ifndef HAS_UNIFORM_u_${ name }
+    ${ name } = a_${ name };
+#else
+    ${ precision } ${ type } ${ name } = u_${ name };
+#endif
+`;
                 } else {
-                    return '\n#if !defined(HAS_UNIFORM_u_'.concat(name, ') \n    #ifdef ').concat(materialOffsetNameDefineName, '\n        ').concat(name, ' = unpack_mix_').concat(unpackType, '(').concat(materialAttribExpression, ', u_').concat(name, '_t);\n    #else\n        ').concat(name, ' = unpack_mix_').concat(unpackType, '(a_').concat(name, ', u_').concat(name, '_t);\n    #endif\n#else\n    ').concat(precision, ' ').concat(type, ' ').concat(name, ' = u_').concat(name, ';\n#endif\n');
+                    return `
+#if !defined(HAS_UNIFORM_u_${ name }) 
+    #ifdef ${ materialOffsetNameDefineName }
+        ${ name } = unpack_mix_${ unpackType }(${ materialAttribExpression }, u_${ name }_t);
+    #else
+        ${ name } = unpack_mix_${ unpackType }(a_${ name }, u_${ name }_t);
+    #endif
+#else
+    ${ precision } ${ type } ${ name } = u_${ name };
+#endif
+`;
                 }
             } else if (operation === 'define-attribute') {
-                return '\n#ifdef HAS_ATTRIBUTE_a_'.concat(name, '\n    in ').concat(precision, ' ').concat(type, ' a_').concat(name, ';\n    out ').concat(precision, ' ').concat(type, ' ').concat(name, ';\n#endif\n');
+                return `
+#ifdef HAS_ATTRIBUTE_a_${ name }
+    in ${ precision } ${ type } a_${ name };
+    out ${ precision } ${ type } ${ name };
+#endif
+`;
             } else if (operation === 'initialize-attribute') {
-                return '\n#ifdef HAS_ATTRIBUTE_a_'.concat(name, '\n    ').concat(name, ' = a_').concat(name, ';\n#endif\n');
+                return `
+#ifdef HAS_ATTRIBUTE_a_${ name }
+    ${ name } = a_${ name };
+#endif
+`;
             }
         } else {
             if (operation === 'define') {
-                return '\n#ifndef HAS_UNIFORM_u_'.concat(name, '\nuniform lowp float u_').concat(name, '_t;\n    #if !defined(').concat(materialOffsetNameDefineName, ')\n        in ').concat(precision, ' ').concat(attrType, ' a_').concat(name, ';\n    #endif  \n#else\nuniform ').concat(precision, ' ').concat(type, ' u_').concat(name, ';\n#endif\n');
+                return `
+#ifndef HAS_UNIFORM_u_${ name }
+uniform lowp float u_${ name }_t;
+    #if !defined(${ materialOffsetNameDefineName })
+        in ${ precision } ${ attrType } a_${ name };
+    #endif  
+#else
+uniform ${ precision } ${ type } u_${ name };
+#endif
+`;
             } else if (operation === 'define-instanced') {
                 if (unpackType === 'mat4') {
-                    return '\n#ifdef INSTANCED_ARRAYS\nin vec4 a_'.concat(name, '0;\nin vec4 a_').concat(name, '1;\nin vec4 a_').concat(name, '2;\nin vec4 a_').concat(name, '3;\n#else\nuniform ').concat(precision, ' ').concat(type, ' u_').concat(name, ';\n#endif\n');
+                    return `
+#ifdef INSTANCED_ARRAYS
+in vec4 a_${ name }0;
+in vec4 a_${ name }1;
+in vec4 a_${ name }2;
+in vec4 a_${ name }3;
+#else
+uniform ${ precision } ${ type } u_${ name };
+#endif
+`;
                 } else {
-                    return '\n#ifdef INSTANCED_ARRAYS\nin '.concat(precision, ' ').concat(attrType, ' a_').concat(name, ';\n#else\nuniform ').concat(precision, ' ').concat(type, ' u_').concat(name, ';\n#endif\n');
+                    return `
+#ifdef INSTANCED_ARRAYS
+in ${ precision } ${ attrType } a_${ name };
+#else
+uniform ${ precision } ${ type } u_${ name };
+#endif
+`;
                 }
             } else if (operation === 'initialize-attribute-custom') {
-                return '\n#ifdef HAS_ATTRIBUTE_a_'.concat(name, '\n    ').concat(precision, ' ').concat(type, ' ').concat(name, ' = a_').concat(name, ';\n#endif\n');
+                return `
+#ifdef HAS_ATTRIBUTE_a_${ name }
+    ${ precision } ${ type } ${ name } = a_${ name };
+#endif
+`;
             } else {
                 if (unpackType === 'vec4') {
-                    return '\n#ifndef HAS_UNIFORM_u_'.concat(name, '\n    #ifdef ').concat(materialOffsetNameDefineName, '\n        ').concat(precision, ' ').concat(type, ' ').concat(name, ' = ').concat(materialAttribExpression, ';\n    #else\n        ').concat(precision, ' ').concat(type, ' ').concat(name, ' = a_').concat(name, ';\n    #endif\n#else\n    ').concat(precision, ' ').concat(type, ' ').concat(name, ' = u_').concat(name, ';\n#endif\n');
+                    return `
+#ifndef HAS_UNIFORM_u_${ name }
+    #ifdef ${ materialOffsetNameDefineName }
+        ${ precision } ${ type } ${ name } = ${ materialAttribExpression };
+    #else
+        ${ precision } ${ type } ${ name } = a_${ name };
+    #endif
+#else
+    ${ precision } ${ type } ${ name } = u_${ name };
+#endif
+`;
                 } else {
-                    return '\n#ifndef HAS_UNIFORM_u_'.concat(name, '\n    #ifdef ').concat(materialOffsetNameDefineName, '\n        ').concat(precision, ' ').concat(type, ' ').concat(name, ' = unpack_mix_').concat(unpackType, '(').concat(materialAttribExpression, ', u_').concat(name, '_t);\n    #else\n        ').concat(precision, ' ').concat(type, ' ').concat(name, ' = unpack_mix_').concat(unpackType, '(a_').concat(name, ', u_').concat(name, '_t);\n    #endif\n#else\n    ').concat(precision, ' ').concat(type, ' ').concat(name, ' = u_').concat(name, ';\n#endif\n');
+                    return `
+#ifndef HAS_UNIFORM_u_${ name }
+    #ifdef ${ materialOffsetNameDefineName }
+        ${ precision } ${ type } ${ name } = unpack_mix_${ unpackType }(${ materialAttribExpression }, u_${ name }_t);
+    #else
+        ${ precision } ${ type } ${ name } = unpack_mix_${ unpackType }(a_${ name }, u_${ name }_t);
+    #endif
+#else
+    ${ precision } ${ type } ${ name } = u_${ name };
+#endif
+`;
                 }
             }
         }
@@ -69972,7 +70054,7 @@ class Terrain extends index.bU {
             const sourceCacheId = terrainProps.get('source');
             const sourceCache = isDrapeModeDeferred ? this._mockSourceCache : style.getSourceCache(sourceCacheId, scope);
             if (!sourceCache) {
-                index.w('Couldn\'t find terrain source "'.concat(sourceCacheId, '".'));
+                index.w(`Couldn't find terrain source "${ sourceCacheId }".`);
                 return;
             }
             this.sourceCache = sourceCache;
@@ -69985,7 +70067,8 @@ class Terrain extends index.bU {
             this.enabled = true;
             const updateSourceCache = () => {
                 if (this.sourceCache.used) {
-                    index.w('Raster DEM source \''.concat(this.sourceCache.id, '\' is used both for terrain and as layer source.\n') + 'This leads to lower resolution of hillshade. For full hillshade resolution but higher memory consumption, define another raster DEM source.');
+                    index.w(`Raster DEM source '${ this.sourceCache.id }' is used both for terrain and as layer source.
+This leads to lower resolution of hillshade. For full hillshade resolution but higher memory consumption, define another raster DEM source.`);
                 }
                 const scaledDemTileSize = this.getScaledDemTileSize();
                 this.sourceCache.update(transform, scaledDemTileSize, true);
@@ -70223,11 +70306,11 @@ class Terrain extends index.bU {
         const demId = demTile.tileID.canonical;
         const demScaleBy = Math.pow(2, demId.z - proxyId.z);
         const suffix = uniformSuffix || '';
-        uniforms['u_dem_tl'.concat(suffix)] = [
+        uniforms[`u_dem_tl${ suffix }`] = [
             proxyId.x * demScaleBy % 1,
             proxyId.y * demScaleBy % 1
         ];
-        uniforms['u_dem_scale'.concat(suffix)] = demScaleBy;
+        uniforms[`u_dem_scale${ suffix }`] = demScaleBy;
         return true;
     }
     get emptyDEMTexture() {
@@ -71346,10 +71429,10 @@ const debugWireframe3DLayerProgramNames = [
 const instancingUniforms = context => ({ 'u_instanceID': new index.cg(context) });
 class Program {
     static cacheKey(source, name, defines, programConfiguration) {
-        let key = ''.concat(name).concat(programConfiguration ? programConfiguration.cacheKey : '');
+        let key = `${ name }${ programConfiguration ? programConfiguration.cacheKey : '' }`;
         for (const define of defines) {
             if (source.usedDefines.includes(define)) {
-                key += '/'.concat(define);
+                key += `/${ define }`;
             }
         }
         return key;
@@ -71361,24 +71444,30 @@ class Program {
         this.name = name;
         this.fixedDefines = [...fixedDefines];
         let defines = configuration ? configuration.defines() : [];
-        defines = defines.concat(fixedDefines.map(define => '#define '.concat(define)));
+        defines = defines.concat(fixedDefines.map(define => `#define ${ define }`));
         const version = '#version 300 es\n';
         let fragmentSource = version + defines.concat(preludeFragPrecisionQualifiers, // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         preludeCommonSource, prelude.fragmentSource).join('\n');
         for (const include of source.fragmentIncludes) {
-            fragmentSource += '\n'.concat(includeMap[include]);
+            fragmentSource += `
+${ includeMap[include] }`;
         }
-        fragmentSource += '\n'.concat(source.fragmentSource);
+        fragmentSource += `
+${ source.fragmentSource }`;
         let vertexSource = version + defines.concat(preludeVertPrecisionQualifiers, // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         preludeCommonSource, prelude.vertexSource).join('\n');
         for (const include of source.vertexIncludes) {
-            vertexSource += '\n'.concat(includeMap[include]);
+            vertexSource += `
+${ includeMap[include] }`;
         }
         this.forceManualRenderingForInstanceIDShaders = context.forceManualRenderingForInstanceIDShaders && source.vertexSource.indexOf('gl_InstanceID') !== -1;
         if (this.forceManualRenderingForInstanceIDShaders) {
-            vertexSource += '\nuniform int u_instanceID;\n';
+            vertexSource += `
+uniform int u_instanceID;
+`;
         }
-        vertexSource += '\n'.concat(source.vertexSource);
+        vertexSource += `
+${ source.vertexSource }`;
         if (this.forceManualRenderingForInstanceIDShaders) {
             vertexSource = vertexSource.replaceAll('gl_InstanceID', 'u_instanceID');
         }
@@ -71597,7 +71686,7 @@ class Program {
         if (this.fixedDefines.includes(define)) {
             for (const key of Object.keys(uniforms)) {
                 if (!uniforms[key].initialized) {
-                    throw new Error('Program \''.concat(this.name, '\', from draw \'').concat(name, '\': uniform ').concat(key, ' not set but required by ').concat(define, ' being defined'));
+                    throw new Error(`Program '${ this.name }', from draw '${ name }': uniform ${ key } not set but required by ${ define } being defined`);
                 }
             }
         }
@@ -74218,7 +74307,7 @@ function drawLine(painter, sourceCache, layer, coords) {
         if (value && value.value && value.value.kind === 'constant') {
             lineOpacityForOcclusion = value.value;
         } else {
-            index.w('Occlusion opacity for layer '.concat(layer.id, ' is supported only when line-opacity isn\'t data-driven.'));
+            index.w(`Occlusion opacity for layer ${ layer.id } is supported only when line-opacity isn't data-driven.`);
         }
     }
     if (width.value.kind !== 'constant' && width.value.isLineProgressConstant === false) {
@@ -74394,13 +74483,13 @@ function drawLine(painter, sourceCache, layer, coords) {
     if (layer.hasNonElevatedBuckets) {
         const terrainEnabledImmediateMode = !isDraping && painter.terrain;
         if (occlusionOpacity !== 0 && terrainEnabledImmediateMode) {
-            index.w('Occlusion opacity for layer '.concat(layer.id, ' is supported on terrain only if the layer has line-z-offset enabled.'));
+            index.w(`Occlusion opacity for layer ${ layer.id } is supported on terrain only if the layer has line-z-offset enabled.`);
         } else {
             if (!terrainEnabledImmediateMode) {
                 const stencilMode3D = StencilMode.disabled;
                 renderTiles(coords, definesValues, depthMode, stencilMode3D, false, true);
             } else {
-                index.w('Cannot render non-elevated lines in immediate mode when terrain is enabled. Layer: '.concat(layer.id, '.'));
+                index.w(`Cannot render non-elevated lines in immediate mode when terrain is enabled. Layer: ${ layer.id }.`);
             }
         }
     }
@@ -77035,10 +77124,10 @@ function drawDebugTile(painter, sourceCache, coord, color, offsetX, offsetY, sho
         const tileSizeKb = Math.floor(tileByteLength / 1024);
         let tileLabel = coord.canonical.toString();
         if (coord.overscaledZ !== coord.canonical.z) {
-            tileLabel += ' => '.concat(coord.overscaledZ);
+            tileLabel += ` => ${ coord.overscaledZ }`;
         }
-        tileLabel += ' '.concat(tile.state);
-        tileLabel += ' '.concat(tileSizeKb, 'kb');
+        tileLabel += ` ${ tile.state }`;
+        tileLabel += ` ${ tileSizeKb }kb`;
         drawTextToOverlay(painter, tileLabel);
     }
     const tileSize = sourceCache.getTile(coord).tileSize;
@@ -77079,7 +77168,7 @@ function drawTextToOverlay(painter, text) {
     ctx2d.lineWidth = 1.5;
     ctx2d.strokeStyle = 'white';
     ctx2d.textBaseline = 'top';
-    ctx2d.font = 'bold '.concat(36, 'px Open Sans, sans-serif');
+    ctx2d.font = `bold ${ 36 }px Open Sans, sans-serif`;
     ctx2d.fillText(text, 5, 5);
     ctx2d.strokeText(text, 5, 5);
     painter.debugOverlayTexture.update(canvas);
@@ -78343,7 +78432,7 @@ function drawBatchedModels(painter, source, layer, coords) {
     const fog = painter.style.fog;
     const shadowRenderer = painter.shadowRenderer;
     if (tr.projection.name !== 'mercator') {
-        index.w('Drawing 3D landmark models for '.concat(tr.projection.name, ' projection is not yet implemented'));
+        index.w(`Drawing 3D landmark models for ${ tr.projection.name } projection is not yet implemented`);
         return;
     }
     const mercCameraPos = painter.transform.getFreeCameraOptions().position;
@@ -80794,16 +80883,16 @@ class Hash {
                 const key = part.split('=')[0];
                 if (key === hashName) {
                     found = true;
-                    return ''.concat(key, '=').concat(hash);
+                    return `${ key }=${ hash }`;
                 }
                 return part;
             }).filter(a => a);
             if (!found) {
-                parts.push(''.concat(hashName, '=').concat(hash));
+                parts.push(`${ hashName }=${ hash }`);
             }
-            return '#'.concat(parts.join('&'));
+            return `#${ parts.join('&') }`;
         }
-        return '#'.concat(hash);
+        return `#${ hash }`;
     }
     _getCurrentHash() {
         const hash = location.hash.replace('#', '');
@@ -80844,11 +80933,11 @@ class Hash {
 }
 function getHashString(map, mapFeedback) {
     const center = map.getCenter(), zoom = Math.round(map.getZoom() * 100) / 100, precision = Math.ceil((zoom * Math.LN2 + Math.log(512 / 360 / 0.5)) / Math.LN10), m = Math.pow(10, precision), lng = Math.round(center.lng * m) / m, lat = Math.round(center.lat * m) / m, bearing = map.getBearing(), pitch = map.getPitch();
-    let hash = mapFeedback ? '/'.concat(lng, '/').concat(lat, '/').concat(zoom) : ''.concat(zoom, '/').concat(lat, '/').concat(lng);
+    let hash = mapFeedback ? `/${ lng }/${ lat }/${ zoom }` : `${ zoom }/${ lat }/${ lng }`;
     if (bearing || pitch)
-        hash += '/'.concat(Math.round(bearing * 10) / 10);
+        hash += `/${ Math.round(bearing * 10) / 10 }`;
     if (pitch)
-        hash += '/'.concat(Math.round(pitch));
+        hash += `/${ Math.round(pitch) }`;
     return hash;
 }
 
@@ -81273,9 +81362,9 @@ class BoxZoomHandler {
         const minX = Math.min(p0.x, pos.x), maxX = Math.max(p0.x, pos.x), minY = Math.min(p0.y, pos.y), maxY = Math.max(p0.y, pos.y);
         this._map._requestDomTask(() => {
             if (this._box) {
-                this._box.style.transform = 'translate('.concat(minX, 'px,').concat(minY, 'px)');
-                this._box.style.width = ''.concat(maxX - minX, 'px');
-                this._box.style.height = ''.concat(maxY - minY, 'px');
+                this._box.style.transform = `translate(${ minX }px,${ minY }px)`;
+                this._box.style.width = `${ maxX - minX }px`;
+                this._box.style.height = `${ maxY - minY }px`;
             }
         });
     }
@@ -81743,7 +81832,7 @@ class TouchPanHandler {
         if (this._map && !this._alertContainer) {
             this._alertContainer = create$1('div', 'mapboxgl-touch-pan-blocker', this._map._container);
             this._alertContainer.textContent = this._map._getUIString('TouchPanBlocker.Message');
-            this._alertContainer.style.fontSize = ''.concat(Math.max(10, Math.min(24, Math.floor(this._el.clientWidth * 0.05))), 'px');
+            this._alertContainer.style.fontSize = `${ Math.max(10, Math.min(24, Math.floor(this._el.clientWidth * 0.05))) }px`;
         }
     }
     _showTouchPanBlockerAlert() {
@@ -82400,7 +82489,7 @@ class ScrollZoomHandler {
             } else {
                 this._alertContainer.textContent = this._map._getUIString('ScrollZoomBlocker.CtrlMessage');
             }
-            this._alertContainer.style.fontSize = ''.concat(Math.max(10, Math.min(24, Math.floor(this._el.clientWidth * 0.05))), 'px');
+            this._alertContainer.style.fontSize = `${ Math.max(10, Math.min(24, Math.floor(this._el.clientWidth * 0.05))) }px`;
         }
     }
     _showBlockerAlert() {
@@ -83084,7 +83173,7 @@ class HandlerManager {
         return false;
     }
     handleWindowEvent(e) {
-        this.handleEvent(e, ''.concat(e.type, 'Window'));
+        this.handleEvent(e, `${ e.type }Window`);
     }
     _getMapTouches(touches) {
         const mapTouches = [];
@@ -83316,7 +83405,7 @@ class HandlerManager {
         for (const eventName in newEventsInProgress) {
             const {originalEvent} = newEventsInProgress[eventName];
             if (!this._eventsInProgress[eventName]) {
-                startEvents[''.concat(eventName, 'start')] = originalEvent;
+                startEvents[`${ eventName }start`] = originalEvent;
             }
             this._eventsInProgress[eventName] = newEventsInProgress[eventName];
         }
@@ -83340,7 +83429,7 @@ class HandlerManager {
             if (!this._handlersById[handlerName].isActive()) {
                 delete this._eventsInProgress[eventName];
                 originalEndEvent = deactivatedHandlers[handlerName] || originalEvent;
-                endEvents[''.concat(eventName, 'end')] = originalEndEvent;
+                endEvents[`${ eventName }end`] = originalEndEvent;
             }
         }
         for (const name in endEvents) {
@@ -84879,7 +84968,7 @@ class AttributionControl {
         this._compactButton.type = 'button';
         this._compactButton.addEventListener('click', this._toggleAttribution);
         this._compactButton.setAttribute('aria-label', title);
-        const buttonIcon = create$1('span', 'mapboxgl-ctrl-icon', this._compactButton);
+        const buttonIcon = create$1('span', `mapboxgl-ctrl-icon`, this._compactButton);
         buttonIcon.setAttribute('aria-hidden', 'true');
         buttonIcon.setAttribute('title', title);
         this._innerContainer = create$1('div', 'mapboxgl-ctrl-attrib-inner', this._container);
@@ -84937,11 +85026,11 @@ class AttributionControl {
         if (editLink) {
             const paramString = params.reduce((acc, next, i) => {
                 if (next.value) {
-                    acc += ''.concat(next.key, '=').concat(next.value).concat(i < params.length - 1 ? '&' : '');
+                    acc += `${ next.key }=${ next.value }${ i < params.length - 1 ? '&' : '' }`;
                 }
                 return acc;
-            }, '?');
-            editLink.href = ''.concat(index.e.FEEDBACK_URL, '/').concat(paramString, '#').concat(getHashString(this._map, true));
+            }, `?`);
+            editLink.href = `${ index.e.FEEDBACK_URL }/${ paramString }#${ getHashString(this._map, true) }`;
             editLink.rel = 'noopener nofollow';
         }
     }
@@ -85139,7 +85228,7 @@ class IndoorControl {
                 map._setIndoorActiveFloorsVisibility(!this._model.activeFloorsVisible);
             }
         });
-        create$1('span', 'mapboxgl-ctrl-icon', buildingsButton).setAttribute('aria-hidden', 'true');
+        create$1('span', `mapboxgl-ctrl-icon`, buildingsButton).setAttribute('aria-hidden', 'true');
         buildingsButton.classList.add('mapboxgl-ctrl-level-button', 'mapboxgl-ctrl-buildings-toggle');
         if (this._model && !this._model.activeFloorsVisible) {
             buildingsButton.classList.add('mapboxgl-ctrl-level-button-selected');
@@ -85335,7 +85424,7 @@ class InteractionSet {
     }
     add(id, interaction) {
         if (this.typeById.has(id)) {
-            throw new Error('Interaction id "'.concat(id, '" already exists.'));
+            throw new Error(`Interaction id "${ id }" already exists.`);
         }
         const filter = interaction.filter;
         let type = interaction.type;
@@ -85437,7 +85526,7 @@ class InteractionSet {
     handleType(event, features) {
         const isMouseEnter = event.type === 'mouseenter';
         if (isMouseEnter && !this.interactionsByType.has(event.type)) {
-            index.w('mouseenter interaction required for mouseleave to work.');
+            index.w(`mouseenter interaction required for mouseleave to work.`);
             return;
         }
         const interactions = Array.from(this.interactionsByType.get(event.type)).reverse();
@@ -85567,16 +85656,16 @@ let Map$1 = class Map extends Camera {
         const initialOptions = options;
         options = Object.assign({}, defaultOptions$5, options);
         if (options.minZoom != null && options.maxZoom != null && options.minZoom > options.maxZoom) {
-            throw new Error('maxZoom must be greater than or equal to minZoom');
+            throw new Error(`maxZoom must be greater than or equal to minZoom`);
         }
         if (options.minPitch != null && options.maxPitch != null && options.minPitch > options.maxPitch) {
-            throw new Error('maxPitch must be greater than or equal to minPitch');
+            throw new Error(`maxPitch must be greater than or equal to minPitch`);
         }
         if (options.minPitch != null && options.minPitch < defaultMinPitch) {
-            throw new Error('minPitch must be greater than or equal to '.concat(defaultMinPitch));
+            throw new Error(`minPitch must be greater than or equal to ${ defaultMinPitch }`);
         }
         if (options.maxPitch != null && options.maxPitch > defaultMaxPitch) {
-            throw new Error('maxPitch must be less than or equal to '.concat(defaultMaxPitch));
+            throw new Error(`maxPitch must be less than or equal to ${ defaultMaxPitch }`);
         }
         if (options.antialias && index.f2(window)) {
             options.antialias = false;
@@ -85639,15 +85728,15 @@ let Map$1 = class Map extends Camera {
             if (container) {
                 this._container = container;
             } else {
-                throw new Error('Container \''.concat(options.container.toString(), '\' not found.'));
+                throw new Error(`Container '${ options.container.toString() }' not found.`);
             }
         } else if (options.container instanceof HTMLElement) {
             this._container = options.container;
         } else {
-            throw new Error('Invalid type: \'container\' must be a String or HTMLElement.');
+            throw new Error(`Invalid type: 'container' must be a String or HTMLElement.`);
         }
         if (this._container.childNodes.length > 0) {
-            index.w('The map container element should be empty, otherwise the map\'s interactivity will be negatively impacted. If you want to display a message when WebGL is not supported, use the Mapbox GL Supported plugin instead.');
+            index.w(`The map container element should be empty, otherwise the map's interactivity will be negatively impacted. If you want to display a message when WebGL is not supported, use the Mapbox GL Supported plugin instead.`);
         }
         if (options.maxBounds) {
             this.setMaxBounds(options.maxBounds);
@@ -85666,7 +85755,7 @@ let Map$1 = class Map extends Camera {
             ;
         this._setupPainter();
         if (this.painter === void 0) {
-            throw new Error('Failed to initialize WebGL.');
+            throw new Error(`Failed to initialize WebGL.`);
         }
         this.on('move', () => this._update(false));
         this.on('moveend', () => this._update(false));
@@ -85725,10 +85814,10 @@ let Map$1 = class Map extends Camera {
         });
         this.on('data', event => {
             this._update(event.dataType === 'style');
-            this.fire(new index.z(''.concat(event.dataType, 'data'), event));
+            this.fire(new index.z(`${ event.dataType }data`, event));
         });
         this.on('dataloading', event => {
-            this.fire(new index.z(''.concat(event.dataType, 'dataloading'), event));
+            this.fire(new index.z(`${ event.dataType }dataloading`, event));
         });
         this._interactions = new InteractionSet(this);
     }
@@ -85973,7 +86062,7 @@ let Map$1 = class Map extends Camera {
             }
             return this;
         } else
-            throw new Error('minZoom must be between '.concat(defaultMinZoom, ' and the current maxZoom, inclusive'));
+            throw new Error(`minZoom must be between ${ defaultMinZoom } and the current maxZoom, inclusive`);
     }
     /**
    * Returns the map's minimum allowable zoom level.
@@ -86008,7 +86097,7 @@ let Map$1 = class Map extends Camera {
             }
             return this;
         } else
-            throw new Error('maxZoom must be greater than the current minZoom');
+            throw new Error(`maxZoom must be greater than the current minZoom`);
     }
     /**
    * Returns the map's maximum allowable zoom level.
@@ -86033,7 +86122,7 @@ let Map$1 = class Map extends Camera {
     setMinPitch(minPitch) {
         minPitch = minPitch === null || minPitch === void 0 ? defaultMinPitch : minPitch;
         if (minPitch < defaultMinPitch) {
-            throw new Error('minPitch must be greater than or equal to '.concat(defaultMinPitch));
+            throw new Error(`minPitch must be greater than or equal to ${ defaultMinPitch }`);
         }
         if (minPitch >= defaultMinPitch && minPitch <= this.transform.maxPitch) {
             this.transform.minPitch = minPitch;
@@ -86045,7 +86134,7 @@ let Map$1 = class Map extends Camera {
             }
             return this;
         } else
-            throw new Error('minPitch must be between '.concat(defaultMinPitch, ' and the current maxPitch, inclusive'));
+            throw new Error(`minPitch must be between ${ defaultMinPitch } and the current maxPitch, inclusive`);
     }
     /**
    * Returns the map's minimum allowable pitch.
@@ -86071,7 +86160,7 @@ let Map$1 = class Map extends Camera {
     setMaxPitch(maxPitch) {
         maxPitch = maxPitch === null || maxPitch === void 0 ? defaultMaxPitch : maxPitch;
         if (maxPitch > defaultMaxPitch) {
-            throw new Error('maxPitch must be less than or equal to '.concat(defaultMaxPitch));
+            throw new Error(`maxPitch must be less than or equal to ${ defaultMaxPitch }`);
         }
         if (maxPitch >= this.transform.minPitch) {
             this.transform.maxPitch = maxPitch;
@@ -86083,7 +86172,7 @@ let Map$1 = class Map extends Camera {
             }
             return this;
         } else
-            throw new Error('maxPitch must be greater than or equal to minPitch');
+            throw new Error(`maxPitch must be greater than or equal to minPitch`);
     }
     /**
    * Returns the map's maximum allowable pitch.
@@ -86683,7 +86772,7 @@ let Map$1 = class Map extends Camera {
     isPointOnSurface(point) {
         const {name} = this.transform.projection;
         if (name !== 'globe' && name !== 'mercator') {
-            index.w(''.concat(name, ' projection does not support isPointOnSurface, this API may behave unexpectedly.'));
+            index.w(`${ name } projection does not support isPointOnSurface, this API may behave unexpectedly.`);
         }
         return this.transform.isPointOnSurface(index.P.convert(point));
     }
@@ -86821,7 +86910,7 @@ let Map$1 = class Map extends Camera {
             this.style._diffStyle(style, (e, isUpdateNeeded) => {
                 if (e) {
                     const message = typeof e === 'string' ? e : e instanceof Error ? e.message : e.error;
-                    index.w('Unable to perform style diff: '.concat(message, '. Rebuilding the style from scratch.'));
+                    index.w(`Unable to perform style diff: ${ message }. Rebuilding the style from scratch.`);
                     this._updateStyle(style, options);
                 } else if (isUpdateNeeded) {
                     this._update(true);
@@ -86837,7 +86926,7 @@ let Map$1 = class Map extends Camera {
     _getUIString(key) {
         const str = this._locale[key];
         if (str == null) {
-            throw new Error('Missing UI string \''.concat(key, '\''));
+            throw new Error(`Missing UI string '${ key }'`);
         }
         return str;
     }
@@ -86904,11 +86993,11 @@ let Map$1 = class Map extends Camera {
     }
     _isValidId(id) {
         if (id == null) {
-            this.fire(new index.y(new Error('IDs can\'t be empty.')));
+            this.fire(new index.y(new Error(`IDs can't be empty.`)));
             return false;
         }
         if (index.dq(id)) {
-            this.fire(new index.y(new Error('IDs can\'t contain special symbols: "'.concat(id, '".'))));
+            this.fire(new index.y(new Error(`IDs can't contain special symbols: "${ id }".`)));
             return false;
         }
         return true;
@@ -87191,7 +87280,9 @@ let Map$1 = class Map extends Camera {
         const existingImageWidth = existingImage.usvg ? existingImage.icon.usvg_tree.width : existingImage.data.width;
         const existingImageHeight = existingImage.usvg ? existingImage.icon.usvg_tree.height : existingImage.data.height;
         if (width !== existingImageWidth || height !== existingImageHeight) {
-            this.fire(new index.y(new Error('The width and height of the updated image ('.concat(width, ', ').concat(height, ')\n                must be that same as the previous version of the image\n                (').concat(existingImage.data.width, ', ').concat(existingImage.data.height, ')'))));
+            this.fire(new index.y(new Error(`The width and height of the updated image (${ width }, ${ height })
+                must be that same as the previous version of the image
+                (${ existingImage.data.width }, ${ existingImage.data.height })`)));
             return;
         }
         const copy = !(image instanceof HTMLImageElement || ImageBitmap && image instanceof ImageBitmap);
@@ -88566,7 +88657,7 @@ let Map$1 = class Map extends Camera {
             'bottom-left',
             'left'
         ].forEach(positionName => {
-            positions[positionName] = create$1('div', 'mapboxgl-ctrl-'.concat(positionName), controlContainer);
+            positions[positionName] = create$1('div', `mapboxgl-ctrl-${ positionName }`, controlContainer);
         });
         this._container.addEventListener('scroll', this._onMapScroll, false);
     }
@@ -88574,8 +88665,8 @@ let Map$1 = class Map extends Camera {
         const pixelRatio = index.o.devicePixelRatio || 1;
         this._canvas.width = pixelRatio * Math.ceil(width);
         this._canvas.height = pixelRatio * Math.ceil(height);
-        this._canvas.style.width = ''.concat(width, 'px');
-        this._canvas.style.height = ''.concat(height, 'px');
+        this._canvas.style.width = `${ width }px`;
+        this._canvas.style.height = `${ height }px`;
     }
     _addMarker(marker) {
         this._markers.push(marker);
@@ -89452,12 +89543,12 @@ class NavigationControl {
                 if (this._map)
                     this._map.zoomIn({}, { originalEvent: e });
             });
-            create$1('span', 'mapboxgl-ctrl-icon', this._zoomInButton).setAttribute('aria-hidden', 'true');
+            create$1('span', `mapboxgl-ctrl-icon`, this._zoomInButton).setAttribute('aria-hidden', 'true');
             this._zoomOutButton = this._createButton('mapboxgl-ctrl-zoom-out', e => {
                 if (this._map)
                     this._map.zoomOut({}, { originalEvent: e });
             });
-            create$1('span', 'mapboxgl-ctrl-icon', this._zoomOutButton).setAttribute('aria-hidden', 'true');
+            create$1('span', `mapboxgl-ctrl-icon`, this._zoomOutButton).setAttribute('aria-hidden', 'true');
         }
         if (this.options.showCompass) {
             index.aX(['_rotateCompassArrow'], this);
@@ -89491,7 +89582,7 @@ class NavigationControl {
         const map = this._map;
         if (!map)
             return;
-        const rotate = this.options.visualizePitch ? 'scale('.concat(1 / Math.pow(Math.cos(map.transform.pitch * (Math.PI / 180)), 0.5), ') rotateX(').concat(map.transform.pitch, 'deg) rotateZ(').concat(map.transform.angle * (180 / Math.PI), 'deg)') : 'rotate('.concat(map.transform.angle * (180 / Math.PI), 'deg)');
+        const rotate = this.options.visualizePitch ? `scale(${ 1 / Math.pow(Math.cos(map.transform.pitch * (Math.PI / 180)), 0.5) }) rotateX(${ map.transform.pitch }deg) rotateZ(${ map.transform.angle * (180 / Math.PI) }deg)` : `rotate(${ map.transform.angle * (180 / Math.PI) }deg)`;
         map._requestDomTask(() => {
             if (this._compassIcon) {
                 this._compassIcon.style.transform = rotate;
@@ -89545,7 +89636,7 @@ class NavigationControl {
     _setButtonTitle(button, title) {
         if (!this._map)
             return;
-        const str = this._map._getUIString('NavigationControl.'.concat(title));
+        const str = this._map._getUIString(`NavigationControl.${ title }`);
         button.setAttribute('aria-label', str);
         if (button.firstElementChild)
             button.firstElementChild.setAttribute('title', str);
@@ -89766,9 +89857,9 @@ class Marker extends index.E {
         });
         const classList = this._element.classList;
         for (const key in anchorTranslate) {
-            classList.remove('mapboxgl-marker-anchor-'.concat(key));
+            classList.remove(`mapboxgl-marker-anchor-${ key }`);
         }
-        classList.add('mapboxgl-marker-anchor-'.concat(this._anchor));
+        classList.add(`mapboxgl-marker-anchor-${ this._anchor }`);
         const classNames = options && options.className ? options.className.trim().split(/\s+/) : [];
         classList.add(...classNames);
         this._popup = null;
@@ -89783,9 +89874,9 @@ class Marker extends index.E {
         const DEFAULT_WIDTH = 27;
         const svg = createSVG('svg', {
             display: 'block',
-            height: ''.concat(DEFAULT_HEIGHT * this._scale, 'px'),
-            width: ''.concat(DEFAULT_WIDTH * this._scale, 'px'),
-            viewBox: '0 0 '.concat(DEFAULT_WIDTH, ' ').concat(DEFAULT_HEIGHT)
+            height: `${ DEFAULT_HEIGHT * this._scale }px`,
+            width: `${ DEFAULT_WIDTH * this._scale }px`,
+            viewBox: `0 0 ${ DEFAULT_WIDTH } ${ DEFAULT_HEIGHT }`
         }, element);
         if (this._altitude === 0) {
             const gradient = createSVG('radialGradient', { id: 'shadowGradient' }, createSVG('defs', {}, svg));
@@ -90122,7 +90213,7 @@ class Marker extends index.E {
                 opacity *= this._occludedOpacity;
             }
         }
-        this._element.style.opacity = ''.concat(opacity);
+        this._element.style.opacity = `${ opacity }`;
         this._element.style.pointerEvents = opacity > 0 ? 'auto' : 'none';
         if (this._popup) {
             this._popup._setOpacity(opacity);
@@ -90142,18 +90233,23 @@ class Marker extends index.E {
             return;
         }
         const offset = this._offset.mult(this._scale);
-        this._element.style.transform = '\n            translate('.concat(pos.x, 'px,').concat(pos.y, 'px)\n            ').concat(anchorTranslate[this._anchor], '\n            ').concat(this._calculateXYTransform(), ' ').concat(this._calculateZTransform(), '\n            translate(').concat(offset.x, 'px,').concat(offset.y, 'px)\n        ');
+        this._element.style.transform = `
+            translate(${ pos.x }px,${ pos.y }px)
+            ${ anchorTranslate[this._anchor] }
+            ${ this._calculateXYTransform() } ${ this._calculateZTransform() }
+            translate(${ offset.x }px,${ offset.y }px)
+        `;
     }
     _calculateXYTransform() {
         const pos = this._pos;
         const map = this._map;
         const alignment = this.getPitchAlignment();
         if (!map || !pos || alignment !== 'map') {
-            return '';
+            return ``;
         }
         if (!map._showingGlobe()) {
             const pitch = map.getPitch();
-            return pitch ? 'rotateX('.concat(pitch, 'deg)') : '';
+            return pitch ? `rotateX(${ pitch }deg)` : '';
         }
         const tilt = index.cW(index.f5(map.transform, this._lngLat));
         const posFromCenter = pos.sub(index.f6(map.transform));
@@ -90164,7 +90260,7 @@ class Marker extends index.E {
         const tiltOverDist = tilt / manhattanDistance;
         const yTilt = posFromCenter.x * tiltOverDist;
         const xTilt = -posFromCenter.y * tiltOverDist;
-        return 'rotateX('.concat(xTilt, 'deg) rotateY(').concat(yTilt, 'deg)');
+        return `rotateX(${ xTilt }deg) rotateY(${ yTilt }deg)`;
     }
     _calculateZTransform() {
         const pos = this._pos;
@@ -90195,7 +90291,7 @@ class Marker extends index.E {
             rotation = up * (1 - smooth);
         }
         rotation += this._rotation;
-        return rotation ? 'rotateZ('.concat(rotation, 'deg)') : '';
+        return rotation ? `rotateZ(${ rotation }deg)` : '';
     }
     _update(delaySnap) {
         cancelAnimationFrame(this._updateFrameId);
@@ -90515,7 +90611,7 @@ class GeolocateControl extends index.E {
     }
     onAdd(map) {
         this._map = map;
-        this._container = create$1('div', 'mapboxgl-ctrl mapboxgl-ctrl-group');
+        this._container = create$1('div', `mapboxgl-ctrl mapboxgl-ctrl-group`);
         this._checkGeolocationSupport(this._setupUI);
         return this._container;
     }
@@ -90674,8 +90770,8 @@ class GeolocateControl extends index.E {
         const tr = map.transform;
         const pixelsPerMeter = index.ce(1, tr._center.lat) * tr.worldSize;
         const circleDiameter = Math.ceil(2 * this._accuracy * pixelsPerMeter);
-        this._circleElement.style.width = ''.concat(circleDiameter, 'px');
-        this._circleElement.style.height = ''.concat(circleDiameter, 'px');
+        this._circleElement.style.width = `${ circleDiameter }px`;
+        this._circleElement.style.height = `${ circleDiameter }px`;
     }
     _onZoom() {
         if (this.options.showUserLocation && this.options.showAccuracyCircle) {
@@ -90739,8 +90835,8 @@ class GeolocateControl extends index.E {
             return;
         }
         this._container.addEventListener('contextmenu', e => e.preventDefault());
-        this._geolocateButton = create$1('button', 'mapboxgl-ctrl-geolocate', this._container);
-        create$1('span', 'mapboxgl-ctrl-icon', this._geolocateButton).setAttribute('aria-hidden', 'true');
+        this._geolocateButton = create$1('button', `mapboxgl-ctrl-geolocate`, this._container);
+        create$1('span', `mapboxgl-ctrl-icon`, this._geolocateButton).setAttribute('aria-hidden', 'true');
         this._geolocateButton.type = 'button';
         if (supported === false) {
             index.w('Geolocation support is not available so the GeolocateControl will be disabled.');
@@ -91021,9 +91117,9 @@ class ScaleControl {
                     unit
                 }).format(distance);
             } else {
-                this._container.innerHTML = ''.concat(distance, '&nbsp;').concat(unitAbbr[unit]);
+                this._container.innerHTML = `${ distance }&nbsp;${ unitAbbr[unit] }`;
             }
-            this._container.style.width = ''.concat(maxWidth * ratio, 'px');
+            this._container.style.width = `${ maxWidth * ratio }px`;
         });
     }
     onAdd(map) {
@@ -91059,7 +91155,7 @@ function getDecimalRoundNum(d) {
     return Math.round(d * multiplier) / multiplier;
 }
 function getRoundNum(num) {
-    const pow10 = Math.pow(10, ''.concat(Math.floor(num)).length - 1);
+    const pow10 = Math.pow(10, `${ Math.floor(num) }`.length - 1);
     let d = num / pow10;
     d = d >= 10 ? 10 : d >= 5 ? 5 : d >= 3 ? 3 : d >= 2 ? 2 : d >= 1 ? 1 : getDecimalRoundNum(d);
     return pow10 * d;
@@ -91089,7 +91185,7 @@ class FullscreenControl {
         this._map = map;
         if (!this._container)
             this._container = this._map.getContainer();
-        this._controlContainer = create$1('div', 'mapboxgl-ctrl mapboxgl-ctrl-group');
+        this._controlContainer = create$1('div', `mapboxgl-ctrl mapboxgl-ctrl-group`);
         if (this._checkFullscreenSupport()) {
             this._setupUI();
         } else {
@@ -91107,8 +91203,8 @@ class FullscreenControl {
         return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
     }
     _setupUI() {
-        const button = this._fullscreenButton = create$1('button', 'mapboxgl-ctrl-fullscreen', this._controlContainer);
-        create$1('span', 'mapboxgl-ctrl-icon', button).setAttribute('aria-hidden', 'true');
+        const button = this._fullscreenButton = create$1('button', `mapboxgl-ctrl-fullscreen`, this._controlContainer);
+        create$1('span', `mapboxgl-ctrl-icon`, button).setAttribute('aria-hidden', 'true');
         button.type = 'button';
         this._updateTitle();
         this._fullscreenButton.addEventListener('click', this._onClickFullscreen);
@@ -91130,8 +91226,8 @@ class FullscreenControl {
         const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement;
         if (fullscreenElement === this._container !== this._fullscreen) {
             this._fullscreen = !this._fullscreen;
-            this._fullscreenButton.classList.toggle('mapboxgl-ctrl-shrink');
-            this._fullscreenButton.classList.toggle('mapboxgl-ctrl-fullscreen');
+            this._fullscreenButton.classList.toggle(`mapboxgl-ctrl-shrink`);
+            this._fullscreenButton.classList.toggle(`mapboxgl-ctrl-fullscreen`);
             this._updateTitle();
         }
     }
@@ -91596,7 +91692,7 @@ class Popup extends index.E {
         const classes = [...this._classList];
         classes.push('mapboxgl-popup');
         if (this._anchor) {
-            classes.push('mapboxgl-popup-anchor-'.concat(this._anchor));
+            classes.push(`mapboxgl-popup-anchor-${ this._anchor }`);
         }
         if (this._trackPointer) {
             classes.push('mapboxgl-popup-track-pointer');
@@ -91630,7 +91726,7 @@ class Popup extends index.E {
             const offsetedPos = pos.add(offset).round();
             map._requestDomTask(() => {
                 if (this._container && anchor) {
-                    this._container.style.transform = ''.concat(anchorTranslate[anchor], ' translate(').concat(offsetedPos.x, 'px,').concat(offsetedPos.y, 'px)');
+                    this._container.style.transform = `${ anchorTranslate[anchor] } translate(${ offsetedPos.x }px,${ offsetedPos.y }px)`;
                 }
             });
         }
@@ -91652,7 +91748,7 @@ class Popup extends index.E {
     }
     _setOpacity(opacity) {
         if (this._container) {
-            this._container.style.opacity = ''.concat(opacity);
+            this._container.style.opacity = `${ opacity }`;
         }
         if (this._content) {
             this._content.style.pointerEvents = opacity ? 'auto' : 'none';

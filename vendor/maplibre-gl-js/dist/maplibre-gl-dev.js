@@ -32706,7 +32706,7 @@ class SymbolBucket {
     constructor(options) {
         this.collisionBoxArray = options.collisionBoxArray;
         this.zoom = options.zoom;
-        this.overscaling = isSafari(globalThis) ? Math.min(options.overscaling, 128) : options.overscaling;
+        this.overscaling = options.overscaling;
         this.layers = options.layers;
         this.layerIds = this.layers.map(layer => layer.id);
         this.index = options.index;
@@ -34836,6 +34836,220 @@ function topDownFeatureComparator(a, b) {
 }
 
 /**
+ * @internal
+ * A [least-recently-used cache](https://en.wikipedia.org/wiki/Cache_algorithms)
+ * with hash lookup made possible by keeping a list of keys in parallel to
+ * an array of dictionary of values
+ *
+ * TileManager offloads currently unused tiles to this cache, and when a tile gets used again,
+ * it is also removed from this cache. Thus addition is the only operation that counts as "usage"
+ * for the purposes of LRU behaviour.
+ */
+class TileCache {
+    /**
+     * @param max - number of permitted values
+     * @param onRemove - callback called with items when they expire
+     */
+    constructor(max, onRemove) {
+        this.max = max;
+        this.onRemove = onRemove;
+        this.reset();
+    }
+    /**
+     * Clear the cache
+     *
+     * @returns this cache
+     */
+    reset() {
+        for (const key in this.data) {
+            for (const removedData of this.data[key]) {
+                if (removedData.timeout)
+                    clearTimeout(removedData.timeout);
+                this.onRemove(removedData.value);
+            }
+        }
+        this.data = {};
+        this.order = [];
+        return this;
+    }
+    /**
+     * Add a key, value combination to the cache, trimming its size if this pushes
+     * it over max length.
+     *
+     * @param tileID - lookup key for the item
+     * @param data - tile data
+     *
+     * @returns this cache
+     */
+    add(tileID, data, expiryTimeout) {
+        const key = tileID.wrapped().key;
+        if (this.data[key] === undefined) {
+            this.data[key] = [];
+        }
+        const dataWrapper = {
+            value: data,
+            timeout: undefined
+        };
+        if (expiryTimeout !== undefined) {
+            dataWrapper.timeout = setTimeout(() => {
+                this.remove(tileID, dataWrapper);
+            }, expiryTimeout);
+        }
+        this.data[key].push(dataWrapper);
+        this.order.push(key);
+        if (this.order.length > this.max) {
+            const removedData = this._getAndRemoveByKey(this.order[0]);
+            if (removedData)
+                this.onRemove(removedData);
+        }
+        return this;
+    }
+    /**
+     * Determine whether the value attached to `key` is present
+     *
+     * @param tileID - the key to be looked-up
+     * @returns whether the cache has this value
+     */
+    has(tileID) {
+        return tileID.wrapped().key in this.data;
+    }
+    /**
+     * Get the value attached to a specific key and remove data from cache.
+     * If the key is not found, returns `null`
+     *
+     * @param tileID - the key to look up
+     * @returns the tile data, or null if it isn't found
+     */
+    getAndRemove(tileID) {
+        if (!this.has(tileID)) {
+            return null;
+        }
+        return this._getAndRemoveByKey(tileID.wrapped().key);
+    }
+    /*
+     * Get and remove the value with the specified key.
+     */
+    _getAndRemoveByKey(key) {
+        const data = this.data[key].shift();
+        if (data.timeout)
+            clearTimeout(data.timeout);
+        if (this.data[key].length === 0) {
+            delete this.data[key];
+        }
+        this.order.splice(this.order.indexOf(key), 1);
+        return data.value;
+    }
+    /*
+     * Get the value with the specified (wrapped tile) key.
+     */
+    getByKey(key) {
+        const data = this.data[key];
+        return data ? data[0].value : null;
+    }
+    /**
+     * Get the value attached to a specific key without removing data
+     * from the cache. If the key is not found, returns `null`
+     *
+     * @param tileID - the key to look up
+     * @returns the tile data, or null if it isn't found
+     */
+    get(tileID) {
+        if (!this.has(tileID)) {
+            return null;
+        }
+        const data = this.data[tileID.wrapped().key][0];
+        return data.value;
+    }
+    /**
+     * Remove a key/value combination from the cache.
+     *
+     * @param tileID - the key for the pair to delete
+     * @param value - If a value is provided, remove that exact version of the value.
+     * @returns this cache
+     */
+    remove(tileID, value) {
+        if (!this.has(tileID)) {
+            return this;
+        }
+        const key = tileID.wrapped().key;
+        const dataIndex = value === undefined ? 0 : this.data[key].indexOf(value);
+        const data = this.data[key][dataIndex];
+        this.data[key].splice(dataIndex, 1);
+        if (data.timeout)
+            clearTimeout(data.timeout);
+        if (this.data[key].length === 0) {
+            delete this.data[key];
+        }
+        this.onRemove(data.value);
+        this.order.splice(this.order.indexOf(key), 1);
+        return this;
+    }
+    /**
+     * Change the max size of the cache.
+     *
+     * @param max - the max size of the cache
+     * @returns this cache
+     */
+    setMaxSize(max) {
+        this.max = max;
+        while (this.order.length > this.max) {
+            const removedData = this._getAndRemoveByKey(this.order[0]);
+            if (removedData)
+                this.onRemove(removedData);
+        }
+        return this;
+    }
+    /**
+     * Remove entries that do not pass a filter function. Used for removing
+     * stale tiles from the cache.
+     *
+     * @param filterFn - Determines whether the tile is filtered. If the supplied function returns false, the tile will be filtered out.
+     */
+    filter(filterFn) {
+        const removed = [];
+        for (const key in this.data) {
+            for (const entry of this.data[key]) {
+                if (!filterFn(entry.value)) {
+                    removed.push(entry);
+                }
+            }
+        }
+        for (const r of removed) {
+            this.remove(r.value.tileID, r);
+        }
+    }
+}
+class BoundedLRUCache {
+    constructor(maxEntries) {
+        this.maxEntries = maxEntries;
+        this.map = new Map();
+    }
+    get(key) {
+        const value = this.map.get(key);
+        if (value !== undefined) {
+            // Move key to end (most recently used)
+            this.map.delete(key);
+            this.map.set(key, value);
+        }
+        return value;
+    }
+    set(key, value) {
+        if (this.map.has(key)) {
+            this.map.delete(key);
+        }
+        else if (this.map.size >= this.maxEntries) {
+            // Delete oldest
+            const oldestKey = this.map.keys().next().value;
+            this.map.delete(oldestKey);
+        }
+        this.map.set(key, value);
+    }
+    clear() {
+        this.map.clear();
+    }
+}
+
+/**
  * Returns the part of a multiline that intersects with the provided rectangular box.
  *
  * @param lines - the lines to check
@@ -34897,6 +35111,141 @@ function clipLine(lines, x1, y1, x2, y2) {
         }
     }
     return clippedLines;
+}
+/**
+ * Clips the geometry to the given bounds.
+ * @param geometry - the geometry to clip
+ * @param type - the geometry type (1=POINT, 2=LINESTRING, 3=POLYGON)
+ * @param x1 - the left edge of the clipping box
+ * @param y1 - the top edge of the clipping box
+ * @param x2 - the right edge of the clipping box
+ * @param y2 - the bottom edge of the clipping box
+ * @returns the clipped geometry
+ */
+function clipGeometry(geometry, type, x1, y1, x2, y2) {
+    let clippedGeometry = clipGeometryOnAxis(geometry, type, x1, x2, 0 /* AxisType.X */);
+    clippedGeometry = clipGeometryOnAxis(clippedGeometry, type, y1, y2, 1 /* AxisType.Y */);
+    return clippedGeometry;
+}
+/**
+ * Clip features between two vertical or horizontal axis-parallel lines:
+ * ```
+ *     |        |
+ *  ___|___     |     /
+ * /   |   \____|____/
+ *     |        |
+ *```
+ * @param geometry - the geometry to clip
+ * @param type - the geometry type (1=POINT, 2=LINESTRING, 3=POLYGON)
+ * @param start - the start line coordinate (x or y) to clip against
+ * @param end - the end line coordinate (x or y) to clip against
+ * @param axis - the axis to clip on (X or Y)
+ * @returns the clipped geometry
+ */
+function clipGeometryOnAxis(geometry, type, start, end, axis) {
+    switch (type) {
+        case 1: // POINT
+            return clipPoints(geometry, start, end, axis);
+        case 2: // LINESTRING
+            return clipLines(geometry, start, end, axis, false);
+        case 3: // POLYGON
+            return clipLines(geometry, start, end, axis, true);
+    }
+    return [];
+}
+function clipPoints(geometry, start, end, axis) {
+    const newGeometry = [];
+    for (const ring of geometry) {
+        for (const point of ring) {
+            const a = axis === 0 /* AxisType.X */ ? point.x : point.y;
+            if (a >= start && a <= end) {
+                newGeometry.push([point]);
+            }
+        }
+    }
+    return newGeometry;
+}
+/**
+ * Clips a line to the given start and end coordinates.
+ * @param line - the line to clip
+ * @param start - the start line coordinate (x or y) to clip against
+ * @param end - the end line coordinate (x or y) to clip against
+ * @param axis - the axis to clip on (X or Y)
+ * @param isPolygon - whether the line is part of a polygon
+ * @returns the clipped line(s)
+ */
+function clipLineInternal(line, start, end, axis, isPolygon) {
+    const intersectionPoint = axis === 0 /* AxisType.X */ ? intersectionPointX : intersectionPointY;
+    let slice = [];
+    const newLine = [];
+    for (let i = 0; i < line.length - 1; i++) {
+        const p1 = line[i];
+        const p2 = line[i + 1];
+        const pos1 = axis === 0 /* AxisType.X */ ? p1.x : p1.y;
+        const pos2 = axis === 0 /* AxisType.X */ ? p2.x : p2.y;
+        let exited = false;
+        if (pos1 < start) {
+            // ---|-->  | (line enters the clip region from the left)
+            if (pos2 > start) {
+                slice.push(intersectionPoint(p1, p2, start));
+            }
+        }
+        else if (pos1 > end) {
+            // |  <--|--- (line enters the clip region from the right)
+            if (pos2 < end) {
+                slice.push(intersectionPoint(p1, p2, end));
+            }
+        }
+        else {
+            slice.push(p1);
+        }
+        if (pos2 < start && pos1 >= start) {
+            // <--|---  | or <--|-----|--- (line exits the clip region on the left)
+            slice.push(intersectionPoint(p1, p2, start));
+            exited = true;
+        }
+        if (pos2 > end && pos1 <= end) {
+            // |  ---|--> or ---|-----|--> (line exits the clip region on the right)
+            slice.push(intersectionPoint(p1, p2, end));
+            exited = true;
+        }
+        if (!isPolygon && exited) {
+            newLine.push(slice);
+            slice = [];
+        }
+    }
+    // add the last point
+    const last = line.length - 1;
+    const lastPos = axis === 0 /* AxisType.X */ ? line[last].x : line[last].y;
+    if (lastPos >= start && lastPos <= end) {
+        slice.push(line[last]);
+    }
+    // close the polygon if its endpoints are not the same after clipping
+    if (isPolygon && slice.length > 0 && !slice[0].equals(slice[slice.length - 1])) {
+        slice.push(new Point(slice[0].x, slice[0].y));
+    }
+    if (slice.length > 0) {
+        newLine.push(slice);
+    }
+    return newLine;
+}
+function clipLines(geometry, start, end, axis, isPolygon) {
+    const newGeometry = [];
+    for (const line of geometry) {
+        const clippedLines = clipLineInternal(line, start, end, axis, isPolygon);
+        if (clippedLines.length > 0) {
+            newGeometry.push(...clippedLines);
+        }
+    }
+    return newGeometry;
+}
+function intersectionPointX(p1, p2, x) {
+    const t = (x - p1.x) / (p2.x - p1.x);
+    return new Point(x, p1.y + (p2.y - p1.y) * t);
+}
+function intersectionPointY(p1, p2, y) {
+    const t = (y - p1.y) / (p2.y - p1.y);
+    return new Point(p1.x + (p2.x - p1.x) * t, y);
 }
 
 class Anchor extends Point {
@@ -36567,6 +36916,7 @@ var performance$1 = performance;
 exports.AJAXError = AJAXError;
 exports.Actor = Actor;
 exports.AlphaImage = AlphaImage;
+exports.BoundedLRUCache = BoundedLRUCache;
 exports.Bounds = Bounds;
 exports.CanonicalTileID = CanonicalTileID;
 exports.CollisionBoxArray = CollisionBoxArray;
@@ -36615,6 +36965,7 @@ exports.SubdivisionGranularityExpression = SubdivisionGranularityExpression;
 exports.SubdivisionGranularitySetting = SubdivisionGranularitySetting;
 exports.SymbolBucket = SymbolBucket;
 exports.Texture = Texture;
+exports.TileCache = TileCache;
 exports.Transitionable = Transitionable;
 exports.TriangleIndexArray = TriangleIndexArray;
 exports.Uniform1f = Uniform1f;
@@ -36644,6 +36995,7 @@ exports.arrayBufferToImageBitmap = arrayBufferToImageBitmap;
 exports.bezier = bezier;
 exports.calculateTileKey = calculateTileKey;
 exports.clamp = clamp$1;
+exports.clipGeometry = clipGeometry;
 exports.clipLine = clipLine;
 exports.clone = clone$5;
 exports.clone$1 = clone$6;
@@ -37052,6 +37404,95 @@ function recalculateLayers(layers, zoom, availableImages) {
     }
 }
 
+class n extends performance.VectorTileFeature{constructor(t,r){super(new performance.Pbf,0,r,[],[]),this.feature=t,this.type=t.type,this.properties=t.tags?t.tags:{},"id"in t&&("string"==typeof t.id?this.id=parseInt(t.id,10):"number"!=typeof t.id||isNaN(t.id)||(this.id=t.id));}loadGeometry(){const e=[],r=1===this.feature.type?[this.feature.geometry]:this.feature.geometry;for(const i of r){const r=[];for(const e of i)r.push(new performance.Point(e[0],e[1]));e.push(r);}return e}}class o extends performance.VectorTileLayer{constructor(t,r){super(new performance.Pbf),this.layers={_geojsonTileLayer:this},this.name="_geojsonTileLayer",this.version=r?r.version:1,this.extent=r?r.extent:4096,this.length=t.length,this.features=t;}feature(e){return new n(this.features[e],this.extent)}}function s(t){const r=new performance.Pbf;return function(e,t){for(const r in e.layers)t.writeMessage(3,f,e.layers[r]);}(t,r),r.finish()}function a(e,t){const r={};for(const i in e)r[i]=new o(e[i].features,t),r[i].name=i,r[i].version=t?t.version:1,r[i].extent=t?t.extent:4096;return s({layers:r})}function f(e,t){t.writeVarintField(15,e.version||1),t.writeStringField(1,e.name||""),t.writeVarintField(5,e.extent||4096);const r={keys:[],values:[],keycache:{},valuecache:{}};for(let i=0;i<e.length;i++)r.feature=e.feature(i),t.writeMessage(2,u,r);const i=r.keys;for(const e of i)t.writeStringField(3,e);const n=r.values;for(const e of n)t.writeMessage(4,y,e);}function u(e,t){if(!e.feature)return;const r=e.feature;void 0!==r.id&&t.writeVarintField(1,r.id),t.writeMessage(2,c,e),t.writeVarintField(3,r.type),t.writeMessage(4,p,r);}function c(e,t){for(const r in e.feature?.properties){let i=e.feature.properties[r],n=e.keycache[r];if(null===i)continue;void 0===n&&(e.keys.push(r),n=e.keys.length-1,e.keycache[r]=n),t.writeVarint(n),"string"!=typeof i&&"boolean"!=typeof i&&"number"!=typeof i&&(i=JSON.stringify(i));const o=typeof i+":"+i;let s=e.valuecache[o];void 0===s&&(e.values.push(i),s=e.values.length-1,e.valuecache[o]=s),t.writeVarint(s);}}function l(e,t){return (t<<3)+(7&e)}function h(e){return e<<1^e>>31}function p(e,t){const r=e.loadGeometry(),i=e.type;let n=0,o=0;for(const s of r){let r=1;1===i&&(r=s.length),t.writeVarint(l(1,r));const a=3===i?s.length-1:s.length;for(let e=0;e<a;e++){1===e&&1!==i&&t.writeVarint(l(2,a-1));const r=s[e].x-n,f=s[e].y-o;t.writeVarint(h(r)),t.writeVarint(h(f)),n+=r,o+=f;}3===e.type&&t.writeVarint(l(7,1));}}function y(e,t){const r=typeof e;"string"===r?t.writeStringField(1,e):"boolean"===r?t.writeBooleanField(7,e):"number"===r&&(e%1!=0?t.writeDoubleField(3,e):e<0?t.writeSVarintField(6,e):t.writeVarintField(5,e));}
+
+class VectorTileFeatureOverzoomed extends performance.VectorTileFeature {
+    constructor(type, geometry, properties, id, extent) {
+        super(new performance.Pbf(), 0, extent, [], []);
+        this.type = type;
+        this.properties = properties ? properties : {};
+        this.extent = extent;
+        this.pointsArray = geometry;
+        this.id = id;
+    }
+    loadGeometry() {
+        // Clone the geometry and ensure all points are Point instances
+        return this.pointsArray.map(ring => ring.map(point => new performance.Point(point.x, point.y)));
+    }
+}
+class VectorTileLayerOverzoomed extends performance.VectorTileLayer {
+    constructor(features, layerName, extent) {
+        super(new performance.Pbf());
+        this.version = 2;
+        this._myFeatures = features;
+        this.name = layerName;
+        this.length = features.length;
+        this.extent = extent;
+    }
+    feature(i) {
+        return this._myFeatures[i];
+    }
+}
+class VectorTileOverzoomed {
+    constructor() {
+        this.layers = {};
+    }
+    addLayer(layer) {
+        this.layers[layer.name] = layer;
+    }
+}
+/**
+ * Encodes the virtual tile into binary vector tile form.
+ * This is a convenience that allows `FeatureIndex` to operate the same way across `VectorTileSource` and `GeoJSONSource` data.
+ * @param virtualVectorTile - a syntetically created vector tile, this tile should have the relevant layer and features already added to it.
+ * @returns - the encoded vector tile along with the original virtual tile binary data.
+ */
+function toVirtualVectorTile(virtualVectorTile) {
+    let pbf = s(virtualVectorTile);
+    if (pbf.byteOffset !== 0 || pbf.byteLength !== pbf.buffer.byteLength) {
+        pbf = new Uint8Array(pbf); // Compatibility with node Buffer (https://github.com/mapbox/pbf/issues/35)
+    }
+    return {
+        vectorTile: virtualVectorTile,
+        rawData: pbf.buffer
+    };
+}
+/**
+ * This function slices a source tile layer into an overzoomed tile layer for a target tile ID.
+ * @param sourceLayer - the source tile layer to slice
+ * @param maxZoomTileID - the maximum zoom tile ID
+ * @param targetTileID - the target tile ID
+ * @returns - the overzoomed tile layer
+ */
+function sliceVectorTileLayer(sourceLayer, maxZoomTileID, targetTileID) {
+    const { extent } = sourceLayer;
+    const dz = targetTileID.z - maxZoomTileID.z;
+    const scale = Math.pow(2, dz);
+    // Calculate the target tile's position within the source tile in target coordinate space
+    // This ensures all tiles share the same coordinate system
+    const offsetX = (targetTileID.x - maxZoomTileID.x * scale) * extent;
+    const offsetY = (targetTileID.y - maxZoomTileID.y * scale) * extent;
+    const featureWrappers = [];
+    for (let index = 0; index < sourceLayer.length; index++) {
+        const feature = sourceLayer.feature(index);
+        let geometry = feature.loadGeometry();
+        // Transform all coordinates to target tile space
+        for (const ring of geometry) {
+            for (const point of ring) {
+                point.x = point.x * scale - offsetX;
+                point.y = point.y * scale - offsetY;
+            }
+        }
+        const buffer = 128;
+        geometry = performance.clipGeometry(geometry, feature.type, -buffer, -buffer, extent + buffer, extent + buffer);
+        if (geometry.length === 0) {
+            continue;
+        }
+        featureWrappers.push(new VectorTileFeatureOverzoomed(feature.type, geometry, feature.properties, feature.id, extent));
+    }
+    return new VectorTileLayerOverzoomed(featureWrappers, sourceLayer.name, extent);
+}
+
 /**
  * The {@link WorkerSource} implementation that supports {@link VectorTileSource}.
  * This class is designed to be easily reused to support custom source types
@@ -37072,6 +37513,7 @@ class VectorTileWorkerSource {
         this.fetching = {};
         this.loading = {};
         this.loaded = {};
+        this.overzoomedTileResultCache = new performance.BoundedLRUCache(1000);
     }
     /**
      * Loads a vector tile
@@ -37109,7 +37551,10 @@ class VectorTileWorkerSource {
      */
     loadTile(params) {
         return performance.__awaiter(this, void 0, void 0, function* () {
-            const tileUid = params.uid;
+            const { uid: tileUid, overzoomParameters } = params;
+            if (overzoomParameters) {
+                params.request = overzoomParameters.overzoomRequest;
+            }
             const perf = (params && params.request && params.request.collectResourceTiming) ?
                 new performance.RequestPerformance(params.request) : false;
             const workerTile = new WorkerTile(params);
@@ -37121,6 +37566,11 @@ class VectorTileWorkerSource {
                 delete this.loading[tileUid];
                 if (!response) {
                     return null;
+                }
+                if (overzoomParameters) {
+                    const overzoomTile = this._getOverzoomTile(params, response.vectorTile);
+                    response.rawData = overzoomTile.rawData;
+                    response.vectorTile = overzoomTile.vectorTile;
                 }
                 const rawTileData = response.rawData;
                 const cacheControl = {};
@@ -37157,6 +37607,36 @@ class VectorTileWorkerSource {
                 throw err;
             }
         });
+    }
+    /**
+     * If we are seeking a tile deeper than the source's max available canonical tile, get the overzoomed tile
+     * @param params - the worker tile parameters
+     * @param maxZoomVectorTile - the original vector tile at the source's max available canonical zoom
+     * @returns the overzoomed tile and its raw data
+     */
+    _getOverzoomTile(params, maxZoomVectorTile) {
+        const { tileID, source, overzoomParameters } = params;
+        const { maxZoomTileID } = overzoomParameters;
+        const cacheKey = `${maxZoomTileID.key}_${tileID.key}`;
+        const cachedOverzoomTile = this.overzoomedTileResultCache.get(cacheKey);
+        if (cachedOverzoomTile) {
+            return cachedOverzoomTile;
+        }
+        const overzoomedVectorTile = new VectorTileOverzoomed();
+        const layerFamilies = this.layerIndex.familiesBySource[source];
+        for (const sourceLayerId in layerFamilies) {
+            const sourceLayer = maxZoomVectorTile.layers[sourceLayerId];
+            if (!sourceLayer) {
+                continue;
+            }
+            const slicedTileLayer = sliceVectorTileLayer(sourceLayer, maxZoomTileID, tileID.canonical);
+            if (slicedTileLayer.length > 0) {
+                overzoomedVectorTile.addLayer(slicedTileLayer);
+            }
+        }
+        const overzoomedVectorTileResult = toVirtualVectorTile(overzoomedVectorTile);
+        this.overzoomedTileResultCache.set(cacheKey, overzoomedVectorTileResult);
+        return overzoomedVectorTileResult;
     }
     /**
      * Implements {@link WorkerSource.reloadTile}.
@@ -37295,8 +37775,6 @@ function requireGeojsonRewind () {
 
 var geojsonRewindExports = requireGeojsonRewind();
 var rewind$1 = /*@__PURE__*/performance.getDefaultExportFromCjs(geojsonRewindExports);
-
-class n extends performance.VectorTileFeature{constructor(t,r){super(new performance.Pbf,0,r,[],[]),this.feature=t,this.type=t.type,this.properties=t.tags?t.tags:{},"id"in t&&("string"==typeof t.id?this.id=parseInt(t.id,10):"number"!=typeof t.id||isNaN(t.id)||(this.id=t.id));}loadGeometry(){const e=[],r=1===this.feature.type?[this.feature.geometry]:this.feature.geometry;for(const i of r){const r=[];for(const e of i)r.push(new performance.Point(e[0],e[1]));e.push(r);}return e}}class o extends performance.VectorTileLayer{constructor(t,r){super(new performance.Pbf),this.layers={_geojsonTileLayer:this},this.name="_geojsonTileLayer",this.version=r?r.version:1,this.extent=r?r.extent:4096,this.length=t.length,this.features=t;}feature(e){return new n(this.features[e],this.extent)}}function s(t){const r=new performance.Pbf;return function(e,t){for(const r in e.layers)t.writeMessage(3,f,e.layers[r]);}(t,r),r.finish()}function a(e,t){const r={};for(const i in e)r[i]=new o(e[i].features,t),r[i].name=i,r[i].version=t?t.version:1,r[i].extent=t?t.extent:4096;return s({layers:r})}function f(e,t){t.writeVarintField(15,e.version||1),t.writeStringField(1,e.name||""),t.writeVarintField(5,e.extent||4096);const r={keys:[],values:[],keycache:{},valuecache:{}};for(let i=0;i<e.length;i++)r.feature=e.feature(i),t.writeMessage(2,u,r);const i=r.keys;for(const e of i)t.writeStringField(3,e);const n=r.values;for(const e of n)t.writeMessage(4,y,e);}function u(e,t){if(!e.feature)return;const r=e.feature;void 0!==r.id&&t.writeVarintField(1,r.id),t.writeMessage(2,c,e),t.writeVarintField(3,r.type),t.writeMessage(4,p,r);}function c(e,t){for(const r in e.feature?.properties){let i=e.feature.properties[r],n=e.keycache[r];if(null===i)continue;void 0===n&&(e.keys.push(r),n=e.keys.length-1,e.keycache[r]=n),t.writeVarint(n),"string"!=typeof i&&"boolean"!=typeof i&&"number"!=typeof i&&(i=JSON.stringify(i));const o=typeof i+":"+i;let s=e.valuecache[o];void 0===s&&(e.values.push(i),s=e.values.length-1,e.valuecache[o]=s),t.writeVarint(s);}}function l(e,t){return (t<<3)+(7&e)}function h(e){return e<<1^e>>31}function p(e,t){const r=e.loadGeometry(),i=e.type;let n=0,o=0;for(const s of r){let r=1;1===i&&(r=s.length),t.writeVarint(l(1,r));const a=3===i?s.length-1:s.length;for(let e=0;e<a;e++){1===e&&1!==i&&t.writeVarint(l(2,a-1));const r=s[e].x-n,f=s[e].y-o;t.writeVarint(h(r)),t.writeVarint(h(f)),n+=r,o+=f;}3===e.type&&t.writeVarint(l(7,1));}}function y(e,t){const r=typeof e;"string"===r?t.writeStringField(1,e):"boolean"===r?t.writeBooleanField(7,e):"number"===r&&(e%1!=0?t.writeDoubleField(3,e):e<0?t.writeSVarintField(6,e):t.writeVarintField(5,e));}
 
 const defaultOptions$1 = {
     minZoom: 0,   // min zoom to generate clusters on
@@ -38625,18 +39103,7 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
                 return null;
             }
             const geojsonWrapper = new o(geoJSONTile.features, { version: 2, extent: performance.EXTENT });
-            // Encode the geojson-vt tile into binary vector tile form.
-            // This is a convenience that allows `FeatureIndex` to operate the same way
-            // across `VectorTileSource` and `GeoJSONSource` data.
-            let pbf = s(geojsonWrapper);
-            if (pbf.byteOffset !== 0 || pbf.byteLength !== pbf.buffer.byteLength) {
-                // Compatibility with node Buffer (https://github.com/mapbox/pbf/issues/35)
-                pbf = new Uint8Array(pbf);
-            }
-            return {
-                vectorTile: geojsonWrapper,
-                rawData: pbf.buffer
-            };
+            return toVirtualVectorTile(geojsonWrapper);
         });
     }
     /**
@@ -39084,7 +39551,7 @@ var dependencies = {
 var devDependencies = {
 	"@mapbox/mapbox-gl-rtl-text": "^0.3.0",
 	"@mapbox/mvt-fixtures": "^3.10.0",
-	"@rollup/plugin-commonjs": "^28.0.9",
+	"@rollup/plugin-commonjs": "^29.0.0",
 	"@rollup/plugin-json": "^6.1.0",
 	"@rollup/plugin-node-resolve": "^16.0.3",
 	"@rollup/plugin-replace": "^6.0.3",
@@ -41808,7 +42275,8 @@ class VectorTileSource extends performance$1.Evented {
                 pixelRatio: this.map.getPixelRatio(),
                 showCollisionBoxes: this.map.showCollisionBoxes,
                 promoteId: this.promoteId,
-                subdivisionGranularity: this.map.style.projection.subdivisionGranularity
+                subdivisionGranularity: this.map.style.projection.subdivisionGranularity,
+                overzoomParameters: this._getOverzoomParameters(tile),
             };
             params.request.collectResourceTiming = this._collectResourceTiming;
             let messageType = "RT" /* MessageType.reloadTile */;
@@ -41841,6 +42309,24 @@ class VectorTileSource extends performance$1.Evented {
                 this._afterTileLoadWorkerResponse(tile, null);
             }
         });
+    }
+    /**
+     * When the requested tile has a higher canonical Z than source maxzoom, pass overzoom parameters so worker can load the
+     * deepest tile at source max zoom to generate sub tiles using geojsonvt for highest performance on vector overscaling
+     */
+    _getOverzoomParameters(tile) {
+        if (tile.tileID.canonical.z <= this.maxzoom) {
+            return undefined;
+        }
+        if (this.map._zoomLevelsToOverscale === undefined) {
+            return undefined;
+        }
+        const maxZoomTileID = tile.tileID.scaledTo(this.maxzoom).canonical;
+        const maxZoomTileUrl = maxZoomTileID.url(this.tiles, this.map.getPixelRatio(), this.scheme);
+        return {
+            maxZoomTileID,
+            overzoomRequest: this.map._requestManager.transformRequest(maxZoomTileUrl, "Tile" /* ResourceType.Tile */)
+        };
     }
     _afterTileLoadWorkerResponse(tile, data) {
         if (data && data.resourceTiming) {
@@ -43803,191 +44289,6 @@ class Tile {
 
 /**
  * @internal
- * A [least-recently-used cache](https://en.wikipedia.org/wiki/Cache_algorithms)
- * with hash lookup made possible by keeping a list of keys in parallel to
- * an array of dictionary of values
- *
- * TileManager offloads currently unused tiles to this cache, and when a tile gets used again,
- * it is also removed from this cache. Thus addition is the only operation that counts as "usage"
- * for the purposes of LRU behaviour.
- */
-class TileCache {
-    /**
-     * @param max - number of permitted values
-     * @param onRemove - callback called with items when they expire
-     */
-    constructor(max, onRemove) {
-        this.max = max;
-        this.onRemove = onRemove;
-        this.reset();
-    }
-    /**
-     * Clear the cache
-     *
-     * @returns this cache
-     */
-    reset() {
-        for (const key in this.data) {
-            for (const removedData of this.data[key]) {
-                if (removedData.timeout)
-                    clearTimeout(removedData.timeout);
-                this.onRemove(removedData.value);
-            }
-        }
-        this.data = {};
-        this.order = [];
-        return this;
-    }
-    /**
-     * Add a key, value combination to the cache, trimming its size if this pushes
-     * it over max length.
-     *
-     * @param tileID - lookup key for the item
-     * @param data - tile data
-     *
-     * @returns this cache
-     */
-    add(tileID, data, expiryTimeout) {
-        const key = tileID.wrapped().key;
-        if (this.data[key] === undefined) {
-            this.data[key] = [];
-        }
-        const dataWrapper = {
-            value: data,
-            timeout: undefined
-        };
-        if (expiryTimeout !== undefined) {
-            dataWrapper.timeout = setTimeout(() => {
-                this.remove(tileID, dataWrapper);
-            }, expiryTimeout);
-        }
-        this.data[key].push(dataWrapper);
-        this.order.push(key);
-        if (this.order.length > this.max) {
-            const removedData = this._getAndRemoveByKey(this.order[0]);
-            if (removedData)
-                this.onRemove(removedData);
-        }
-        return this;
-    }
-    /**
-     * Determine whether the value attached to `key` is present
-     *
-     * @param tileID - the key to be looked-up
-     * @returns whether the cache has this value
-     */
-    has(tileID) {
-        return tileID.wrapped().key in this.data;
-    }
-    /**
-     * Get the value attached to a specific key and remove data from cache.
-     * If the key is not found, returns `null`
-     *
-     * @param tileID - the key to look up
-     * @returns the tile data, or null if it isn't found
-     */
-    getAndRemove(tileID) {
-        if (!this.has(tileID)) {
-            return null;
-        }
-        return this._getAndRemoveByKey(tileID.wrapped().key);
-    }
-    /*
-     * Get and remove the value with the specified key.
-     */
-    _getAndRemoveByKey(key) {
-        const data = this.data[key].shift();
-        if (data.timeout)
-            clearTimeout(data.timeout);
-        if (this.data[key].length === 0) {
-            delete this.data[key];
-        }
-        this.order.splice(this.order.indexOf(key), 1);
-        return data.value;
-    }
-    /*
-     * Get the value with the specified (wrapped tile) key.
-     */
-    getByKey(key) {
-        const data = this.data[key];
-        return data ? data[0].value : null;
-    }
-    /**
-     * Get the value attached to a specific key without removing data
-     * from the cache. If the key is not found, returns `null`
-     *
-     * @param tileID - the key to look up
-     * @returns the tile data, or null if it isn't found
-     */
-    get(tileID) {
-        if (!this.has(tileID)) {
-            return null;
-        }
-        const data = this.data[tileID.wrapped().key][0];
-        return data.value;
-    }
-    /**
-     * Remove a key/value combination from the cache.
-     *
-     * @param tileID - the key for the pair to delete
-     * @param value - If a value is provided, remove that exact version of the value.
-     * @returns this cache
-     */
-    remove(tileID, value) {
-        if (!this.has(tileID)) {
-            return this;
-        }
-        const key = tileID.wrapped().key;
-        const dataIndex = value === undefined ? 0 : this.data[key].indexOf(value);
-        const data = this.data[key][dataIndex];
-        this.data[key].splice(dataIndex, 1);
-        if (data.timeout)
-            clearTimeout(data.timeout);
-        if (this.data[key].length === 0) {
-            delete this.data[key];
-        }
-        this.onRemove(data.value);
-        this.order.splice(this.order.indexOf(key), 1);
-        return this;
-    }
-    /**
-     * Change the max size of the cache.
-     *
-     * @param max - the max size of the cache
-     * @returns this cache
-     */
-    setMaxSize(max) {
-        this.max = max;
-        while (this.order.length > this.max) {
-            const removedData = this._getAndRemoveByKey(this.order[0]);
-            if (removedData)
-                this.onRemove(removedData);
-        }
-        return this;
-    }
-    /**
-     * Remove entries that do not pass a filter function. Used for removing
-     * stale tiles from the cache.
-     *
-     * @param filterFn - Determines whether the tile is filtered. If the supplied function returns false, the tile will be filtered out.
-     */
-    filter(filterFn) {
-        const removed = [];
-        for (const key in this.data) {
-            for (const entry of this.data[key]) {
-                if (!filterFn(entry.value)) {
-                    removed.push(entry);
-                }
-            }
-        }
-        for (const r of removed) {
-            this.remove(r.value.tileID, r);
-        }
-    }
-}
-
-/**
- * @internal
  * SourceFeatureState manages the state and pending changes
  * to features in a source, separated by source layer.
  * stateChanges and deletedStates batch all changes to the tile (updates and removes, respectively)
@@ -44418,7 +44719,7 @@ class TileManager extends performance$1.Evented {
         });
         this._source = create(id, options, dispatcher, this);
         this._tiles = {};
-        this._cache = new TileCache(0, (tile) => this._unloadTile(tile));
+        this._cache = new performance$1.TileCache(0, (tile) => this._unloadTile(tile));
         this._timers = {};
         this._maxTileCacheSize = null;
         this._maxTileCacheZoomLevels = null;
@@ -44850,11 +45151,13 @@ class TileManager extends performance$1.Evented {
             idealTileIDs = coveringTiles(transform, {
                 tileSize: this.usedForTerrain ? this.tileSize : this._source.tileSize,
                 minzoom: this._source.minzoom,
-                maxzoom: this._source.maxzoom,
+                maxzoom: this._source.type === 'vector' && this.map._zoomLevelsToOverscale !== undefined
+                    ? transform.maxZoom - this.map._zoomLevelsToOverscale
+                    : this._source.maxzoom,
                 roundZoom: this.usedForTerrain ? false : this._source.roundZoom,
                 reparseOverscaled: this._source.reparseOverscaled,
                 terrain,
-                calculateTileZoom: this._source.calculateTileZoom
+                calculateTileZoom: this._source.calculateTileZoom,
             });
             if (this._source.hasTile) {
                 idealTileIDs = idealTileIDs.filter((coord) => this._source.hasTile(coord));
@@ -64506,7 +64809,8 @@ const defaultOptions$4 = {
     /**Because GL MAX_TEXTURE_SIZE is usually at least 4096px. */
     maxCanvasSize: [4096, 4096],
     cancelPendingTileRequestsWhileZooming: true,
-    centerClampedToGround: true
+    centerClampedToGround: true,
+    experimentalZoomLevelsToOverscale: undefined
 };
 /**
  * The `Map` object represents the map on your page. It exposes methods
@@ -64654,6 +64958,7 @@ let Map$1 = class Map extends Camera {
         this._clickTolerance = resolvedOptions.clickTolerance;
         this._overridePixelRatio = resolvedOptions.pixelRatio;
         this._maxCanvasSize = resolvedOptions.maxCanvasSize;
+        this._zoomLevelsToOverscale = resolvedOptions.experimentalZoomLevelsToOverscale;
         this.transformCameraUpdate = resolvedOptions.transformCameraUpdate;
         this.transformConstrain = resolvedOptions.transformConstrain;
         this.cancelPendingTileRequestsWhileZooming = resolvedOptions.cancelPendingTileRequestsWhileZooming === true;
