@@ -800,7 +800,6 @@ var source_vector = {
 			length: 4,
 			doc: "An array containing the longitude and latitude of the southwest and northeast corners of the source's bounding box in the following order: `[sw.lng, sw.lat, ne.lng, ne.lat]`."
 		},
-		experimental: true,
 		doc: "An array of additional discrete geographic regions where tiles are available. When used alongside the `bounds` property, these regions act as an additional filter - Mapbox GL will only request tiles that are both within the `bounds` and any of the regions defined in `extra_bounds`. When used independently (without `bounds`), Mapbox GL will request tiles that fall within any of the regions in `extra_bounds`. This allows for more fine-grained control over tile requests, particularly when dealing with sparse data coverage."
 	},
 	scheme: {
@@ -890,7 +889,6 @@ var source_raster = {
 			length: 4,
 			doc: "An array containing the longitude and latitude of the southwest and northeast corners of the source's bounding box in the following order: `[sw.lng, sw.lat, ne.lng, ne.lat]`."
 		},
-		experimental: true,
 		doc: "An array of additional discrete geographic regions where tiles are available. When used alongside the `bounds` property, these regions act as an additional filter - Mapbox GL will only request tiles that are both within the `bounds` and any of the regions defined in `extra_bounds`. When used independently (without `bounds`), Mapbox GL will request tiles that fall within any of the regions in `extra_bounds`. This allows for more fine-grained control over tile requests, particularly when dealing with sparse data coverage."
 	},
 	minzoom: {
@@ -982,7 +980,6 @@ var source_raster_dem = {
 			length: 4,
 			doc: "An array containing the longitude and latitude of the southwest and northeast corners of the source's bounding box in the following order: `[sw.lng, sw.lat, ne.lng, ne.lat]`."
 		},
-		experimental: true,
 		doc: "An array of additional discrete geographic regions where tiles are available. When used alongside the `bounds` property, these regions act as an additional filter - Mapbox GL will only request tiles that are both within the `bounds` and any of the regions defined in `extra_bounds`. When used independently (without `bounds`), Mapbox GL will request tiles that fall within any of the regions in `extra_bounds`. This allows for more fine-grained control over tile requests, particularly when dealing with sparse data coverage."
 	},
 	minzoom: {
@@ -1075,7 +1072,6 @@ var source_raster_array = {
 			length: 4,
 			doc: "An array containing the longitude and latitude of the southwest and northeast corners of the source's bounding box in the following order: `[sw.lng, sw.lat, ne.lng, ne.lat]`."
 		},
-		experimental: true,
 		doc: "An array of additional discrete geographic regions where tiles are available. When used alongside the `bounds` property, these regions act as an additional filter - Mapbox GL will only request tiles that are both within the `bounds` and any of the regions defined in `extra_bounds`. When used independently (without `bounds`), Mapbox GL will request tiles that fall within any of the regions in `extra_bounds`. This allows for more fine-grained control over tile requests, particularly when dealing with sparse data coverage."
 	},
 	minzoom: {

@@ -13162,7 +13162,6 @@ const getAppearanceProperties = () => properties$2 || (properties$2 = new Proper
 
 class SymbolAppearance {
     constructor(condition, name, properties, scope, options, iconImageUseTheme) {
-        this.cachedIconPrimary = null;
         const conditionSpec = spec['appearance']['condition'];
         const compiledExpression = createExpression(condition, conditionSpec);
         if (compiledExpression.result === 'success') {
@@ -13176,15 +13175,6 @@ class SymbolAppearance {
                 this.unevaluatedLayout.setValue(property, properties[property]);
             }
         }
-    }
-    hasCachedIconPrimary() {
-        return this.cachedIconPrimary !== null;
-    }
-    setCachedIconPrimary(iconPrimary) {
-        this.cachedIconPrimary = iconPrimary;
-    }
-    getCachedIconPrimary() {
-        return this.cachedIconPrimary;
     }
     isActive(context) {
         if (!this.condition && context.isHidden && this.name === 'hidden')
@@ -13203,6 +13193,9 @@ class SymbolAppearance {
     getUnevaluatedProperties() {
         return this.unevaluatedLayout;
     }
+    getUnevaluatedProperty(name) {
+        return this.unevaluatedLayout._values[name];
+    }
     recalculate(parameters, availableImages, iconImageUseTheme) {
         if (this.unevaluatedLayout) {
             this.properties = this.unevaluatedLayout.possiblyEvaluate(parameters, void 0, availableImages, iconImageUseTheme);
@@ -13217,6 +13210,22 @@ class SymbolAppearance {
             result['properties'] = this.unevaluatedLayout.serialize();
         }
         return result;
+    }
+    hasIconProperties() {
+        const iconImageProperty = this.hasProperty('icon-image');
+        const iconSizeProperty = this.hasProperty('icon-size');
+        const iconOffsetProperty = this.hasProperty('icon-offset');
+        const iconRotateProperty = this.hasProperty('icon-rotate');
+        return iconImageProperty || iconSizeProperty || iconOffsetProperty || iconRotateProperty;
+    }
+    hasTextProperties() {
+        const textSizeProperty = this.hasProperty('text-size');
+        const textOffsetProperty = this.hasProperty('text-offset');
+        const textRotateProperty = this.hasProperty('text-rotate');
+        return textSizeProperty || textOffsetProperty || textRotateProperty;
+    }
+    hasProperty(name) {
+        return this.getUnevaluatedProperty(name).value !== void 0;
     }
 }
 
@@ -18396,7 +18405,7 @@ function tilespaceTranslate(translate2, translateAnchor, bearing, pixelsToTileUn
 }
 
 let layout$e;
-const getLayoutProperties$d = () => layout$e || (layout$e = new Properties({
+const getLayoutProperties$e = () => layout$e || (layout$e = new Properties({
     'circle-sort-key': new DataDrivenProperty(spec['layout_circle']['circle-sort-key']),
     'circle-elevation-reference': new DataConstantProperty(spec['layout_circle']['circle-elevation-reference']),
     'visibility': new DataConstantProperty(spec['layout_circle']['visibility'])
@@ -19503,7 +19512,7 @@ const circleDefinesValues = layer => {
 class CircleStyleLayer extends StyleLayer {
     constructor(layer, scope, lut, options) {
         const properties = {
-            layout: getLayoutProperties$d(),
+            layout: getLayoutProperties$e(),
             paint: getPaintProperties$e()
         };
         super(layer, properties, scope, lut, options);
@@ -19608,7 +19617,7 @@ class HeatmapBucket extends CircleBucket {
 register(HeatmapBucket, 'HeatmapBucket', { omit: ['layers'] });
 
 let layout$c;
-const getLayoutProperties$c = () => layout$c || (layout$c = new Properties({ 'visibility': new DataConstantProperty(spec['layout_heatmap']['visibility']) }));
+const getLayoutProperties$d = () => layout$c || (layout$c = new Properties({ 'visibility': new DataConstantProperty(spec['layout_heatmap']['visibility']) }));
 let paint$d;
 const getPaintProperties$d = () => paint$d || (paint$d = new Properties({
     'heatmap-radius': new DataDrivenProperty(spec['paint_heatmap']['heatmap-radius']),
@@ -19801,7 +19810,7 @@ class HeatmapStyleLayer extends StyleLayer {
     }
     constructor(layer, scope, lut, options) {
         const properties = {
-            layout: getLayoutProperties$c(),
+            layout: getLayoutProperties$d(),
             paint: getPaintProperties$d()
         };
         super(layer, properties, scope, lut, options);
@@ -19868,7 +19877,7 @@ class HeatmapStyleLayer extends StyleLayer {
 }
 
 let layout$b;
-const getLayoutProperties$b = () => layout$b || (layout$b = new Properties({ 'visibility': new DataConstantProperty(spec['layout_hillshade']['visibility']) }));
+const getLayoutProperties$c = () => layout$b || (layout$b = new Properties({ 'visibility': new DataConstantProperty(spec['layout_hillshade']['visibility']) }));
 let paint$c;
 const getPaintProperties$c = () => paint$c || (paint$c = new Properties({
     'hillshade-illumination-direction': new DataConstantProperty(spec['paint_hillshade']['hillshade-illumination-direction']),
@@ -19898,7 +19907,7 @@ const getPaintProperties$c = () => paint$c || (paint$c = new Properties({
 class HillshadeStyleLayer extends StyleLayer {
     constructor(layer, scope, lut, options) {
         const properties = {
-            layout: getLayoutProperties$b(),
+            layout: getLayoutProperties$c(),
             paint: getPaintProperties$c()
         };
         super(layer, properties, scope, lut, options);
@@ -23884,7 +23893,7 @@ register(FillBufferData, 'FillBufferData');
 register(ElevatedStructures, 'ElevatedStructures');
 
 let layout$a;
-const getLayoutProperties$a = () => layout$a || (layout$a = new Properties({
+const getLayoutProperties$b = () => layout$a || (layout$a = new Properties({
     'fill-sort-key': new DataDrivenProperty(spec['layout_fill']['fill-sort-key']),
     'visibility': new DataConstantProperty(spec['layout_fill']['visibility']),
     'fill-elevation-reference': new DataConstantProperty(spec['layout_fill']['fill-elevation-reference']),
@@ -23929,7 +23938,7 @@ const getPaintProperties$b = () => paint$b || (paint$b = new Properties({
 class FillStyleLayer extends StyleLayer {
     constructor(layer, scope, lut, options) {
         const properties = {
-            layout: getLayoutProperties$a(),
+            layout: getLayoutProperties$b(),
             paint: getPaintProperties$b()
         };
         super(layer, properties, scope, lut, options);
@@ -24255,7 +24264,7 @@ class ClipBucket {
 register(ClipBucket, 'ClipBucket', { omit: ['layers'] });
 
 let layout$9;
-const getLayoutProperties$9 = () => layout$9 || (layout$9 = new Properties({
+const getLayoutProperties$a = () => layout$9 || (layout$9 = new Properties({
     'clip-layer-types': new DataConstantProperty(spec['layout_clip']['clip-layer-types']),
     'clip-layer-scope': new DataConstantProperty(spec['layout_clip']['clip-layer-scope'])
 }));
@@ -24265,7 +24274,7 @@ const getPaintProperties$a = () => paint$a || (paint$a = new Properties({}));
 class ClipStyleLayer extends StyleLayer {
     constructor(layer, scope, lut, options) {
         const properties = {
-            layout: getLayoutProperties$9(),
+            layout: getLayoutProperties$a(),
             paint: getPaintProperties$a()
         };
         super(layer, properties, scope, lut, options);
@@ -26213,7 +26222,7 @@ function transformFootprintVertices$1(vertices, offset, count, footprintId, cent
 }
 
 let layout$8;
-const getLayoutProperties$8 = () => layout$8 || (layout$8 = new Properties({
+const getLayoutProperties$9 = () => layout$8 || (layout$8 = new Properties({
     'visibility': new DataConstantProperty(spec['layout_fill-extrusion']['visibility']),
     'fill-extrusion-edge-radius': new DataConstantProperty(spec['layout_fill-extrusion']['fill-extrusion-edge-radius'])
 }));
@@ -26453,7 +26462,7 @@ function computeT(a, b, p) {
 class FillExtrusionStyleLayer extends StyleLayer {
     constructor(layer, scope, lut, options) {
         const properties = {
-            layout: getLayoutProperties$8(),
+            layout: getLayoutProperties$9(),
             paint: getPaintProperties$9()
         };
         super(layer, properties, scope, lut, options);
@@ -30546,7 +30555,7 @@ register(BuildingGeometry, 'BuildingGeometry');
 register(BuildingBloomGeometry, 'BuildingBloomGeometry');
 
 let layout$7;
-const getLayoutProperties$7 = () => layout$7 || (layout$7 = new Properties({
+const getLayoutProperties$8 = () => layout$7 || (layout$7 = new Properties({
     'visibility': new DataConstantProperty(spec['layout_building']['visibility']),
     'building-facade': new DataDrivenProperty(spec['layout_building']['building-facade']),
     'building-facade-floors': new DataDrivenProperty(spec['layout_building']['building-facade-floors']),
@@ -30590,7 +30599,7 @@ const getPaintProperties$8 = () => paint$8 || (paint$8 = new Properties({
 class BuildingStyleLayer extends StyleLayer {
     constructor(layer, scope, lut, options) {
         const properties = {
-            layout: getLayoutProperties$7(),
+            layout: getLayoutProperties$8(),
             paint: getPaintProperties$8()
         };
         super(layer, properties, scope, lut, options);
@@ -31663,7 +31672,7 @@ register(LineBucket, 'LineBucket', {
 });
 
 let layout$6;
-const getLayoutProperties$6 = () => layout$6 || (layout$6 = new Properties({
+const getLayoutProperties$7 = () => layout$6 || (layout$6 = new Properties({
     'line-cap': new DataDrivenProperty(spec['layout_line']['line-cap']),
     'line-join': new DataDrivenProperty(spec['layout_line']['line-join']),
     'line-miter-limit': new DataConstantProperty(spec['layout_line']['line-miter-limit']),
@@ -31876,7 +31885,7 @@ const getProperties$1 = () => {
         return properties$1;
     }
     properties$1 = {
-        layout: getLayoutProperties$6(),
+        layout: getLayoutProperties$7(),
         paint: getPaintProperties$7()
     };
     return properties$1;
@@ -35600,48 +35609,55 @@ function rotateBoundingBox(bbox, rotateDegrees) {
     const tr = new Point(bbox.right, bbox.top);
     const bl = new Point(bbox.left, bbox.bottom);
     const br = new Point(bbox.right, bbox.bottom);
-    tl._rotateAround(rotateRadians, new Point(0, 0));
-    tr._rotateAround(rotateRadians, new Point(0, 0));
-    bl._rotateAround(rotateRadians, new Point(0, 0));
-    br._rotateAround(rotateRadians, new Point(0, 0));
+    const center = new Point(0, 0);
+    tl._rotateAround(rotateRadians, center);
+    tr._rotateAround(rotateRadians, center);
+    bl._rotateAround(rotateRadians, center);
+    br._rotateAround(rotateRadians, center);
     bbox.left = Math.min(tl.x, tr.x, bl.x, br.x);
     bbox.right = Math.max(tl.x, tr.x, bl.x, br.x);
     bbox.top = Math.min(tl.y, tr.y, bl.y, br.y);
     bbox.bottom = Math.max(tl.y, tr.y, bl.y, br.y);
 }
-function updateIconBoundingBox(shapedIcon, iconBBox, rotate, iconScale) {
-    const collisionPadding = shapedIcon.collisionPadding || [
+function getUpdateSymbolBoundingBox(shaped, existingBBox, rotate, scale, textOffset) {
+    const collisionPadding = isPositionedIcon(shaped) && shaped.collisionPadding ? shaped.collisionPadding : [
         0,
         0,
         0,
         0
     ];
-    const top = shapedIcon.top - collisionPadding[1];
-    const bottom = shapedIcon.bottom + collisionPadding[3];
-    const left = shapedIcon.left - collisionPadding[0];
-    const right = shapedIcon.right + collisionPadding[2];
-    const newIconBBox = {
+    const top = shaped.top - collisionPadding[1];
+    const bottom = shaped.bottom + collisionPadding[3];
+    const left = shaped.left - collisionPadding[0];
+    const right = shaped.right + collisionPadding[2];
+    const newBBox = {
         top,
         bottom,
         left,
         right,
         scaled: false
     };
-    if (iconScale !== void 0) {
-        scaleBoundingBox(newIconBBox, iconScale);
+    if (scale !== void 0) {
+        scaleBoundingBox(newBBox, scale);
     }
     if (rotate) {
-        rotateBoundingBox(newIconBBox, rotate);
+        rotateBoundingBox(newBBox, rotate);
     }
-    if (!iconBBox) {
-        return newIconBBox;
+    if (textOffset) {
+        newBBox.left += textOffset[0];
+        newBBox.right += textOffset[0];
+        newBBox.top += textOffset[1];
+        newBBox.bottom += textOffset[1];
+    }
+    if (!existingBBox) {
+        return newBBox;
     } else {
         return {
-            top: Math.min(iconBBox.top, newIconBBox.top),
-            bottom: Math.max(iconBBox.bottom, newIconBBox.bottom),
-            left: Math.min(iconBBox.left, newIconBBox.left),
-            right: Math.max(iconBBox.right, newIconBBox.right),
-            scaled: iconBBox.scaled || newIconBBox.scaled
+            top: Math.min(existingBBox.top, newBBox.top),
+            bottom: Math.max(existingBBox.bottom, newBBox.bottom),
+            left: Math.min(existingBBox.left, newBBox.left),
+            right: Math.max(existingBBox.right, newBBox.right),
+            scaled: existingBBox.scaled || newBBox.scaled
         };
     }
 }
@@ -35882,7 +35898,7 @@ function performSymbolLayout(bucket, glyphMap, glyphPositions, imageMap, imagePo
             }
         }
         shapedIcon = defaultShapedIcon;
-        const {iconBBox, iconVerticalBBox} = mergeAppearancesBboxes(bucket, shapedIcon, verticallyShapedIcon, layout, feature, canonical, layoutIconSize, iconOffset, sizes, imagePositions, iconAnchor);
+        const {iconBBox, iconVerticalBBox, textBBox, textVerticalBBox} = mergeAppearancesBboxes(bucket, shapedIcon, verticallyShapedIcon, layout, feature, canonical, layoutIconSize, iconOffset, sizes, imagePositions, iconAnchor, shapedTextOrientations, layoutTextSize, textOffset);
         featureData.push({
             feature,
             shapedTextOrientations,
@@ -35899,7 +35915,9 @@ function performSymbolLayout(bucket, glyphMap, glyphPositions, imageMap, imagePo
             isSDFIcon,
             iconTextFit,
             iconCollisionBounds: iconBBox,
-            iconVerticalCollisionBounds: iconVerticalBBox
+            iconVerticalCollisionBounds: iconVerticalBBox,
+            textCollisionBounds: textBBox,
+            textVerticalCollisionBounds: textVerticalBBox
         });
     }
     return {
@@ -35910,73 +35928,141 @@ function performSymbolLayout(bucket, glyphMap, glyphPositions, imageMap, imagePo
         symbolPlacement
     };
 }
-function mergeAppearancesBboxes(bucket, shapedIcon, verticallyShapedIcon, layout, feature, canonical, layoutIconSize, iconOffset, sizes, imagePositions, iconAnchor) {
+function getLayoutProperties$6(layout, feature, canonical) {
+    const baseIconRotate = layout.get('icon-rotate').evaluate(feature, {}, canonical);
+    const baseTextRotate = layout.get('text-rotate').evaluate(feature, {}, canonical);
+    const [iconSizeScaleRangeMin, iconSizeScaleRangeMax] = layout.get('icon-size-scale-range');
+    const iconScaleFactor = clamp(1, iconSizeScaleRangeMin, iconSizeScaleRangeMax);
+    return {
+        baseIconRotate,
+        baseTextRotate,
+        iconScaleFactor
+    };
+}
+function mergeAppearancesBboxes(bucket, shapedIcon, verticallyShapedIcon, layout, feature, canonical, layoutIconSize, iconOffset, sizes, imagePositions, iconAnchor, shapedTextOrientations, layoutTextSize, textOffset) {
     const symbolLayer = bucket.layers[0];
     const appearances = symbolLayer.appearances;
     if (appearances.length === 0) {
         return {
             iconBBox: null,
-            iconVerticalBBox: null
+            iconVerticalBBox: null,
+            textBBox: null,
+            textVerticalBBox: null
         };
     }
-    let iconBBox = null;
-    let iconVerticalBBox = null;
-    const baseIconRotate = layout.get('icon-rotate').evaluate(feature, {}, canonical);
+    const iconBBoxes = {
+        iconBBox: null,
+        iconVerticalBBox: null
+    };
+    const textBBoxes = {
+        textBBox: null,
+        textVerticalBBox: null
+    };
+    const {baseIconRotate, baseTextRotate, iconScaleFactor} = getLayoutProperties$6(layout, feature, canonical);
     if (shapedIcon) {
-        iconBBox = updateIconBoundingBox(shapedIcon, iconBBox, baseIconRotate, layoutIconSize);
+        iconBBoxes.iconBBox = getUpdateSymbolBoundingBox(shapedIcon, iconBBoxes.iconBBox, baseIconRotate, layoutIconSize);
         if (verticallyShapedIcon) {
             const verticalIconRotate = baseIconRotate + 90;
-            iconVerticalBBox = updateIconBoundingBox(verticallyShapedIcon, iconVerticalBBox, verticalIconRotate, layoutIconSize);
+            iconBBoxes.iconVerticalBBox = getUpdateSymbolBoundingBox(verticallyShapedIcon, iconBBoxes.iconVerticalBBox, verticalIconRotate, layoutIconSize);
         }
     }
-    const [iconSizeScaleRangeMin, iconSizeScaleRangeMax] = layout.get('icon-size-scale-range');
-    const iconScaleFactor = clamp(1, iconSizeScaleRangeMin, iconSizeScaleRangeMax);
+    const defaultHorizontalShaping = getDefaultHorizontalShaping(shapedTextOrientations.horizontal);
+    if (defaultHorizontalShaping) {
+        textBBoxes.textBBox = getUpdateSymbolBoundingBox(defaultHorizontalShaping, textBBoxes.textBBox, baseTextRotate, 1, textOffset);
+    }
+    if (shapedTextOrientations.vertical) {
+        const verticalTextRotate = baseTextRotate + 90;
+        textBBoxes.textVerticalBBox = getUpdateSymbolBoundingBox(shapedTextOrientations.vertical, textBBoxes.textVerticalBBox, verticalTextRotate, 1, textOffset);
+    }
     for (const appearance of appearances) {
-        const unevaluatedProperties = appearance.getUnevaluatedProperties();
-        const iconImageProperty = unevaluatedProperties._values['icon-image'].value !== void 0;
-        const iconSizeProperty = unevaluatedProperties._values['icon-size'].value !== void 0;
-        const iconOffsetProperty = unevaluatedProperties._values['icon-offset'].value !== void 0;
-        const iconRotateProperty = unevaluatedProperties._values['icon-rotate'].value !== void 0;
-        if (iconImageProperty || iconSizeProperty || iconOffsetProperty || iconRotateProperty) {
-            const appearanceIconOffsetValue = iconOffsetProperty ? symbolLayer.getAppearanceValueAndResolveTokens(appearance, 'icon-offset', feature, canonical, []) : null;
-            const appearanceIconOffset = appearanceIconOffsetValue && Array.isArray(appearanceIconOffsetValue) ? appearanceIconOffsetValue : iconOffset;
-            const appearanceIconRotateValue = iconRotateProperty ? symbolLayer.getAppearanceValueAndResolveTokens(appearance, 'icon-rotate', feature, canonical, []) : null;
-            const appearanceIconRotate = typeof appearanceIconRotateValue === 'number' ? appearanceIconRotateValue : baseIconRotate;
-            const appearanceIconSizeValue = iconSizeProperty ? symbolLayer.getAppearanceValueAndResolveTokens(appearance, 'icon-size', feature, canonical, []) : null;
-            const appearanceIconSize = typeof appearanceIconSizeValue === 'number' ? appearanceIconSizeValue * sizes.iconScaleFactor : layoutIconSize;
-            let appearanceShapedIcon = null;
-            let appearanceVerticallyShapedIcon = null;
-            let imagePositionToUse = null;
-            if (iconImageProperty) {
-                const appearanceIconImage = symbolLayer.getAppearanceValueAndResolveTokens(appearance, 'icon-image', feature, canonical, []);
-                if (appearanceIconImage) {
-                    const icon = bucket.getResolvedImageFromTokens(appearanceIconImage);
-                    const unevaluatedIconSize = unevaluatedProperties._values['icon-size'];
-                    const iconSizeData = getSizeData(bucket.zoom, unevaluatedIconSize, bucket.worldview);
-                    const imageVariant = getScaledImageVariant(icon, iconSizeData, unevaluatedIconSize, canonical, bucket.zoom, feature, bucket.pixelRatio, iconScaleFactor, bucket.worldview);
-                    imagePositionToUse = imagePositions.get(imageVariant.iconPrimary.toString());
-                }
-            } else if (shapedIcon) {
-                imagePositionToUse = shapedIcon.imagePrimary;
-            }
-            if (imagePositionToUse) {
-                appearanceShapedIcon = shapeIcon(imagePositionToUse, null, appearanceIconOffset, iconAnchor);
-                if (bucket.allowVerticalPlacement) {
-                    appearanceVerticallyShapedIcon = shapeIcon(imagePositionToUse, null, appearanceIconOffset, iconAnchor);
-                }
-            }
-            if (appearanceShapedIcon) {
-                iconBBox = updateIconBoundingBox(appearanceShapedIcon, iconBBox, appearanceIconRotate, appearanceIconSize);
-            }
-            if (appearanceVerticallyShapedIcon) {
-                const verticalAppearanceIconRotate = appearanceIconRotate + 90;
-                iconVerticalBBox = updateIconBoundingBox(appearanceVerticallyShapedIcon, iconVerticalBBox, verticalAppearanceIconRotate, appearanceIconSize);
-            }
+        if (appearance.hasIconProperties()) {
+            updateIconBoundingBoxes(iconBBoxes, bucket, symbolLayer, appearance, feature, canonical, iconOffset, baseIconRotate, layoutIconSize, sizes, shapedIcon, imagePositions, iconScaleFactor, iconAnchor);
+        }
+        if (appearance.hasTextProperties()) {
+            updateTextBoundingBoxes(textBBoxes, symbolLayer, appearance, feature, canonical, textOffset, baseTextRotate, layoutTextSize, defaultHorizontalShaping, shapedTextOrientations.vertical);
         }
     }
     return {
-        iconBBox,
-        iconVerticalBBox
+        iconBBox: iconBBoxes.iconBBox,
+        iconVerticalBBox: iconBBoxes.iconVerticalBBox,
+        textBBox: textBBoxes.textBBox,
+        textVerticalBBox: textBBoxes.textVerticalBBox
+    };
+}
+function updateIconBoundingBoxes(input, bucket, symbolLayer, appearance, feature, canonical, iconOffset, baseIconRotate, layoutIconSize, sizes, shapedIcon, imagePositions, iconScaleFactor, iconAnchor) {
+    const {appearanceIconOffset, appearanceIconRotate, appearanceIconSize} = getAppearanceIconValues(appearance, symbolLayer, feature, canonical, iconOffset, baseIconRotate, layoutIconSize, sizes);
+    let appearanceShapedIcon = null;
+    let appearanceVerticallyShapedIcon = null;
+    let imagePositionToUse = null;
+    if (appearance.hasProperty('icon-image')) {
+        imagePositionToUse = getAppearanceImagePosition(bucket, symbolLayer, appearance, feature, canonical, imagePositions, iconScaleFactor);
+    } else if (shapedIcon) {
+        imagePositionToUse = shapedIcon.imagePrimary;
+    }
+    if (imagePositionToUse) {
+        appearanceShapedIcon = shapeIcon(imagePositionToUse, null, appearanceIconOffset, iconAnchor);
+        if (bucket.allowVerticalPlacement) {
+            appearanceVerticallyShapedIcon = shapeIcon(imagePositionToUse, null, appearanceIconOffset, iconAnchor);
+        }
+    }
+    if (appearanceShapedIcon) {
+        input.iconBBox = getUpdateSymbolBoundingBox(appearanceShapedIcon, input.iconBBox, appearanceIconRotate, appearanceIconSize);
+    }
+    if (appearanceVerticallyShapedIcon) {
+        const verticalAppearanceIconRotate = appearanceIconRotate + 90;
+        input.iconVerticalBBox = getUpdateSymbolBoundingBox(appearanceVerticallyShapedIcon, input.iconVerticalBBox, verticalAppearanceIconRotate, appearanceIconSize);
+    }
+}
+function getAppearanceIconValues(appearance, symbolLayer, feature, canonical, iconOffset, baseIconRotate, layoutIconSize, sizes) {
+    const appearanceIconOffsetValue = appearance.hasProperty('icon-offset') ? symbolLayer.getAppearanceValueAndResolveTokens(appearance, 'icon-offset', feature, canonical, []) : null;
+    const appearanceIconOffset = appearanceIconOffsetValue && Array.isArray(appearanceIconOffsetValue) ? appearanceIconOffsetValue : iconOffset;
+    const appearanceIconRotateValue = appearance.hasProperty('icon-rotate') ? symbolLayer.getAppearanceValueAndResolveTokens(appearance, 'icon-rotate', feature, canonical, []) : null;
+    const appearanceIconRotate = typeof appearanceIconRotateValue === 'number' ? appearanceIconRotateValue : baseIconRotate;
+    const appearanceIconSizeValue = appearance.hasProperty('icon-size') ? symbolLayer.getAppearanceValueAndResolveTokens(appearance, 'icon-size', feature, canonical, []) : null;
+    const appearanceIconSize = typeof appearanceIconSizeValue === 'number' ? appearanceIconSizeValue * sizes.iconScaleFactor : layoutIconSize;
+    return {
+        appearanceIconOffset,
+        appearanceIconRotate,
+        appearanceIconSize
+    };
+}
+function getAppearanceImagePosition(bucket, symbolLayer, appearance, feature, canonical, imagePositions, iconScaleFactor) {
+    let imagePositionToUse = null;
+    const appearanceIconImage = symbolLayer.getAppearanceValueAndResolveTokens(appearance, 'icon-image', feature, canonical, []);
+    if (appearanceIconImage) {
+        const icon = bucket.getResolvedImageFromTokens(appearanceIconImage);
+        const unevaluatedIconSize = appearance.getUnevaluatedProperty('icon-size');
+        const iconSizeData = getSizeData(bucket.zoom, unevaluatedIconSize, bucket.worldview);
+        const imageVariant = getScaledImageVariant(icon, iconSizeData, unevaluatedIconSize, canonical, bucket.zoom, feature, bucket.pixelRatio, iconScaleFactor, bucket.worldview);
+        imagePositionToUse = imagePositions.get(imageVariant.iconPrimary.toString());
+    }
+    return imagePositionToUse;
+}
+function updateTextBoundingBoxes(input, symbolLayer, appearance, feature, canonical, textOffset, baseTextRotate, layoutTextSize, defaultHorizontalShaping, defaultVerticalShaping) {
+    const {appearanceTextOffset, appearanceTextRotate, appearanceTextSize} = getAppearanceTextValues(appearance, symbolLayer, feature, canonical, textOffset, baseTextRotate, layoutTextSize);
+    const textSizeScale = appearanceTextSize / layoutTextSize;
+    if (defaultHorizontalShaping) {
+        input.textBBox = getUpdateSymbolBoundingBox(defaultHorizontalShaping, input.textBBox, appearanceTextRotate, textSizeScale, appearanceTextOffset);
+    }
+    if (defaultVerticalShaping) {
+        const verticalAppearanceTextRotate = appearanceTextRotate + 90;
+        input.textVerticalBBox = getUpdateSymbolBoundingBox(defaultVerticalShaping, input.textVerticalBBox, verticalAppearanceTextRotate, textSizeScale, appearanceTextOffset);
+    }
+}
+function getAppearanceTextValues(appearance, symbolLayer, feature, canonical, textOffset, baseTextRotate, layoutTextSize) {
+    const appearanceTextOffsetValue = appearance.hasProperty('text-offset') ? symbolLayer.getAppearanceValueAndResolveTokens(appearance, 'text-offset', feature, canonical, []) : null;
+    const appearanceTextOffset = appearanceTextOffsetValue && Array.isArray(appearanceTextOffsetValue) ? [
+        appearanceTextOffsetValue[0] * ONE_EM,
+        appearanceTextOffsetValue[1] * ONE_EM
+    ] : textOffset;
+    const appearanceTextRotateValue = appearance.hasProperty('text-rotate') ? symbolLayer.getAppearanceValueAndResolveTokens(appearance, 'text-rotate', feature, canonical, []) : null;
+    const appearanceTextRotate = typeof appearanceTextRotateValue === 'number' ? appearanceTextRotateValue : baseTextRotate;
+    const appearanceTextSizeValue = appearance.hasProperty('text-size') ? symbolLayer.getAppearanceValueAndResolveTokens(appearance, 'text-size', feature, canonical, []) : null;
+    const appearanceTextSize = typeof appearanceTextSizeValue === 'number' ? appearanceTextSizeValue : layoutTextSize;
+    return {
+        appearanceTextOffset,
+        appearanceTextRotate,
+        appearanceTextSize
     };
 }
 function scaleShapedIconImage(outImagePosition, image, variant, beforeFitIcon, afterFitIcon, iconTextFit, imageRasterizationTasks, imageMap, imagePositions) {
@@ -36027,13 +36113,13 @@ function postRasterizationSymbolLayout(bucket, bucketData, showCollisionBoxes, a
     bucket.iconAtlasPositions = imageAtlas.iconPositions;
     const {featureData, hasAnySecondaryIcon, sizes, textAlongLine, symbolPlacement} = bucketData;
     for (const data of featureData) {
-        const {shapedIcon, verticallyShapedIcon, feature, shapedTextOrientations, shapedText, layoutTextSize, layoutIconSize, textOffset, isSDFIcon, iconPrimary, iconSecondary, iconTextFit, iconOffset, iconCollisionBounds, iconVerticalCollisionBounds} = data;
+        const {shapedIcon, verticallyShapedIcon, feature, shapedTextOrientations, shapedText, layoutTextSize, layoutIconSize, textOffset, isSDFIcon, iconPrimary, iconSecondary, iconTextFit, iconOffset, iconCollisionBounds, iconVerticalCollisionBounds, textCollisionBounds, textVerticalCollisionBounds} = data;
         reconcileImagePosition(shapedIcon, imageAtlas.iconPositions, iconPrimary, iconSecondary);
         reconcileImagePosition(verticallyShapedIcon, imageAtlas.iconPositions, iconPrimary, iconSecondary);
         reconcileTextImagePositions(shapedTextOrientations, imageAtlas.iconPositions);
         checkCrossFadeImagePositions(iconPrimary, iconSecondary, imageAtlas.iconPositions);
         if (shapedText || shapedIcon) {
-            addFeature(bucket, feature, shapedTextOrientations, shapedIcon, verticallyShapedIcon, imageMap, sizes, layoutTextSize, layoutIconSize, textOffset, isSDFIcon, availableImages, canonical, projection, brightness, hasAnySecondaryIcon, iconTextFit, iconOffset, textAlongLine, symbolPlacement, iconCollisionBounds, iconVerticalCollisionBounds);
+            addFeature(bucket, feature, shapedTextOrientations, shapedIcon, verticallyShapedIcon, imageMap, sizes, layoutTextSize, layoutIconSize, textOffset, isSDFIcon, availableImages, canonical, projection, brightness, hasAnySecondaryIcon, iconTextFit, iconOffset, textAlongLine, symbolPlacement, iconCollisionBounds, iconVerticalCollisionBounds, textCollisionBounds);
         }
     }
     if (showCollisionBoxes) {
@@ -36107,7 +36193,7 @@ function fitIconsToText(bucket, shapedIcon, layout, feature, canonical, shapedTe
         verticallyShapedIcon
     };
 }
-function addFeature(bucket, feature, shapedTextOrientations, shapedIcon, verticallyShapedIcon, imageMap, sizes, layoutTextSize, layoutIconSize, textOffset, isSDFIcon, availableImages, canonical, projection, brightness, hasAnySecondaryIcon, iconTextFit, iconOffset, textAlongLine, symbolPlacement, iconCollisionBounds, iconVerticalCollisionBounds) {
+function addFeature(bucket, feature, shapedTextOrientations, shapedIcon, verticallyShapedIcon, imageMap, sizes, layoutTextSize, layoutIconSize, textOffset, isSDFIcon, availableImages, canonical, projection, brightness, hasAnySecondaryIcon, iconTextFit, iconOffset, textAlongLine, symbolPlacement, iconCollisionBounds, iconVerticalCollisionBounds, textCollisionBounds, textVerticalCollisionBounds) {
     let textMaxSize = sizes.textMaxSize.evaluate(feature, {}, canonical);
     if (textMaxSize === void 0) {
         textMaxSize = layoutTextSize * sizes.textScaleFactor;
@@ -36146,7 +36232,7 @@ function addFeature(bucket, feature, shapedTextOrientations, shapedIcon, vertica
                 up: projection.upVector(canonicalId, anchor.x, anchor.y)
             };
         }
-        addSymbol(bucket, anchor, globe, line, shapedTextOrientations, shapedIcon, imageMap, verticallyShapedIcon, bucket.layers[0], bucket.collisionBoxArray, feature.index, feature.sourceLayerIndex, bucket.index, textPadding, textAlongLine, textOffset, iconBoxScale, iconPadding, iconAlongLine, iconOffset, feature, sizes, isSDFIcon, availableImages, canonical, brightness, hasAnySecondaryIcon, iconTextFit, elevationFeatureIndex, iconCollisionBounds, iconVerticalCollisionBounds);
+        addSymbol(bucket, anchor, globe, line, shapedTextOrientations, shapedIcon, imageMap, verticallyShapedIcon, bucket.layers[0], bucket.collisionBoxArray, feature.index, feature.sourceLayerIndex, bucket.index, textPadding, textAlongLine, textOffset, iconBoxScale, iconPadding, iconAlongLine, iconOffset, feature, sizes, isSDFIcon, availableImages, canonical, brightness, hasAnySecondaryIcon, iconTextFit, elevationFeatureIndex, iconCollisionBounds, iconVerticalCollisionBounds, textCollisionBounds);
     };
     if (symbolPlacement === 'line') {
         for (const line of clipLines(feature.geometry, 0, 0, EXTENT, EXTENT)) {
@@ -36259,7 +36345,7 @@ function evaluateCircleCollisionFeature(shaped) {
     const height = shaped.bottom - shaped.top;
     return height > 0 ? Math.max(10, height) : null;
 }
-function addSymbol(bucket, anchor, globe, line, shapedTextOrientations, shapedIcon, imageMap, verticallyShapedIcon, layer, collisionBoxArray, featureIndex, sourceLayerIndex, bucketIndex, textPadding, textAlongLine, textOffset, iconBoxScale, iconPadding, iconAlongLine, iconOffset, feature, sizes, isSDFIcon, availableImages, canonical, brightness, hasAnySecondaryIcon, iconTextFit, elevationFeatureIndex, iconCollisionBounds, iconVerticalCollisionBounds) {
+function addSymbol(bucket, anchor, globe, line, shapedTextOrientations, shapedIcon, imageMap, verticallyShapedIcon, layer, collisionBoxArray, featureIndex, sourceLayerIndex, bucketIndex, textPadding, textAlongLine, textOffset, iconBoxScale, iconPadding, iconAlongLine, iconOffset, feature, sizes, isSDFIcon, availableImages, canonical, brightness, hasAnySecondaryIcon, iconTextFit, elevationFeatureIndex, iconCollisionBounds, iconVerticalCollisionBounds, textCollisionBounds, textVerticalCollisionBounds) {
     const lineArray = bucket.addToLineVertexArray(anchor, line);
     let textBoxIndex, iconBoxIndex, verticalTextBoxIndex, verticalIconBoxIndex;
     let textCircle, verticalTextCircle, verticalIconCircle;
@@ -36293,7 +36379,7 @@ function addSymbol(bucket, anchor, globe, line, shapedTextOrientations, shapedIc
         } else {
             const textRotation = layer.layout.get('text-rotate').evaluate(feature, {}, canonical);
             const verticalTextRotation = textRotation + 90;
-            verticalTextBoxIndex = evaluateBoxCollisionFeature(collisionBoxArray, collisionFeatureAnchor, anchor, featureIndex, sourceLayerIndex, bucketIndex, verticalShaping, textPadding, verticalTextRotation, textOffset);
+            verticalTextBoxIndex = evaluateBoxCollisionFeature(collisionBoxArray, collisionFeatureAnchor, anchor, featureIndex, sourceLayerIndex, bucketIndex, verticalShaping, textPadding, verticalTextRotation, textOffset, textCollisionBounds);
             if (verticallyShapedIcon) {
                 verticalIconBoxIndex = evaluateBoxCollisionFeature(collisionBoxArray, collisionFeatureAnchor, anchor, featureIndex, sourceLayerIndex, bucketIndex, verticallyShapedIcon, iconPadding, verticalTextRotation, null, iconVerticalCollisionBounds);
             }
@@ -36343,7 +36429,7 @@ function addSymbol(bucket, anchor, globe, line, shapedTextOrientations, shapedIc
                 textCircle = evaluateCircleCollisionFeature(shaping);
             } else {
                 const textRotate = layer.layout.get('text-rotate').evaluate(feature, {}, canonical);
-                textBoxIndex = evaluateBoxCollisionFeature(collisionBoxArray, collisionFeatureAnchor, anchor, featureIndex, sourceLayerIndex, bucketIndex, shaping, textPadding, textRotate, textOffset);
+                textBoxIndex = evaluateBoxCollisionFeature(collisionBoxArray, collisionFeatureAnchor, anchor, featureIndex, sourceLayerIndex, bucketIndex, shaping, textPadding, textRotate, textOffset, textCollisionBounds);
             }
         }
         const singleLine = shaping.positionedLines.length === 1;
@@ -37710,11 +37796,13 @@ class SymbolBucket {
                         type: 'Point',
                         id: featureData.id
                     };
-                    if (!activeAppearance.hasCachedIconPrimary()) {
-                        const iconPrimary2 = this.getCombinedIconPrimary(activeAppearance, layer, evaluationFeature, canonical, availableImages, minimalFeature, iconScaleFactor);
-                        activeAppearance.setCachedIconPrimary(iconPrimary2);
+                    let iconPrimary;
+                    if (!featureData.appearanceIcon) {
+                        iconPrimary = this.getCombinedIconPrimary(activeAppearance, layer, evaluationFeature, canonical, availableImages, minimalFeature, iconScaleFactor);
+                        featureData.appearanceIcon = iconPrimary;
+                    } else {
+                        iconPrimary = featureData.appearanceIcon;
                     }
-                    const iconPrimary = activeAppearance.getCachedIconPrimary();
                     if (!iconPrimary)
                         continue;
                     const primaryImageSerialized = iconPrimary.toString();

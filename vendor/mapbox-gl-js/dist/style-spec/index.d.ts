@@ -524,9 +524,6 @@ type VectorSourceSpecification = {
 		number,
 		number
 	];
-	/**
-	 * @experimental This property is experimental and subject to change in future versions.
-	 */
 	"extra_bounds"?: Array<[
 		number,
 		number,
@@ -551,9 +548,6 @@ type RasterSourceSpecification = {
 		number,
 		number
 	];
-	/**
-	 * @experimental This property is experimental and subject to change in future versions.
-	 */
 	"extra_bounds"?: Array<[
 		number,
 		number,
@@ -578,9 +572,6 @@ type RasterDEMSourceSpecification = {
 		number,
 		number
 	];
-	/**
-	 * @experimental This property is experimental and subject to change in future versions.
-	 */
 	"extra_bounds"?: Array<[
 		number,
 		number,
@@ -605,9 +596,6 @@ type RasterArraySourceSpecification = {
 		number,
 		number
 	];
-	/**
-	 * @experimental This property is experimental and subject to change in future versions.
-	 */
 	"extra_bounds"?: Array<[
 		number,
 		number,
