@@ -1,7 +1,6 @@
 import { MapLibreEvent, MapMouseEvent, MapTouchEvent, LineLayerSpecification, FillLayerSpecification, CircleLayerSpecification, SymbolLayerSpecification } from 'maplibre-gl';
 import { GeoJSON, Feature, LineString, MultiLineString, Position, Point, MultiPoint, Polygon, MultiPolygon, FeatureCollection, BBox, GeoJsonProperties } from 'geojson';
 import { PartialDeep } from 'type-fest';
-import * as lodash from 'lodash';
 
 declare const GM_PREFIX: "gm";
 declare const GM_SYSTEM_PREFIX: "_gm";
@@ -933,10 +932,7 @@ declare class GmEvents {
 }
 
 type SourceUpdateMethods = {
-    [key in FeatureSourceName]: {
-        debounced: () => void;
-        throttled: () => void;
-    };
+    [key in FeatureSourceName]: () => void;
 };
 declare class SourceUpdateManager {
     gm: Geoman;
@@ -947,10 +943,6 @@ declare class SourceUpdateManager {
     delayedSourceUpdateMethods: SourceUpdateMethods;
     constructor(gm: Geoman);
     getFeatureId(feature: Feature): any;
-    getDelayedSourceUpdateMethod({ sourceName, type, }: {
-        sourceName: FeatureSourceName;
-        type: 'throttled' | 'debounced';
-    }): lodash.DebouncedFunc<() => void>;
     updateSource({ sourceName, diff, }: {
         sourceName: FeatureSourceName;
         diff?: GeoJsonUniversalDiff;
