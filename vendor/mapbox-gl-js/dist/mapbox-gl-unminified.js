@@ -29916,9 +29916,11 @@ class BuildingBucket {
                             15
                         ];
                         facadeHeight = facadeHeights[feature.id ? feature.id % facadeHeights.length : 0];
-                        buildingGen.setFacadeOptions(facadeHeight, true);
+                    } else if (height <= 10) {
+                        facadeHeight = 3;
                     }
-                    startPositionTile = 1.6803 * facadeHeight / tileToMeters;
+                    buildingGen.setFacadeOptions(facadeHeight, true);
+                    startPositionTile = (height < 15 ? 1.3 : 1.61803) * facadeHeight / tileToMeters;
                 } else {
                     startPositionTile = base / tileToMeters;
                 }
@@ -37436,6 +37438,7 @@ class SymbolBucket {
         const layer = this.layers[0];
         const unevaluatedLayoutValues = layer._unevaluatedLayout._values;
         this.worldview = options.worldview;
+        this.localizable = options.localizable;
         this.textSizeData = getSizeData(this.zoom, unevaluatedLayoutValues['text-size'], this.worldview);
         this.iconSizeData = getSizeData(this.zoom, unevaluatedLayoutValues['icon-size'], this.worldview);
         const layout = this.layers[0].layout;
@@ -45905,21 +45908,20 @@ class WorkerTile {
             }
             const sourceLayerIndex = sourceLayerCoder.encode(sourceLayerId);
             const features = [];
+            const localizable = this.localizableLayerIds && this.localizableLayerIds.has(sourceLayerId);
             let elevationDependency = false;
             for (let index$1 = 0, currentFeatureIndex = 0; index$1 < sourceLayer.length; index$1++) {
                 const feature = sourceLayer.feature(index$1);
                 const id = featureIndex.getId(feature, sourceLayerId);
-                if (this.localizableLayerIds && this.localizableLayerIds.has(sourceLayerId)) {
-                    const worldview = feature.properties ? feature.properties.worldview : null;
-                    if (this.worldview && typeof worldview === 'string') {
-                        if (worldview === 'all') {
-                            feature.properties['$localized'] = true;
-                        } else if (worldview.split(',').includes(this.worldview)) {
-                            feature.properties['$localized'] = true;
-                            feature.properties['worldview'] = this.worldview;
-                        } else {
-                            continue;
-                        }
+                const worldview = feature.properties ? feature.properties.worldview : null;
+                if (localizable && this.worldview && typeof worldview === 'string') {
+                    if (worldview === 'all') {
+                        feature.properties['$localized'] = true;
+                    } else if (worldview.split(',').includes(this.worldview)) {
+                        feature.properties['$localized'] = true;
+                        feature.properties['worldview'] = this.worldview;
+                    } else {
+                        continue;
                     }
                 }
                 if (!elevationDependency && feature.properties && feature.properties.hasOwnProperty(index.fo)) {
@@ -45964,7 +45966,8 @@ class WorkerTile {
                     projection: this.projection.spec,
                     tessellationStep: this.tessellationStep,
                     styleDefinedModelURLs: availableModels,
-                    worldview: this.worldview
+                    worldview: this.worldview,
+                    localizable
                 });
                 featureIndex.bucketLayerIDs.push(family.map(l => index.B(l.id, l.scope)));
                 let bucketPromise = bucket.prepare ? bucket.prepare() : null;
@@ -59911,6 +59914,17 @@ class Placement {
                     sourceLayerIndex: retainedQueryData.sourceLayerIndex,
                     layoutVertexArrayOffset: 0
                 });
+                const worldview = feature.properties ? feature.properties.worldview : null;
+                if (bucket.localizable && bucket.worldview && typeof worldview === 'string') {
+                    if (worldview === 'all') {
+                        feature.properties['$localized'] = true;
+                    } else if (worldview.split(',').includes(bucket.worldview)) {
+                        feature.properties['$localized'] = true;
+                        feature.properties['worldview'] = bucket.worldview;
+                    } else {
+                        return;
+                    }
+                }
             }
             if (clippingData) {
                 const globals = {
