@@ -19,14 +19,16 @@ for /r %%F in (*.js.map) do (
 if %count%==0 (
     echo No .js.map files found.
     pause
-    exit /b
+    ::exit /b
+    goto :process_css
 )
 
 echo.
 set /p choice=Delete all %count% .js.map files? (Y/N): 
 if /i not "%choice%"=="Y" (
     echo Aborted.
-    exit /b
+    ::exit /b
+    goto :process_css
 )
 
 echo.
@@ -35,6 +37,7 @@ for /l %%I in (1,1,%count%) do (
     del /f /q "!file[%%I]!"
 )
 
+:process_css
 
 echo.
 echo Searching for .css.map files in %cd% ...
