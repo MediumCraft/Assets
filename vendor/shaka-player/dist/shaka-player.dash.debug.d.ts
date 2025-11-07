@@ -2465,7 +2465,7 @@ declare namespace ?_?.clutz.shaka.util.Error {
     CONTENT_NOT_LOADED = 7004.0 ,
     CONTENT_TRANSFORMATION_FAILED = 3019.0 ,
     CONTENT_UNSUPPORTED_BY_BROWSER = 4032.0 ,
-    CS_AD_MANAGER_NOT_INITIALIZED = 10001.0 ,
+    CS_AD_CONTAINER_MISSING = 10008.0 ,
     CS_IMA_SDK_MISSING = 10000.0 ,
     CURRENT_DAI_REQUEST_NOT_FINISHED = 10004.0 ,
     DASH_CONFLICTING_AES_128 = 4050.0 ,
@@ -2512,7 +2512,6 @@ declare namespace ?_?.clutz.shaka.util.Error {
     INDEXED_DB_ERROR = 9001.0 ,
     INDEXED_DB_INIT_TIMED_OUT = 9017.0 ,
     INIT_DATA_TRANSFORM_ERROR = 6016.0 ,
-    INTERSTITIAL_AD_MANAGER_NOT_INITIALIZED = 10006.0 ,
     INVALID_HLS_TAG = 4016.0 ,
     INVALID_MP4_CEA = 2010.0 ,
     INVALID_MP4_TTML = 2007.0 ,
@@ -2540,7 +2539,6 @@ declare namespace ?_?.clutz.shaka.util.Error {
     MP4_SIDX_INVALID_TIMESCALE = 3005.0 ,
     MP4_SIDX_TYPE_NOT_SUPPORTED = 3006.0 ,
     MP4_SIDX_WRONG_BOX_TYPE = 3004.0 ,
-    MT_AD_MANAGER_NOT_INITIALIZED = 10005.0 ,
     NEW_KEY_OPERATION_NOT_SUPPORTED = 9011.0 ,
     NO_CAST_RECEIVERS = 8001.0 ,
     NO_INIT_DATA_FOR_OFFLINE = 9007.0 ,
@@ -2565,7 +2563,7 @@ declare namespace ?_?.clutz.shaka.util.Error {
     SERVER_CERTIFICATE_REQUEST_FAILED = 6017.0 ,
     SERVER_CERTIFICATE_REQUIRED = 6015.0 ,
     SRC_EQUALS_PRELOAD_NOT_SUPPORTED = 7005.0 ,
-    SS_AD_MANAGER_NOT_INITIALIZED = 10003.0 ,
+    SS_AD_CONTAINER_MISSING = 10009.0 ,
     SS_IMA_SDK_MISSING = 10002.0 ,
     STORAGE_LIMIT_REACHED = 9014.0 ,
     STORAGE_NOT_SUPPORTED = 9000.0 ,
@@ -3448,15 +3446,10 @@ declare namespace ?_?.clutz.shaka.extern {
      * playing content, this will return an empty stats object.
      */
     getStats ( ) : any ;
-    initClientSide (adContainer : HTMLElement , video : HTMLMediaElement , adsRenderingSettings : any | null ) : any ;
-    initInterstitial (adContainer : HTMLElement | null , basePlayer : ?_?.clutz.shaka.Player , baseVideo : HTMLMediaElement ) : any ;
-    initMediaTailor (adContainer : HTMLElement | null , networkingEngine : ?_?.clutz.shaka.net.NetworkingEngine , video : HTMLMediaElement ) : any ;
-    initServerSide (adContainer : HTMLElement , video : HTMLMediaElement ) : any ;
     onAssetUnload ( ) : any ;
     onCueMetadataChange (value : ?_?.clutz.shaka.extern.MetadataFrame ) : any ;
-    onDASHMetadata (basePlayer : ?_?.clutz.shaka.Player , baseVideo : HTMLMediaElement , region : ?_?.clutz.shaka.extern.TimelineRegionInfo ) : any ;
-    onDashTimedMetadata (region : ?_?.clutz.shaka.extern.TimelineRegionInfo ) : any ;
-    onHLSMetadata (basePlayer : ?_?.clutz.shaka.Player , baseVideo : HTMLMediaElement , metadata : ?_?.clutz.shaka.extern.HLSMetadata ) : Promise < any > ;
+    onDASHMetadata (region : ?_?.clutz.shaka.extern.TimelineRegionInfo ) : any ;
+    onHLSMetadata (metadata : ?_?.clutz.shaka.extern.HLSMetadata ) : Promise < any > ;
     onHlsTimedMetadata (metadata : ?_?.clutz.shaka.extern.ID3Metadata , timestampOffset : number ) : any ;
     /**
      * Fired when the manifest is updated.
@@ -3464,9 +3457,10 @@ declare namespace ?_?.clutz.shaka.extern {
     onManifestUpdated (isLive : boolean ) : any ;
     release ( ) : any ;
     replaceServerSideAdTagParameters (adTagParameters : object | null ) : any ;
-    requestClientSideAds (imaRequest : any ) : any ;
+    requestClientSideAds (imaRequest : any , adsRenderingSettings : any | null ) : any ;
     requestMediaTailorStream (url : string , adsParams : object | null , backupUrl ? : string ) : Promise < string > ;
     requestServerSideStream (imaRequest : any , backupUrl ? : string ) : Promise < string > ;
+    setContainers (clientSideAdContainer : HTMLElement , serverSideAdContainer : HTMLElement ) : any ;
     setLocale (locale : string ) : any ;
     updateClientSideAdsRenderingSettings (adsRenderingSettings : any ) : any ;
   }

@@ -392,13 +392,11 @@ shaka.util.Error.Code = {
   'MODIFY_OPERATION_NOT_SUPPORTED': 9016,
   'INDEXED_DB_INIT_TIMED_OUT': 9017,
   'CS_IMA_SDK_MISSING': 10000,
-  'CS_AD_MANAGER_NOT_INITIALIZED': 10001,
   'SS_IMA_SDK_MISSING': 10002,
-  'SS_AD_MANAGER_NOT_INITIALIZED': 10003,
   'CURRENT_DAI_REQUEST_NOT_FINISHED': 10004,
-  'MT_AD_MANAGER_NOT_INITIALIZED': 10005,
-  'INTERSTITIAL_AD_MANAGER_NOT_INITIALIZED': 10006,
-  'VAST_INVALID_XML': 10007
+  'VAST_INVALID_XML': 10007,
+  'CS_AD_CONTAINER_MISSING': 10008,
+  'SS_AD_CONTAINER_MISSING': 10009
 };
 /**
  * @namespace shaka.util.StringUtils
@@ -3562,6 +3560,7 @@ shaka.Player = class extends shaka.util.FakeEventTarget {
   /**
    * Get the current load mode.
    * @return {shaka.Player.LoadMode}
+   * @noinline
    */
   getLoadMode() {}
   /**
@@ -3647,6 +3646,7 @@ shaka.Player = class extends shaka.util.FakeEventTarget {
   /**
    * Indicates if the player has fully loaded the stream.
    * @return {boolean}
+   * @noinline
    */
   isFullyLoaded() {}
   /**
@@ -4267,15 +4267,11 @@ shaka.ads.AdManager = class extends shaka.util.FakeEventTarget {
   /**
    * @override
    */
+  setContainers(clientSideAdContainer, serverSideAdContainer) {}
+  /**
+   * @override
+   */
   configure(config) {}
-  /**
-   * @override
-   */
-  initInterstitial(adContainer, basePlayer, baseVideo) {}
-  /**
-   * @override
-   */
-  initClientSide(adContainer, video, adsRenderingSettings) {}
   /**
    * @override
    */
@@ -4287,15 +4283,22 @@ shaka.ads.AdManager = class extends shaka.util.FakeEventTarget {
   /**
    * @override
    */
-  requestClientSideAds(imaRequest) {}
+  requestClientSideAds(imaRequest, adsRenderingSettings) {}
   /**
    * @override
    */
   updateClientSideAdsRenderingSettings(adsRenderingSettings) {}
   /**
+   * @param {!google.ima.dai.api.StreamRequest} imaRequest
+   * @param {string=} backupUrl
+   * @return {!Promise<string>}
    * @override
    */
-  initMediaTailor(adContainer, networkingEngine, video) {}
+  requestServerSideStream(imaRequest, backupUrl) {}
+  /**
+   * @override
+   */
+  replaceServerSideAdTagParameters(adTagParameters) {}
   /**
    * @param {string} url
    * @param {Object} adsParams
@@ -4312,18 +4315,15 @@ shaka.ads.AdManager = class extends shaka.util.FakeEventTarget {
   /**
    * @override
    */
-  initServerSide(adContainer, video) {}
-  /**
-   * @param {!google.ima.dai.api.StreamRequest} imaRequest
-   * @param {string=} backupUrl
-   * @return {!Promise<string>}
-   * @override
-   */
-  requestServerSideStream(imaRequest, backupUrl) {}
+  addCustomInterstitial(interstitial) {}
   /**
    * @override
    */
-  replaceServerSideAdTagParameters(adTagParameters) {}
+  addAdUrlInterstitial(url) {}
+  /**
+   * @override
+   */
+  getInterstitialPlayer() {}
   /**
    * @return {!Array<!shaka.extern.AdCuePoint>}
    * @override
@@ -4341,10 +4341,6 @@ shaka.ads.AdManager = class extends shaka.util.FakeEventTarget {
   /**
    * @override
    */
-  onDashTimedMetadata(region) {}
-  /**
-   * @override
-   */
   onHlsTimedMetadata(metadata, timestamp) {}
   /**
    * @override
@@ -4353,23 +4349,11 @@ shaka.ads.AdManager = class extends shaka.util.FakeEventTarget {
   /**
    * @override
    */
-  onHLSMetadata(basePlayer, baseVideo, metadata) {}
+  onHLSMetadata(metadata) {}
   /**
    * @override
    */
-  onDASHMetadata(basePlayer, baseVideo, region) {}
-  /**
-   * @override
-   */
-  addCustomInterstitial(interstitial) {}
-  /**
-   * @override
-   */
-  addAdUrlInterstitial(url) {}
-  /**
-   * @override
-   */
-  getInterstitialPlayer() {}
+  onDASHMetadata(region) {}
   /**
    * @override
    */
