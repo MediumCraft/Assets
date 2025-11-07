@@ -5159,8 +5159,23 @@ const uniform = ( value, type ) => {
 
 	}
 
-	// @TODO: get ConstNode from .traverse() in the future
-	value = ( value && value.isNode === true ) ? ( value.node && value.node.value ) || value.value : value;
+	if ( value && value.isNode === true ) {
+
+		let v = value.value;
+
+		value.traverse( n => {
+
+			if ( n.isConstNode === true ) {
+
+				v = n.value;
+
+			}
+
+		} );
+
+		value = v;
+
+	}
 
 	return nodeObject( new UniformNode( value, nodeType ) );
 
@@ -16583,9 +16598,9 @@ class BatchNode extends Node {
 
 		const getIndirectIndex = Fn( ( [ id ] ) => {
 
-			const size = int( textureSize( textureLoad( this.batchMesh._indirectTexture ), 0 ).x );
-			const x = int( id ).mod( size );
-			const y = int( id ).div( size );
+			const size = int( textureSize( textureLoad( this.batchMesh._indirectTexture ), 0 ).x ).toConst();
+			const x = int( id ).mod( size ).toConst();
+			const y = int( id ).div( size ).toConst();
 			return textureLoad( this.batchMesh._indirectTexture, ivec2( x, y ) ).x;
 
 		} ).setLayout( {
@@ -16600,11 +16615,11 @@ class BatchNode extends Node {
 
 		const matricesTexture = this.batchMesh._matricesTexture;
 
-		const size = int( textureSize( textureLoad( matricesTexture ), 0 ).x );
-		const j = float( indirectId ).mul( 4 ).toInt().toVar();
+		const size = int( textureSize( textureLoad( matricesTexture ), 0 ).x ).toConst();
+		const j = float( indirectId ).mul( 4 ).toInt().toConst();
 
-		const x = j.mod( size );
-		const y = j.div( size );
+		const x = j.mod( size ).toConst();
+		const y = j.div( size ).toConst();
 		const batchingMatrix = mat4(
 			textureLoad( matricesTexture, ivec2( x, y ) ),
 			textureLoad( matricesTexture, ivec2( x.add( 1 ), y ) ),
@@ -16619,10 +16634,10 @@ class BatchNode extends Node {
 
 			const getBatchingColor = Fn( ( [ id ] ) => {
 
-				const size = int( textureSize( textureLoad( colorsTexture ), 0 ).x );
+				const size = int( textureSize( textureLoad( colorsTexture ), 0 ).x ).toConst();
 				const j = id;
-				const x = j.mod( size );
-				const y = j.div( size );
+				const x = j.mod( size ).toConst();
+				const y = j.div( size ).toConst();
 				return textureLoad( colorsTexture, ivec2( x, y ) ).rgb;
 
 			} ).setLayout( {
@@ -36377,11 +36392,36 @@ class Texture3DNode extends TextureNode {
  * @tsl
  * @function
  * @param {Data3DTexture} value - The 3D texture.
- * @param {?Node<vec2|vec3>} [uvNode=null] - The uv node.
+ * @param {?Node<vec3>} [uvNode=null] - The uv node.
  * @param {?Node<int>} [levelNode=null] - The level node.
  * @returns {Texture3DNode}
  */
 const texture3D = /*@__PURE__*/ nodeProxy( Texture3DNode ).setParameterLength( 1, 3 );
+
+/**
+ * TSL function for creating a texture node that fetches/loads texels without interpolation.
+ *
+ * @tsl
+ * @function
+ * @param {?(Texture|TextureNode)} [value=EmptyTexture] - The texture.
+ * @param {?Node<vec3>} [uvNode=null] - The uv node.
+ * @param {?Node<int>} [levelNode=null] - The level node.
+ * @param {?Node<float>} [biasNode=null] - The bias node.
+ * @returns {TextureNode}
+ */
+const texture3DLoad = ( ...params ) => texture3D( ...params ).setSampler( false );
+
+/**
+ * TSL function for creating a texture node that fetches/loads texels without interpolation.
+ *
+ * @tsl
+ * @function
+ * @param {?(Texture|TextureNode)} [value=EmptyTexture] - The texture.
+ * @param {?Node<vec3>} [uvNode=null] - The uv node.
+ * @param {?Node<int>} [levelNode=null] - The level node.
+ * @returns {TextureNode}
+ */
+const texture3DLevel = ( value, uvNode, levelNode ) => texture3D( value, uvNode ).level( levelNode );
 
 /**
  * A special type of reference node that allows to link values in
@@ -46158,6 +46198,8 @@ var TSL = /*#__PURE__*/Object.freeze({
 	tangentWorld: tangentWorld,
 	texture: texture,
 	texture3D: texture3D,
+	texture3DLevel: texture3DLevel,
+	texture3DLoad: texture3DLoad,
 	textureBarrier: textureBarrier,
 	textureBicubic: textureBicubic,
 	textureBicubicLevel: textureBicubicLevel,
@@ -49538,7 +49580,7 @@ class NodeBuilder {
 	 */
 	getBufferAttributeFromNode( node, type ) {
 
-		const nodeData = this.getDataFromNode( node );
+		const nodeData = this.getDataFromNode( node, 'vertex' );
 
 		let bufferAttribute = nodeData.bufferAttribute;
 
@@ -56561,11 +56603,6 @@ class Renderer {
 
 	//
 
-	/**
-	 * Sets the inspector instance. The inspector can be any class that extends from `InspectorBase`.
-	 *
-	 * @param {InspectorBase} value - The new inspector.
-	 */
 	set inspector( value ) {
 
 		if ( this._inspector !== null ) {
@@ -56579,6 +56616,11 @@ class Renderer {
 
 	}
 
+	/**
+	 * The inspector instance. The inspector can be any class that extends from `InspectorBase`.
+	 *
+	 * @type {InspectorBase}
+	 */
 	get inspector() {
 
 		return this._inspector;
