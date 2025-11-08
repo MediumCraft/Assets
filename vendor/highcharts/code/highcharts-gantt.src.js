@@ -1,5 +1,5 @@
 /**
- * @license Highcharts Gantt JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts Gantt JS v12.4.0-modified (2025-11-07)
  * @module highcharts/highcharts-gantt
  *
  * (c) 2017-2025 Highsoft AS
@@ -47475,7 +47475,7 @@ var Responsive;
 
 ;// ./code/es-modules/masters/highcharts.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts JS v12.4.0-modified (2025-11-07)
  * @module highcharts/highcharts
  *
  * (c) 2009-2025 Highsoft AS
@@ -56296,7 +56296,7 @@ Pathfinder.prototype.algorithms = PathfinderAlgorithms;
 
 ;// ./code/es-modules/masters/modules/pathfinder.src.js
 /**
- * @license Highcharts Gantt JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts Gantt JS v12.4.0-modified (2025-11-07)
  * @module highcharts/modules/pathfinder
  * @requires highcharts
  *
@@ -56426,7 +56426,7 @@ const StaticScale = {
 
 ;// ./code/es-modules/masters/modules/static-scale.src.js
 /**
- * @license Highcharts Gantt JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts Gantt JS v12.4.0-modified (2025-11-07)
  * @module highcharts/modules/static-scale
  * @requires highcharts
  *
@@ -57239,7 +57239,7 @@ Series_SeriesRegistry.registerSeriesType('xrange', XRangeSeries);
 
 ;// ./code/es-modules/masters/modules/xrange.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts JS v12.4.0-modified (2025-11-07)
  * @module highcharts/modules/xrange
  * @requires highcharts
  *
@@ -60816,7 +60816,7 @@ Series_SeriesRegistry.registerSeriesType('gantt', GanttSeries);
 
 ;// ./code/es-modules/masters/modules/gantt.src.js
 /**
- * @license Highcharts Gantt JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts Gantt JS v12.4.0-modified (2025-11-07)
  * @module highcharts/modules/gantt
  * @requires highcharts
  *

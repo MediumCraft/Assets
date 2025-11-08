@@ -1,5 +1,5 @@
 /**
- * @license Highcharts Gantt JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts Gantt JS v12.4.0-modified (2025-11-07)
  * @module highcharts/highcharts-gantt
  *
  * (c) 2017-2025 Highsoft AS
@@ -3888,7 +3888,7 @@ const external_highcharts_src_js_default_Time_namespaceObject = __WEBPACK_EXTERN
 var external_highcharts_src_js_default_Time_default = /*#__PURE__*/__webpack_require__.n(external_highcharts_src_js_default_Time_namespaceObject);
 ;// ./code/es-modules/masters/highcharts.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts JS v12.4.0-modified (2025-11-07)
  * @module highcharts/highcharts
  *
  * (c) 2009-2025 Highsoft AS
@@ -4879,7 +4879,7 @@ const gantt_src_js_default_Pathfinder_namespaceObject = __WEBPACK_EXTERNAL_MODUL
 var gantt_src_js_default_Pathfinder_default = /*#__PURE__*/__webpack_require__.n(gantt_src_js_default_Pathfinder_namespaceObject);
 ;// ./code/es-modules/masters/modules/pathfinder.src.js
 /**
- * @license Highcharts Gantt JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts Gantt JS v12.4.0-modified (2025-11-07)
  * @module highcharts/modules/pathfinder
  * @requires highcharts
  *
@@ -5009,7 +5009,7 @@ const StaticScale = {
 
 ;// ./code/es-modules/masters/modules/static-scale.src.js
 /**
- * @license Highcharts Gantt JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts Gantt JS v12.4.0-modified (2025-11-07)
  * @module highcharts/modules/static-scale
  * @requires highcharts
  *
@@ -5031,7 +5031,7 @@ const gantt_src_js_default_Series_types_xrange_namespaceObject = __WEBPACK_EXTER
 var gantt_src_js_default_Series_types_xrange_default = /*#__PURE__*/__webpack_require__.n(gantt_src_js_default_Series_types_xrange_namespaceObject);
 ;// ./code/es-modules/masters/modules/xrange.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts JS v12.4.0-modified (2025-11-07)
  * @module highcharts/modules/xrange
  * @requires highcharts
  *
@@ -8608,7 +8608,7 @@ external_highcharts_src_js_default_SeriesRegistry_default().registerSeriesType('
 
 ;// ./code/es-modules/masters/modules/gantt.src.js
 /**
- * @license Highcharts Gantt JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts Gantt JS v12.4.0-modified (2025-11-07)
  * @module highcharts/modules/gantt
  * @requires highcharts
  *

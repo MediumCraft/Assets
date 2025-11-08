@@ -1,5 +1,5 @@
 /**
- * @license Highcharts Maps v12.4.0-modified (2025-11-06)
+ * @license Highcharts Maps v12.4.0-modified (2025-11-07)
  * @module highcharts/highmaps
  *
  * (c) 2011-2025 Highsoft AS
@@ -47469,7 +47469,7 @@ var Responsive;
 
 ;// ./code/es-modules/masters/highcharts.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts JS v12.4.0-modified (2025-11-07)
  * @module highcharts/highcharts
  *
  * (c) 2009-2025 Highsoft AS
@@ -49041,7 +49041,7 @@ Array.prototype.push.apply(Axis_Axis.keepProps, ColorAxis.keepProps);
 
 ;// ./code/es-modules/masters/modules/coloraxis.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts JS v12.4.0-modified (2025-11-07)
  * @module highcharts/modules/color-axis
  * @requires highcharts
  *
@@ -58722,6 +58722,9 @@ HeatmapSeries.defaultOptions = HeatmapSeries_merge(HeatmapSeries_ScatterSeries.d
 HeatmapSeries_addEvent(HeatmapSeries, 'afterDataClassLegendClick', function () {
     this.isDirtyCanvas = true;
     this.drawPoints();
+    if (this.options.enableMouseTracking) {
+        this.drawTracker(); // #23162, set tracker again after points redraw
+    }
 });
 HeatmapSeries_extend(HeatmapSeries.prototype, {
     axisTypes: Series_ColorMapComposition.seriesMembers.axisTypes,
@@ -58781,7 +58784,7 @@ Series_SeriesRegistry.registerSeriesType('heatmap', HeatmapSeries);
 
 ;// ./code/es-modules/masters/modules/map.src.js
 /**
- * @license Highmaps JS v12.4.0-modified (2025-11-06)
+ * @license Highmaps JS v12.4.0-modified (2025-11-07)
  * @module highcharts/modules/map
  * @requires highcharts
  *

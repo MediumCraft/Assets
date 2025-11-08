@@ -1,5 +1,5 @@
 /**
- * @license Highmaps JS v12.4.0-modified (2025-11-06)
+ * @license Highmaps JS v12.4.0-modified (2025-11-07)
  * @module highcharts/modules/map
  * @requires highcharts
  *
@@ -1641,7 +1641,7 @@ Array.prototype.push.apply((highcharts_Axis_commonjs_highcharts_Axis_commonjs2_h
 
 ;// ./code/es-modules/masters/modules/coloraxis.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts JS v12.4.0-modified (2025-11-07)
  * @module highcharts/modules/color-axis
  * @requires highcharts
  *
@@ -11585,6 +11585,9 @@ HeatmapSeries.defaultOptions = HeatmapSeries_merge(HeatmapSeries_ScatterSeries.d
 HeatmapSeries_addEvent(HeatmapSeries, 'afterDataClassLegendClick', function () {
     this.isDirtyCanvas = true;
     this.drawPoints();
+    if (this.options.enableMouseTracking) {
+        this.drawTracker(); // #23162, set tracker again after points redraw
+    }
 });
 HeatmapSeries_extend(HeatmapSeries.prototype, {
     axisTypes: Series_ColorMapComposition.seriesMembers.axisTypes,

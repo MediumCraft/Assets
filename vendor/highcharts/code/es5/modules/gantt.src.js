@@ -1,5 +1,5 @@
 /**
- * @license Highcharts Gantt JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts Gantt JS v12.4.0-modified (2025-11-07)
  * @module highcharts/modules/gantt
  * @requires highcharts
  *
@@ -9824,7 +9824,7 @@ Pathfinder.prototype.algorithms = PathfinderAlgorithms;
 
 ;// ./code/es5/es-modules/masters/modules/pathfinder.src.js
 /**
- * @license Highcharts Gantt JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts Gantt JS v12.4.0-modified (2025-11-07)
  * @module highcharts/modules/pathfinder
  * @requires highcharts
  *
@@ -9961,7 +9961,7 @@ var StaticScale = {
 
 ;// ./code/es5/es-modules/masters/modules/static-scale.src.js
 /**
- * @license Highcharts Gantt JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts Gantt JS v12.4.0-modified (2025-11-07)
  * @module highcharts/modules/static-scale
  * @requires highcharts
  *
@@ -10895,7 +10895,7 @@ highcharts_SeriesRegistry_commonjs_highcharts_SeriesRegistry_commonjs2_highchart
 
 ;// ./code/es5/es-modules/masters/modules/xrange.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-06)
+ * @license Highcharts JS v12.4.0-modified (2025-11-07)
  * @module highcharts/modules/xrange
  * @requires highcharts
  *
