@@ -4955,6 +4955,7 @@ export declare class FeatureIndex {
 	grid3D: TransferableGridIndex;
 	featureIndexArray: FeatureIndexArray;
 	promoteId?: PromoteIdSpecification;
+	encoding: string;
 	rawTileData: ArrayBuffer;
 	bucketLayerIDs: Array<Array<string>>;
 	vtLayers: {
@@ -5104,6 +5105,7 @@ type WorkerTileParameters = TileParameters & {
 	collectResourceTiming?: boolean;
 	returnDependencies?: boolean;
 	subdivisionGranularity: SubdivisionGranularitySetting;
+	encoding?: string;
 	/**
 	 * Provide this property when the requested tile has a higher canonical Z than source maxzoom.
 	 * This allows the worker to know that it needs to overzoom from a source tile.
@@ -5133,6 +5135,7 @@ export type WorkerTileResult = ExpiryData & {
 	featureIndex: FeatureIndex;
 	collisionBoxArray: CollisionBoxArray;
 	rawTileData?: ArrayBuffer;
+	encoding?: string;
 	resourceTiming?: Array<PerformanceResourceTiming>;
 	glyphMap?: {
 		[_: string]: {
@@ -5489,6 +5492,7 @@ export declare class Tile {
 	};
 	latestFeatureIndex: FeatureIndex;
 	latestRawTileData: ArrayBuffer;
+	latestEncoding: string;
 	imageAtlas: ImageAtlas;
 	imageAtlasTexture: Texture;
 	dashPositions: {
@@ -14331,7 +14335,7 @@ type VectorTileSourceOptions = VectorSourceSpecification & {
 	tileSize?: number;
 };
 /**
- * A source containing vector tiles in [Mapbox Vector Tile format](https://docs.mapbox.com/vector-tiles/reference/).
+ * A source containing vector tiles in [Maplibre Vector Tile format](https://maplibre.org/maplibre-tile-spec/) or [Mapbox Vector Tile format](https://docs.mapbox.com/vector-tiles/reference/).
  * (See the [Style Specification](https://maplibre.org/maplibre-style-spec/) for detailed documentation of options.)
  *
  * @group Sources
@@ -14372,6 +14376,7 @@ export declare class VectorTileSource extends Evented implements Source {
 	maxzoom: number;
 	url: string;
 	scheme: string;
+	encoding: string;
 	tileSize: number;
 	promoteId: PromoteIdSpecification;
 	_options: VectorSourceSpecification;
