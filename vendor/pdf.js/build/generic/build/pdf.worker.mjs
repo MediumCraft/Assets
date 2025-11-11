@@ -17,8 +17,8 @@
  */
 
 /**
- * pdfjsVersion = 5.4.426
- * pdfjsBuild = 4f2c1e231
+ * pdfjsVersion = 5.4.431
+ * pdfjsBuild = 9cea57879
  */
 /******/ // The require scope
 /******/ var __webpack_require__ = {};
@@ -58340,6 +58340,14 @@ class DocumentData {
     this.postponedRefCopies = new RefSetCache();
   }
 }
+class XRefWrapper {
+  constructor(entries) {
+    this.entries = entries;
+  }
+  fetch(ref) {
+    return ref instanceof Ref ? this.entries[ref.num] : ref;
+  }
+}
 class PDFEditor {
   constructor({
     useObjectStreams = true,
@@ -58351,6 +58359,7 @@ class PDFEditor {
     this.oldPages = [];
     this.newPages = [];
     this.xref = [null];
+    this.xrefWrapper = new XRefWrapper(this.xref);
     this.newRefCount = 1;
     [this.rootRef, this.rootDict] = this.newDict;
     [this.infoRef, this.infoDict] = this.newDict;
@@ -58425,9 +58434,11 @@ class PDFEditor {
       ({
         dict
       } = obj = obj.getOriginalStream().clone());
+      dict.xref = this.xrefWrapper;
     } else if (obj instanceof Dict) {
       if (mustClone) {
         obj = obj.clone();
+        obj.xref = this.xrefWrapper;
       }
       dict = obj;
     }
@@ -58927,7 +58938,7 @@ class PDFEditor {
       rootDict
     } = this;
     rootDict.setIfName("Type", "Catalog");
-    rootDict.set("Version", this.version);
+    rootDict.setIfName("Version", this.version);
     this.#makePageTree();
     this.#makePageLabelsTree();
     this.#makeDestinationsTree();
@@ -59232,7 +59243,7 @@ class WorkerMessageHandler {
       docId,
       apiVersion
     } = docParams;
-    const workerVersion = "5.4.426";
+    const workerVersion = "5.4.431";
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match ` + `the Worker version "${workerVersion}".`);
     }

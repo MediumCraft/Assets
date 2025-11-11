@@ -17,8 +17,8 @@
  */
 
 /**
- * pdfjsVersion = 5.4.426
- * pdfjsBuild = 4f2c1e231
+ * pdfjsVersion = 5.4.431
+ * pdfjsBuild = 9cea57879
  */
 /******/ var __webpack_modules__ = ({
 
@@ -17776,7 +17776,7 @@ class PDFViewer {
   #textLayerMode = TextLayerMode.ENABLE;
   #viewerAlert = null;
   constructor(options) {
-    const viewerVersion = "5.4.426";
+    const viewerVersion = "5.4.431";
     if (version !== viewerVersion) {
       throw new Error(`The API version "${version}" does not match the Viewer version "${viewerVersion}".`);
     }
