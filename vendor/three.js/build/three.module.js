@@ -2677,7 +2677,7 @@ const EXTRA_LOD_SIGMA = [ 0.125, 0.215, 0.35, 0.446, 0.526, 0.582 ];
 const MAX_SAMPLES = 20;
 
 // GGX VNDF importance sampling configuration
-const GGX_SAMPLES = 512;
+const GGX_SAMPLES = 256;
 
 const _flatCamera = /*@__PURE__*/ new OrthographicCamera();
 const _clearColor = /*@__PURE__*/ new Color();
@@ -3458,8 +3458,8 @@ function _getGGXShader( lodMax, width, height ) {
 
 		fragmentShader: /* glsl */`
 
-			precision mediump float;
-			precision mediump int;
+			precision highp float;
+			precision highp int;
 
 			varying vec3 vOutputDirection;
 
@@ -9990,9 +9990,9 @@ function WebGLState( gl, extensions ) {
 
 			gl.compressedTexImage2D( ...arguments );
 
-		} catch ( error ) {
+		} catch ( e ) {
 
-			error( 'WebGLState:', error );
+			error( 'WebGLState:', e );
 
 		}
 
@@ -10004,9 +10004,9 @@ function WebGLState( gl, extensions ) {
 
 			gl.compressedTexImage3D( ...arguments );
 
-		} catch ( error ) {
+		} catch ( e ) {
 
-			error( 'WebGLState:', error );
+			error( 'WebGLState:', e );
 
 		}
 
@@ -10018,9 +10018,9 @@ function WebGLState( gl, extensions ) {
 
 			gl.texSubImage2D( ...arguments );
 
-		} catch ( error ) {
+		} catch ( e ) {
 
-			error( 'WebGLState:', error );
+			error( 'WebGLState:', e );
 
 		}
 
@@ -10032,9 +10032,9 @@ function WebGLState( gl, extensions ) {
 
 			gl.texSubImage3D( ...arguments );
 
-		} catch ( error ) {
+		} catch ( e ) {
 
-			error( 'WebGLState:', error );
+			error( 'WebGLState:', e );
 
 		}
 
@@ -10046,9 +10046,9 @@ function WebGLState( gl, extensions ) {
 
 			gl.compressedTexSubImage2D( ...arguments );
 
-		} catch ( error ) {
+		} catch ( e ) {
 
-			error( 'WebGLState:', error );
+			error( 'WebGLState:', e );
 
 		}
 
@@ -10060,9 +10060,9 @@ function WebGLState( gl, extensions ) {
 
 			gl.compressedTexSubImage3D( ...arguments );
 
-		} catch ( error ) {
+		} catch ( e ) {
 
-			error( 'WebGLState:', error );
+			error( 'WebGLState:', e );
 
 		}
 
@@ -10074,9 +10074,9 @@ function WebGLState( gl, extensions ) {
 
 			gl.texStorage2D( ...arguments );
 
-		} catch ( error ) {
+		} catch ( e ) {
 
-			error( 'WebGLState:', error );
+			error( 'WebGLState:', e );
 
 		}
 
@@ -10088,9 +10088,9 @@ function WebGLState( gl, extensions ) {
 
 			gl.texStorage3D( ...arguments );
 
-		} catch ( error ) {
+		} catch ( e ) {
 
-			error( 'WebGLState:', error );
+			error( 'WebGLState:', e );
 
 		}
 
@@ -10102,9 +10102,9 @@ function WebGLState( gl, extensions ) {
 
 			gl.texImage2D( ...arguments );
 
-		} catch ( error ) {
+		} catch ( e ) {
 
-			error( 'WebGLState:', error );
+			error( 'WebGLState:', e );
 
 		}
 
@@ -10116,9 +10116,9 @@ function WebGLState( gl, extensions ) {
 
 			gl.texImage3D( ...arguments );
 
-		} catch ( error ) {
+		} catch ( e ) {
 
-			error( 'WebGLState:', error );
+			error( 'WebGLState:', e );
 
 		}
 
@@ -15494,10 +15494,10 @@ class WebGLRenderer {
 
 			}
 
-		} catch ( error ) {
+		} catch ( e ) {
 
-			error( 'WebGLRenderer: ' + error.message );
-			throw error;
+			error( 'WebGLRenderer: ' + e.message );
+			throw e;
 
 		}
 

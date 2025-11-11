@@ -15026,17 +15026,7 @@ const bitangentViewFrame = /*@__PURE__*/ B.mul( scale$1 ).toVar( 'bitangentViewF
  * @tsl
  * @type {Node<vec4>}
  */
-const tangentGeometry = /*@__PURE__*/ Fn( ( builder ) => {
-
-	if ( builder.geometry.hasAttribute( 'tangent' ) === false ) {
-
-		builder.geometry.computeTangents();
-
-	}
-
-	return attribute( 'tangent', 'vec4' );
-
-} )();
+const tangentGeometry = /*@__PURE__*/ attribute( 'tangent', 'vec4' );
 
 /**
  * TSL object that represents the vertex tangent in local space of the current rendered object.
@@ -21505,7 +21495,7 @@ class Line2NodeMaterial extends NodeMaterial {
 				offset.assign( offset.mul( materialLineWidth ) );
 
 				// adjust for clip-space to screen-space conversion // maybe resolution should be based on viewport ...
-				offset.assign( offset.div( viewport.w ) );
+				offset.assign( offset.div( viewport.w.div( screenDPR ) ) );
 
 				// select end
 				clip.assign( positionGeometry.y.lessThan( 0.5 ).select( clipStart, clipEnd ) );
@@ -31067,16 +31057,14 @@ class Bindings extends DataMap {
 
 		for ( const binding of bindGroup.bindings ) {
 
-			if ( binding.isNodeUniformsGroup ) {
+			const updatedGroup = this.nodes.updateGroup( binding );
 
-				const updated = this.nodes.updateGroup( binding );
+			// every uniforms group is a uniform buffer. So if no update is required,
+			// we move one with the next binding. Otherwise the next if block will update the group.
 
-				// every uniforms group is a uniform buffer. So if no update is required,
-				// we move one with the next binding. Otherwise the next if block will update the group.
+			if ( updatedGroup === false ) continue;
 
-				if ( updated === false ) continue;
-
-			}
+			//
 
 			if ( binding.isStorageBuffer ) {
 
@@ -33767,6 +33755,434 @@ const intBitsToFloat = ( value ) => new BitcastNode( value, 'float', 'int' );
  * @returns {BitcastNode}
  */
 const uintBitsToFloat = ( value ) => new BitcastNode( value, 'float', 'uint' );
+
+const registeredBitcountFunctions = {};
+
+/**
+ * This node represents an operation that counts the bits of a piece of shader data.
+ *
+ * @augments MathNode
+ */
+class BitcountNode extends MathNode {
+
+	static get type() {
+
+		return 'BitcountNode';
+
+	}
+
+	/**
+	 * Constructs a new math node.
+	 *
+	 * @param {'countTrailingZeros'|'countLeadingZeros'|'countOneBits'} method - The method name.
+	 * @param {Node} aNode - The first input.
+	 */
+	constructor( method, aNode ) {
+
+		super( method, aNode );
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isBitcountNode = true;
+
+	}
+
+	/**
+	 * Casts the input value of the function to an integer if necessary.
+	 *
+	 * @private
+	 * @param {Node<uint>|Node<int>} inputNode - The input value.
+	 * @param {Node<uint>} outputNode - The output value.
+	 * @param {string} elementType - The type of the input value.
+	 */
+	_resolveElementType( inputNode, outputNode, elementType ) {
+
+		if ( elementType === 'int' ) {
+
+			outputNode.assign( bitcast( inputNode, 'uint' ) );
+
+		} else {
+
+			outputNode.assign( inputNode );
+
+		}
+
+	}
+
+	_returnDataNode( inputType ) {
+
+		switch ( inputType ) {
+
+			case 'uint': {
+
+				return uint;
+
+			}
+
+			case 'int': {
+
+				return int;
+
+			}
+
+			case 'uvec2': {
+
+				return uvec2;
+
+			}
+
+			case 'uvec3': {
+
+				return uvec3;
+
+			}
+
+			case 'uvec4': {
+
+				return uvec4;
+
+			}
+
+			case 'ivec2': {
+
+				return ivec2;
+
+			}
+
+			case 'ivec3': {
+
+				return ivec3;
+
+			}
+
+			case 'ivec4': {
+
+				return ivec4;
+
+			}
+
+		}
+
+	}
+
+	/**
+	 * Creates and registers a reusable GLSL function that emulates the behavior of countTrailingZeros.
+	 *
+	 * @private
+	 * @param {string} method - The name of the function to create.
+	 * @param {string} elementType - The type of the input value.
+	 * @returns {Function} - The generated function
+	 */
+	_createTrailingZerosBaseLayout( method, elementType ) {
+
+		const outputConvertNode = this._returnDataNode( elementType );
+
+		const fnDef = Fn( ( [ value ] ) => {
+
+			const v = uint( 0.0 );
+
+			this._resolveElementType( value, v, elementType );
+
+			const f = float( v.bitAnd( negate( v ) ) );
+			const uintBits = floatBitsToUint( f );
+
+			const numTrailingZeros = ( uintBits.shiftRight( 23 ) ).sub( 127 );
+
+			return outputConvertNode( numTrailingZeros );
+
+		} ).setLayout( {
+			name: method,
+			type: elementType,
+			inputs: [
+				{ name: 'value', type: elementType }
+			]
+		} );
+
+		return fnDef;
+
+	}
+
+	/**
+	 * Creates and registers a reusable GLSL function that emulates the behavior of countLeadingZeros.
+	 *
+	 * @private
+	 * @param {string} method - The name of the function to create.
+	 * @param {string} elementType - The type of the input value.
+	 * @returns {Function} - The generated function
+	 */
+	_createLeadingZerosBaseLayout( method, elementType ) {
+
+		const outputConvertNode = this._returnDataNode( elementType );
+
+		const fnDef = Fn( ( [ value ] ) => {
+
+			If( value.equal( uint( 0 ) ), () => {
+
+				return uint( 32 );
+
+			} );
+
+			const v = uint( 0 );
+			const n = uint( 0 );
+			this._resolveElementType( value, v, elementType );
+
+			If( v.shiftRight( 16 ).equal( 0 ), () => {
+
+				n.addAssign( 16 );
+				v.shiftLeftAssign( 16 );
+
+			} );
+
+			If( v.shiftRight( 24 ).equal( 0 ), () => {
+
+				n.addAssign( 8 );
+				v.shiftLeftAssign( 8 );
+
+			} );
+
+			If( v.shiftRight( 28 ).equal( 0 ), () => {
+
+				n.addAssign( 4 );
+				v.shiftLeftAssign( 4 );
+
+			} );
+
+			If( v.shiftRight( 30 ).equal( 0 ), () => {
+
+				n.addAssign( 2 );
+				v.shiftLeftAssign( 2 );
+
+			} );
+
+			If( v.shiftRight( 31 ).equal( 0 ), () => {
+
+				n.addAssign( 1 );
+
+			} );
+
+			return outputConvertNode( n );
+
+		} ).setLayout( {
+			name: method,
+			type: elementType,
+			inputs: [
+				{ name: 'value', type: elementType }
+			]
+		} );
+
+		return fnDef;
+
+	}
+
+	/**
+	 * Creates and registers a reusable GLSL function that emulates the behavior of countOneBits.
+	 *
+	 * @private
+	 * @param {string} method - The name of the function to create.
+	 * @param {string} elementType - The type of the input value.
+	 * @returns {Function} - The generated function
+	 */
+	_createOneBitsBaseLayout( method, elementType ) {
+
+		const outputConvertNode = this._returnDataNode( elementType );
+
+		const fnDef = Fn( ( [ value ] ) => {
+
+			const v = uint( 0.0 );
+
+			this._resolveElementType( value, v, elementType );
+
+			v.assign( v.sub( v.shiftRight( uint( 1 ) ).bitAnd( uint( 0x55555555 ) ) ) );
+			v.assign( v.bitAnd( uint( 0x33333333 ) ).add( v.shiftRight( uint( 2 ) ).bitAnd( uint( 0x33333333 ) ) ) );
+
+			const numBits = v.add( v.shiftRight( uint( 4 ) ) ).bitAnd( uint( 0xF0F0F0F ) ).mul( uint( 0x1010101 ) ).shiftRight( uint( 24 ) );
+
+			return outputConvertNode( numBits );
+
+		} ).setLayout( {
+			name: method,
+			type: elementType,
+			inputs: [
+				{ name: 'value', type: elementType }
+			]
+		} );
+
+		return fnDef;
+
+	}
+
+	/**
+	 * Creates and registers a reusable GLSL function that emulates the behavior of the specified bitcount function.
+	 * including considerations for component-wise bitcounts on vector type inputs.
+	 *
+	 * @private
+	 * @param {string} method - The name of the function to create.
+	 * @param {string} inputType - The type of the input value.
+	 * @param {number} typeLength - The vec length of the input value.
+	 * @param {Function} baseFn - The base function that operates on an individual component of the vector.
+	 * @returns {Function} - The alias function for the specified bitcount method.
+	 */
+	_createMainLayout( method, inputType, typeLength, baseFn ) {
+
+		const outputConvertNode = this._returnDataNode( inputType );
+
+		const fnDef = Fn( ( [ value ] ) => {
+
+			if ( typeLength === 1 ) {
+
+				return outputConvertNode( baseFn( value ) );
+
+			} else {
+
+				const vec = outputConvertNode( 0 );
+
+				const components = [ 'x', 'y', 'z', 'w' ];
+				for ( let i = 0; i < typeLength; i ++ ) {
+
+					const component = components[ i ];
+
+					vec[ component ].assign( baseFn( value[ component ] ) );
+
+				}
+
+				return vec;
+
+			}
+
+		} ).setLayout( {
+			name: method,
+			type: inputType,
+			inputs: [
+				{ name: 'value', type: inputType }
+			]
+		} );
+
+		return fnDef;
+
+	}
+
+	setup( builder ) {
+
+		const { method, aNode } = this;
+
+		const { renderer } = builder;
+
+		if ( renderer.backend.isWebGPUBackend ) {
+
+			// use built-in WGSL functions for WebGPU
+
+			return super.setup( builder );
+
+		}
+
+		const inputType = this.getInputType( builder );
+		const elementType = builder.getElementType( inputType );
+
+		const typeLength = builder.getTypeLength( inputType );
+
+		const baseMethod = `${method}_base_${elementType}`;
+		const newMethod = `${method}_${inputType}`;
+
+		let baseFn = registeredBitcountFunctions[ baseMethod ];
+
+		if ( baseFn === undefined ) {
+
+			switch ( method ) {
+
+				case BitcountNode.COUNT_LEADING_ZEROS: {
+
+					baseFn = this._createLeadingZerosBaseLayout( baseMethod, elementType );
+					break;
+
+				}
+
+				case BitcountNode.COUNT_TRAILING_ZEROS: {
+
+					baseFn = this._createTrailingZerosBaseLayout( baseMethod, elementType );
+					break;
+
+				}
+
+				case BitcountNode.COUNT_ONE_BITS: {
+
+					baseFn = this._createOneBitsBaseLayout( baseMethod, elementType );
+					break;
+
+				}
+
+			}
+
+			registeredBitcountFunctions[ baseMethod ] = baseFn;
+
+		}
+
+		let fn = registeredBitcountFunctions[ newMethod ];
+
+		if ( fn === undefined ) {
+
+			fn = this._createMainLayout( newMethod, inputType, typeLength, baseFn );
+			registeredBitcountFunctions[ newMethod ] = fn;
+
+		}
+
+		const output = Fn( () => {
+
+			return fn(
+				aNode,
+			);
+
+		} );
+
+		return output();
+
+	}
+
+}
+
+BitcountNode.COUNT_TRAILING_ZEROS = 'countTrailingZeros';
+BitcountNode.COUNT_LEADING_ZEROS = 'countLeadingZeros';
+BitcountNode.COUNT_ONE_BITS = 'countOneBits';
+
+/**
+ * Finds the number of consecutive 0 bits from the least significant bit of the input value,
+ * which is also the index of the least significant bit of the input value.
+ *
+ * Can only be used with {@link WebGPURenderer} and a WebGPU backend.
+ *
+ * @tsl
+ * @function
+ * @param {Node | number} x - The input value.
+ * @returns {Node}
+ */
+const countTrailingZeros = /*@__PURE__*/ nodeProxyIntent( BitcountNode, BitcountNode.COUNT_TRAILING_ZEROS ).setParameterLength( 1 );
+
+/**
+ * Finds the number of consecutive 0 bits starting from the most significant bit of the input value.
+ *
+ * Can only be used with {@link WebGPURenderer} and a WebGPU backend.
+ *
+ * @tsl
+ * @function
+ * @param {Node | number} x - The input value.
+ * @returns {Node}
+ */
+const countLeadingZeros = /*@__PURE__*/ nodeProxyIntent( BitcountNode, BitcountNode.COUNT_LEADING_ZEROS ).setParameterLength( 1 );
+
+/**
+ * Finds the number of '1' bits set in the input value
+ *
+ * Can only be used with {@link WebGPURenderer} and a WebGPU backend.
+ *
+ * @tsl
+ * @function
+ * @returns {Node}
+ */
+const countOneBits = /*@__PURE__*/ nodeProxyIntent( BitcountNode, BitcountNode.COUNT_ONE_BITS ).setParameterLength( 1 );
 
 /**
  * Generates a hash value in the range `[0, 1]` from the given seed.
@@ -45899,6 +46315,9 @@ var TSL = /*#__PURE__*/Object.freeze({
 	convertColorSpace: convertColorSpace,
 	convertToTexture: convertToTexture,
 	cos: cos,
+	countLeadingZeros: countLeadingZeros,
+	countOneBits: countOneBits,
+	countTrailingZeros: countTrailingZeros,
 	cross: cross,
 	cubeTexture: cubeTexture,
 	cubeTextureBase: cubeTextureBase,
@@ -47954,6 +48373,8 @@ class Matrix4NodeUniform extends Matrix4Uniform {
 }
 
 let _id$5 = 0;
+
+const sharedNodeData = new WeakMap();
 
 const rendererCache = new WeakMap();
 
@@ -50870,6 +51291,26 @@ class NodeBuilder {
 	}
 
 	/**
+	 * Returns shared data object for the given node.
+	 *
+	 * @param {Node} node - The node to get shared data from.
+	 * @return {Object} The shared data.
+	 */
+	getSharedDataFromNode( node ) {
+
+		let data = sharedNodeData.get( node );
+
+		if ( data === undefined ) {
+
+			data = {};
+
+		}
+
+		return data;
+
+	}
+
+	/**
 	 * Returns a uniform representation which is later used for UBO generation and rendering.
 	 *
 	 * @param {NodeUniform} uniformNode - The uniform node.
@@ -50878,16 +51319,31 @@ class NodeBuilder {
 	 */
 	getNodeUniform( uniformNode, type ) {
 
-		if ( type === 'float' || type === 'int' || type === 'uint' ) return new NumberNodeUniform( uniformNode );
-		if ( type === 'vec2' || type === 'ivec2' || type === 'uvec2' ) return new Vector2NodeUniform( uniformNode );
-		if ( type === 'vec3' || type === 'ivec3' || type === 'uvec3' ) return new Vector3NodeUniform( uniformNode );
-		if ( type === 'vec4' || type === 'ivec4' || type === 'uvec4' ) return new Vector4NodeUniform( uniformNode );
-		if ( type === 'color' ) return new ColorNodeUniform( uniformNode );
-		if ( type === 'mat2' ) return new Matrix2NodeUniform( uniformNode );
-		if ( type === 'mat3' ) return new Matrix3NodeUniform( uniformNode );
-		if ( type === 'mat4' ) return new Matrix4NodeUniform( uniformNode );
+		const nodeData = this.getSharedDataFromNode( uniformNode );
 
-		throw new Error( `Uniform "${type}" not declared.` );
+		let node = nodeData.cache;
+
+		if ( node === undefined ) {
+
+			if ( type === 'float' || type === 'int' || type === 'uint' ) node = new NumberNodeUniform( uniformNode );
+			else if ( type === 'vec2' || type === 'ivec2' || type === 'uvec2' ) node = new Vector2NodeUniform( uniformNode );
+			else if ( type === 'vec3' || type === 'ivec3' || type === 'uvec3' ) node = new Vector3NodeUniform( uniformNode );
+			else if ( type === 'vec4' || type === 'ivec4' || type === 'uvec4' ) node = new Vector4NodeUniform( uniformNode );
+			else if ( type === 'color' ) node = new ColorNodeUniform( uniformNode );
+			else if ( type === 'mat2' ) node = new Matrix2NodeUniform( uniformNode );
+			else if ( type === 'mat3' ) node = new Matrix3NodeUniform( uniformNode );
+			else if ( type === 'mat4' ) node = new Matrix4NodeUniform( uniformNode );
+			else {
+
+				throw new Error( `Uniform "${ type }" not implemented.` );
+
+			}
+
+			nodeData.cache = node;
+
+		}
+
+		return node;
 
 	}
 
@@ -59051,6 +59507,17 @@ class Binding {
 	}
 
 	/**
+	 * The shader stages in which the binding's resource is visible.
+	 *
+	 * @return {number} The visibility bitmask.
+	 */
+	getVisibility() {
+
+		return this.visibility;
+
+	}
+
+	/**
 	 * Clones the binding.
 	 *
 	 * @return {Binding} The cloned binding.
@@ -60130,8 +60597,8 @@ class NodeSampledTexture3D extends NodeSampledTexture {
 }
 
 const glslPolyfills = {
-	bitcast_int_uint: new CodeNode( /* glsl */'uint tsl_bitcast_uint_to_int ( int x ) { return floatBitsToInt( uintBitsToFloat( x ) ); }' ),
-	bitcast_uint_int: new CodeNode( /* glsl */'uint tsl_bitcast_int_to_uint ( int x ) { return floatBitsToUint( intBitsToFloat ( x ) ); }' )
+	bitcast_int_uint: new CodeNode( /* glsl */'uint tsl_bitcast_int_to_uint ( int x ) { return floatBitsToUint( intBitsToFloat ( x ) ); }' ),
+	bitcast_uint_int: new CodeNode( /* glsl */'uint tsl_bitcast_uint_to_int ( uint x ) { return floatBitsToInt( uintBitsToFloat ( x ) ); }' )
 };
 
 const glslMethods = {
@@ -61651,11 +62118,22 @@ void main() {
 
 			} else if ( type === 'buffer' ) {
 
-				node.name = `NodeBuffer_${ node.id }`;
 				uniformNode.name = `buffer${ node.id }`;
 
-				const buffer = new NodeUniformBuffer( node, group );
-				buffer.name = node.name;
+				const sharedData = this.getSharedDataFromNode( node );
+
+				let buffer = sharedData.buffer;
+
+				if ( buffer === undefined ) {
+
+					node.name = `NodeBuffer_${ node.id }`;
+
+					buffer = new NodeUniformBuffer( node, group );
+					buffer.name = node.name;
+
+					sharedData.buffer = buffer;
+
+				}
 
 				bindings.push( buffer );
 
@@ -66078,9 +66556,9 @@ class WebGLTimestampQueryPool extends TimestampQueryPool {
 
 			}
 
-		} catch ( error ) {
+		} catch ( e ) {
 
-			error( 'Error in beginQuery:', error );
+			error( 'Error in beginQuery:', e );
 			this.activeQuery = null;
 			this.queryStates.set( baseOffset, 'inactive' );
 
@@ -66121,9 +66599,9 @@ class WebGLTimestampQueryPool extends TimestampQueryPool {
 			this.queryStates.set( baseOffset, 'ended' );
 			this.activeQuery = null;
 
-		} catch ( error ) {
+		} catch ( e ) {
 
-			error( 'Error in endQuery:', error );
+			error( 'Error in endQuery:', e );
 			// Reset state on error
 			this.queryStates.set( baseOffset, 'inactive' );
 			this.activeQuery = null;
@@ -66214,9 +66692,9 @@ class WebGLTimestampQueryPool extends TimestampQueryPool {
 
 			return totalDuration;
 
-		} catch ( error ) {
+		} catch ( e ) {
 
-			error( 'Error resolving queries:', error );
+			error( 'Error resolving queries:', e );
 			return this.lastValue;
 
 		} finally {
@@ -66302,9 +66780,9 @@ class WebGLTimestampQueryPool extends TimestampQueryPool {
 					const elapsed = this.gl.getQueryParameter( query, this.gl.QUERY_RESULT );
 					resolve( Number( elapsed ) / 1e6 ); // Convert nanoseconds to milliseconds
 
-				} catch ( error ) {
+				} catch ( e ) {
 
-					error( 'Error checking query:', error );
+					error( 'Error checking query:', e );
 					resolve( this.lastValue );
 
 				}
@@ -72536,10 +73014,21 @@ class WGSLNodeBuilder extends NodeBuilder {
 
 			} else if ( type === 'buffer' || type === 'storageBuffer' || type === 'indirectStorageBuffer' ) {
 
-				const bufferClass = type === 'buffer' ? NodeUniformBuffer : NodeStorageBuffer;
+				const sharedData = this.getSharedDataFromNode( node );
 
-				const buffer = new bufferClass( node, group );
-				buffer.setVisibility( gpuShaderStageLib[ shaderStage ] );
+				let buffer = sharedData.buffer;
+
+				if ( buffer === undefined ) {
+
+					const bufferClass = type === 'buffer' ? NodeUniformBuffer : NodeStorageBuffer;
+
+					buffer = new bufferClass( node, group );
+
+					sharedData.buffer = buffer;
+
+				}
+
+				buffer.setVisibility( buffer.getVisibility() | gpuShaderStageLib[ shaderStage ] );
 
 				bindings.push( buffer );
 
@@ -75971,9 +76460,9 @@ class WebGPUTimestampQueryPool extends TimestampQueryPool {
 
 			return totalDuration;
 
-		} catch ( error ) {
+		} catch ( e ) {
 
-			error( 'Error resolving queries:', error );
+			error( 'Error resolving queries:', e );
 			if ( this.resultBuffer.mapState === 'mapped' ) {
 
 				this.resultBuffer.unmap();
@@ -76009,9 +76498,9 @@ class WebGPUTimestampQueryPool extends TimestampQueryPool {
 
 				await this.pendingResolve;
 
-			} catch ( error ) {
+			} catch ( e ) {
 
-				error( 'Error waiting for pending resolve:', error );
+				error( 'Error waiting for pending resolve:', e );
 
 			}
 
@@ -76024,9 +76513,9 @@ class WebGPUTimestampQueryPool extends TimestampQueryPool {
 
 				this.resultBuffer.unmap();
 
-			} catch ( error ) {
+			} catch ( e ) {
 
-				error( 'Error unmapping buffer:', error );
+				error( 'Error unmapping buffer:', e );
 
 			}
 
