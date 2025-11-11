@@ -28,7 +28,7 @@ if (!shared) {
 }
 
 
-define(['exports'], (function (exports) { 'use strict';
+define(['exports'], (function (exports$1) { 'use strict';
 
 /**
  * Common utilities
@@ -13571,6 +13571,7 @@ const DEFAULT_CAPACITY = 128;
 const RESIZE_MULTIPLIER = 5;
 class StructArray {
     constructor() {
+        this._reallocCount = 0;
         this.capacity = -1;
         this.resize(0);
     }
@@ -13631,6 +13632,7 @@ class StructArray {
    */
     reserve(n) {
         if (n > this.capacity) {
+            this._reallocCount++;
             this.capacity = Math.max(n, Math.floor(this.capacity * RESIZE_MULTIPLIER), DEFAULT_CAPACITY);
             this.arrayBuffer = new ArrayBuffer(this.capacity * this.bytesPerElement);
             const oldUint8Array = this.uint8;
@@ -13638,6 +13640,14 @@ class StructArray {
             if (oldUint8Array)
                 this.uint8.set(oldUint8Array);
         }
+    }
+    /**
+   * Indicate a planned increase in size, so that any necessary allocation may
+   * be done once, ahead of time.
+   * @param {number} n The expected number of additional elements added to the array.
+   */
+    reserveForAdditional(n) {
+        this.reserve(this.length + n);
     }
     /**
    * Create TypedArray views for the current ArrayBuffer.
@@ -21324,10 +21334,10 @@ var hasRequiredMartinez_umd;
 function requireMartinez_umd () {
 	if (hasRequiredMartinez_umd) return martinez_umd.exports;
 	hasRequiredMartinez_umd = 1;
-	(function (module, exports) {
+	(function (module, exports$1) {
 		(function (global, factory) {
-		    factory(exports) ;
-		}(this, function (exports) {
+		    factory(exports$1) ;
+		}(this, function (exports$1) {
 		    function DEFAULT_COMPARE(a, b) {
 		        return a > b ? 1 : a < b ? -1 : 0;
 		    }
@@ -23278,12 +23288,12 @@ function requireMartinez_umd () {
 		        INTERSECTION: INTERSECTION,
 		        XOR: XOR
 		    };
-		    exports.diff = diff;
-		    exports.intersection = intersection$1;
-		    exports.operations = operations;
-		    exports.union = union;
-		    exports.xor = xor;
-		    Object.defineProperty(exports, '__esModule', { value: true });
+		    exports$1.diff = diff;
+		    exports$1.intersection = intersection$1;
+		    exports$1.operations = operations;
+		    exports$1.union = union;
+		    exports$1.xor = xor;
+		    Object.defineProperty(exports$1, '__esModule', { value: true });
 		}));    
 	} (martinez_umd, martinez_umd.exports));
 	return martinez_umd.exports;
@@ -26040,10 +26050,17 @@ class FillExtrusionBucket {
             if (region.order < layerIndex)
                 continue;
             const padding = Math.max(1, Math.pow(2, region.footprintTileId.canonical.z - coord.canonical.z));
-            if (region.footprint.buildingId) {
-                const regionFootprintBuildingId = region.footprint.buildingId;
+            if (region.footprint.buildingIds) {
                 for (const centroid of this.centroidData) {
-                    if (centroid.buildingId === regionFootprintBuildingId) {
+                    if (centroid.flags & HIDDEN_BY_REPLACEMENT) {
+                        continue;
+                    }
+                    if (region.min.x > centroid.max.x || centroid.min.x > region.max.x) {
+                        continue;
+                    } else if (region.min.y > centroid.max.y || centroid.min.y > region.max.y) {
+                        continue;
+                    }
+                    if (region.footprint.buildingIds.has(centroid.buildingId)) {
                         centroid.flags |= HIDDEN_BY_REPLACEMENT;
                     }
                 }
@@ -26060,7 +26077,7 @@ class FillExtrusionBucket {
                     for (let i = 0; i < centroid.footprintSegLen; i++) {
                         const seg = this.footprintSegments[centroid.footprintSegIdx + i];
                         transformedVertices.length = 0;
-                        transformFootprintVertices$1(this.footprintVertices, seg.vertexOffset, seg.vertexCount, region.footprintTileId.canonical, coord.canonical, transformedVertices);
+                        transformFootprintVertices(this.footprintVertices, seg.vertexOffset, seg.vertexCount, region.footprintTileId.canonical, coord.canonical, transformedVertices);
                         if (footprintTrianglesIntersect(region.footprint, transformedVertices, this.footprintIndices.uint16, seg.indexOffset, seg.indexCount, -seg.vertexOffset, -padding)) {
                             centroid.flags |= HIDDEN_BY_REPLACEMENT;
                             break;
@@ -26210,7 +26227,7 @@ function resampleFillExtrusionPolygonsForGlobe(polygons, tileBounds, tileID) {
     };
     return gridSubdivision(polygons, tileBounds, cellCountOnXAxis, cellCountOnYAxis, 1, splitFn);
 }
-function transformFootprintVertices$1(vertices, offset, count, footprintId, centroidId, out) {
+function transformFootprintVertices(vertices, offset, count, footprintId, centroidId, out) {
     const zDiff = Math.pow(2, footprintId.z - centroidId.z);
     for (let i = 0; i < count; i++) {
         let x = vertices.int16[(i + offset) * 2 + 0];
@@ -27361,45 +27378,45 @@ function loadBuildingGen(wasmPromise) {
     };
     const instantiateWasm = WebAssembly.instantiateStreaming ? WebAssembly.instantiateStreaming(wasmPromise, wasmImports) : wasmPromise.then(wasm => wasm.arrayBuffer()).then(buffer => WebAssembly.instantiate(buffer, wasmImports));
     return instantiateWasm.then(output => {
-        const exports = output.instance.exports;
-        const initialiseRuntime = exports.g;
+        const exports$1 = output.instance.exports;
+        const initialiseRuntime = exports$1.g;
         initialiseRuntime();
-        wasmMemory = exports.f;
+        wasmMemory = exports$1.f;
         updateMemoryViews();
         return new BuildingGen({
-            setStyle: exports.h,
-            setAOOptions: exports.i,
-            setMetricOptions: exports.j,
-            setStructuralOptions: exports.k,
-            setFacadeOptions: exports.l,
-            setFauxFacadeOptions: exports.m,
-            setFacadeClassifierOptions: exports.n,
-            addFeature: exports.o,
-            addFacade: exports.p,
-            generateMesh: exports.q,
-            getLastError: exports.r,
-            getOuterRingLength: exports.s,
-            getMeshCount: exports.t,
-            getPositionsPtr: exports.u,
-            getPositionsLength: exports.v,
-            getNormalsPtr: exports.w,
-            getNormalsLength: exports.x,
-            getColorsPtr: exports.y,
-            getColorsLength: exports.z,
-            getAOPtr: exports.A,
-            getAOLength: exports.B,
-            getUVPtr: exports.C,
-            getUVLength: exports.D,
-            getFauxFacadePtr: exports.E,
-            getFauxFacadeLength: exports.F,
-            getIndicesPtr: exports.G,
-            getIndicesLength: exports.H,
-            getBuildingPart: exports.I,
-            getRingCount: exports.J,
-            getRingPtr: exports.K,
-            getRingLength: exports.L,
-            free: exports.M,
-            malloc: exports.N,
+            setStyle: exports$1.h,
+            setAOOptions: exports$1.i,
+            setMetricOptions: exports$1.j,
+            setStructuralOptions: exports$1.k,
+            setFacadeOptions: exports$1.l,
+            setFauxFacadeOptions: exports$1.m,
+            setFacadeClassifierOptions: exports$1.n,
+            addFeature: exports$1.o,
+            addFacade: exports$1.p,
+            generateMesh: exports$1.q,
+            getLastError: exports$1.r,
+            getOuterRingLength: exports$1.s,
+            getMeshCount: exports$1.t,
+            getPositionsPtr: exports$1.u,
+            getPositionsLength: exports$1.v,
+            getNormalsPtr: exports$1.w,
+            getNormalsLength: exports$1.x,
+            getColorsPtr: exports$1.y,
+            getColorsLength: exports$1.z,
+            getAOPtr: exports$1.A,
+            getAOLength: exports$1.B,
+            getUVPtr: exports$1.C,
+            getUVLength: exports$1.D,
+            getFauxFacadePtr: exports$1.E,
+            getFauxFacadeLength: exports$1.F,
+            getIndicesPtr: exports$1.G,
+            getIndicesLength: exports$1.H,
+            getBuildingPart: exports$1.I,
+            getRingCount: exports$1.J,
+            getRingPtr: exports$1.K,
+            getRingLength: exports$1.L,
+            free: exports$1.M,
+            malloc: exports$1.N,
             heapU8,
             heap32,
             heapF32
@@ -29682,11 +29699,25 @@ class BuildingGeometry {
         this.layoutFacadeDataArray = null;
         this.layoutFacadeVerticalRangeArray = null;
         this.layoutFloodLightDataArray = new StructArrayLayout1ui2();
-        this.layoutAOArray = new StructArrayLayout1f4();
+        this.layoutAOArray = new StructArrayLayout1ub1();
         this.indexArray = new StructArrayLayout3ui6();
         this.indexArrayForConflation = new StructArrayLayout3ui6();
         this.segmentsBucket = new SegmentVector();
         this.entranceBloom = new BuildingBloomGeometry();
+    }
+    reserve(numVertices, numIndices, withFauxFacade) {
+        this.layoutVertexArray.reserveForAdditional(numVertices);
+        this.layoutCentroidArray.reserveForAdditional(numVertices);
+        this.layoutFloodLightDataArray.reserveForAdditional(numVertices);
+        this.layoutNormalArray.reserveForAdditional(numVertices);
+        this.layoutAOArray.reserveForAdditional(numVertices);
+        this.layoutColorArray.reserveForAdditional(numVertices);
+        this.indexArray.reserveForAdditional(numIndices);
+        if (withFauxFacade) {
+            this.layoutFacadePaintArray.reserveForAdditional(numVertices);
+            this.layoutFacadeDataArray.reserveForAdditional(numVertices);
+            this.layoutFacadeVerticalRangeArray.reserveForAdditional(numVertices);
+        }
     }
 }
 class BuildingBucket {
@@ -29696,6 +29727,10 @@ class BuildingBucket {
         this.replacementUpdateTime = 0;
         this.activeReplacements = [];
         this.footprints = [];
+        this.footprintsVertices = new StructArrayLayout2f8();
+        this.footprintsIndices = new StructArrayLayout1ui2();
+        this.footprintsMin = new Point(Infinity, Infinity);
+        this.footprintsMax = new Point(-Infinity, -Infinity);
         this.featuresOnBorder = [];
         this.buildingFeatures = [];
         this.buildingWithoutFacade = new BuildingGeometry();
@@ -29703,6 +29738,8 @@ class BuildingBucket {
         this.indexArrayForConflationUploaded = false;
         this.featureFootprintLookup = /* @__PURE__ */
         new Map();
+        this.buildingIds = /* @__PURE__ */
+        new Set();
         this.footprintLookup = {};
         this.zoom = options.zoom;
         this.canonical = options.canonical;
@@ -29726,15 +29763,19 @@ class BuildingBucket {
         this.hasAppearances = null;
     }
     updateFootprints(_id, _footprints) {
-        for (const footprint of this.footprints) {
-            const buildingIncomplete = footprint.hiddenFlags & BUILDING_HIDDEN_WITH_INCOMPLETE_PARTS;
-            if (!buildingIncomplete) {
-                _footprints.push({
-                    footprint,
-                    id: _id
-                });
-            }
-        }
+        const emptyGrid = new TriangleGridIndex([], [], 1);
+        const footprintForBucket = {
+            vertices: [],
+            indices: new Uint32Array(0),
+            grid: emptyGrid,
+            min: this.footprintsMin,
+            max: this.footprintsMax,
+            buildingIds: this.buildingIds
+        };
+        _footprints.push({
+            footprint: footprintForBucket,
+            id: _id
+        });
     }
     updateAppearances(_canonical, _featureState, _availableImages, _globalProperties) {
     }
@@ -29789,6 +29830,7 @@ class BuildingBucket {
         new Map();
         const facadeDataForFeature = /* @__PURE__ */
         new Map();
+        let featuresFacadesCount = 0;
         for (const {feature} of features) {
             const isFacade = vectorTileFeatureTypes$2[feature.type] === 'LineString';
             if (!isFacade) {
@@ -29824,6 +29866,7 @@ class BuildingBucket {
                 facadeDataForFeature.set(sourceId, facades);
             }
             facades.push(facadeProperties);
+            ++featuresFacadesCount;
         }
         this.maxHeight = 0;
         const disabledFootprintLookup = new Array();
@@ -29843,6 +29886,12 @@ class BuildingBucket {
                 footprintIndex
             });
         };
+        const estimatedVertexCapacity = (features.length - featuresFacadesCount) * 64;
+        const estimatedIndexCapacity = estimatedVertexCapacity / 2;
+        this.buildingWithFacade.reserve(estimatedVertexCapacity, estimatedIndexCapacity, true);
+        this.buildingWithoutFacade.reserve(estimatedVertexCapacity * 2, estimatedIndexCapacity * 2, false);
+        this.footprintsIndices.reserve((features.length - featuresFacadesCount) * 16);
+        this.footprintsVertices.reserve((features.length - featuresFacadesCount) * 8);
         for (const {feature, id, index, sourceLayerIndex} of features) {
             const isFacade = vectorTileFeatureTypes$2[feature.type] === 'LineString';
             if (isFacade) {
@@ -29984,11 +30033,11 @@ class BuildingBucket {
                 disableBuilding(buildingId);
                 continue;
             }
+            const building = hasFauxFacade ? this.buildingWithFacade : this.buildingWithoutFacade;
             let vertexCount = 0;
             for (const mesh of result.meshes) {
                 vertexCount += mesh.positions.length / 3;
             }
-            const building = hasFauxFacade ? this.buildingWithFacade : this.buildingWithoutFacade;
             const segment = building.segmentsBucket.prepareSegment(vertexCount, building.layoutVertexArray, building.indexArray);
             const buildingParts = [];
             let buildingBloom = null;
@@ -30078,7 +30127,7 @@ class BuildingBucket {
                     building.layoutNormalArray.emplaceBack(nx, ny, nz);
                 }
                 for (let a = 0; a < mesh.ao.length; a++) {
-                    building.layoutAOArray.emplaceBack(mesh.ao[a]);
+                    building.layoutAOArray.emplaceBack(mesh.ao[a] * 255);
                 }
                 for (let c = 0; c < mesh.colors.length; c += 3) {
                     const colorFactor = 1 + (mesh.ao[c / 3] - 1) * aoIntensity;
@@ -30143,8 +30192,9 @@ class BuildingBucket {
             };
             this.buildingFeatures.push(buildingFeature);
             const indexArrayRangeLength = building.indexArray.length - indexArrayRangeStartOffset;
+            const footprintIndexOffset = this.footprintsIndices.length;
+            const footprintVertexOffset = this.footprintsVertices.length;
             const footprintFlattened = [];
-            const footprintflattenedPts = [];
             const footprintBoundsMin = new Point(Infinity, Infinity);
             const footprintBoundsMax = new Point(-Infinity, -Infinity);
             const groundEffectVertexOffset = this.groundEffect.vertexArray.length;
@@ -30161,7 +30211,7 @@ class BuildingBucket {
                     const point = new Point(ring[reverseIdx], ring[reverseIdx + 1]);
                     groundPolyline.push(point);
                     footprintFlattened.push(point.x, point.y);
-                    footprintflattenedPts.push(point.clone());
+                    this.footprintsVertices.emplaceBack(point.x, point.y);
                 }
                 footprintBoundsMin.x = Math.min(footprintBoundsMin.x, boundsMin.x);
                 footprintBoundsMin.y = Math.min(footprintBoundsMin.y, boundsMin.y);
@@ -30173,6 +30223,7 @@ class BuildingBucket {
                 ], maxRadius);
             }
             const groundEffectVertexLength = this.groundEffect.vertexArray.length - groundEffectVertexOffset;
+            this.groundEffect.groundRadiusArray.reserveForAdditional(groundEffectVertexLength);
             for (let v = 0; v < groundEffectVertexLength; v++) {
                 this.groundEffect.groundRadiusArray.emplaceBack(floodLightGroundRadius);
             }
@@ -30184,12 +30235,24 @@ class BuildingBucket {
             }
             {
                 const indices = earcut(footprintFlattened, null, 2);
-                const grid = new TriangleGridIndex(footprintflattenedPts, indices, 8, 256);
+                this.footprintsIndices.resize(this.footprintsIndices.length + indices.length);
+                for (let i = 0; i < indices.length; ++i) {
+                    this.footprintsIndices.uint16[footprintIndexOffset + i] = indices[i];
+                }
+                let buildingOrFeatureId = feature.id;
+                if (feature.properties && feature.properties.hasOwnProperty('building_id')) {
+                    buildingOrFeatureId = feature.properties['building_id'];
+                }
+                this.buildingIds.add(buildingOrFeatureId);
+                this.footprintsMin.x = Math.min(this.footprintsMin.x, footprintBoundsMin.x);
+                this.footprintsMin.y = Math.min(this.footprintsMin.y, footprintBoundsMin.y);
+                this.footprintsMax.x = Math.max(this.footprintsMax.x, footprintBoundsMax.x);
+                this.footprintsMax.y = Math.max(this.footprintsMax.y, footprintBoundsMax.y);
                 const footprint = {
-                    vertices: footprintflattenedPts,
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                    indices,
-                    grid,
+                    footprintVertexOffset,
+                    footprintVertexLength: this.footprintsVertices.length - footprintVertexOffset,
+                    footprintIndexOffset,
+                    footprintIndexLength: this.footprintsIndices.length - footprintIndexOffset,
                     min: footprintBoundsMin,
                     max: footprintBoundsMax,
                     buildingId: buildingId != null ? buildingId : feature.id,
@@ -30218,9 +30281,17 @@ class BuildingBucket {
         disabledFootprintLookup.forEach(({buildingId, footprintIndex}) => {
             if (disabledBuildings.has(buildingId)) {
                 const footprint = this.footprints[footprintIndex];
-                footprint.hiddenFlags = BUILDING_HIDDEN_WITH_INCOMPLETE_PARTS;
+                footprint.hiddenFlags |= BUILDING_HIDDEN_WITH_INCOMPLETE_PARTS;
             }
         });
+        const filteredBuildingIds = /* @__PURE__ */
+        new Set();
+        this.buildingIds.forEach((buildingId, value2, set) => {
+            if (!disabledBuildings.has(buildingId)) {
+                filteredBuildingIds.add(buildingId);
+            }
+        });
+        this.buildingIds = filteredBuildingIds;
         this.groundEffect.prepareBorderSegments();
         this.evaluate(this.layers[0], {});
     }
@@ -30424,7 +30495,7 @@ class BuildingBucket {
                 emissive = clamp(emissive, 0, 1);
                 for (let i = 0; i < buildingPart.vertexLength; i++) {
                     const vertexOffset = buildingPart.vertexOffset + i;
-                    const colorFactor = 1 + (building.layoutAOArray.float32[vertexOffset] - 1) * aoIntensity;
+                    const colorFactor = 1 + (building.layoutAOArray.uint8[vertexOffset] / 255 - 1) * aoIntensity;
                     const r = color.r * colorFactor * 255;
                     const g = color.g * colorFactor * 255;
                     const b = color.b * colorFactor * 255;
@@ -30486,8 +30557,8 @@ class BuildingBucket {
                     continue;
                 }
                 transformedVertices.length = 0;
-                transformFootprintVertices(footprint.vertices, 0, footprint.vertices.length, region.footprintTileId.canonical, coord.canonical, transformedVertices);
-                if (footprintTrianglesIntersect(region.footprint, transformedVertices, footprint.indices, 0, footprint.indices.length, 0, -padding)) {
+                transformFootprintVerticesFloat32(this.footprintsVertices, footprint.footprintVertexOffset, footprint.footprintVertexLength, region.footprintTileId.canonical, coord.canonical, transformedVertices);
+                if (footprintTrianglesIntersect(region.footprint, transformedVertices, this.footprintsIndices.uint16, footprint.footprintIndexOffset, footprint.footprintIndexLength, 0, -padding)) {
                     footprint.hiddenFlags |= BUILDING_HIDDEN_BY_REPLACEMENT;
                 }
             }
@@ -30526,7 +30597,9 @@ class BuildingBucket {
             if (footprint.height <= height) {
                 continue;
             }
-            if (pointInFootprint(pt, footprint)) {
+            const footprintVertices = this.footprintsVertices.float32.subarray(footprint.footprintVertexOffset * 2, (footprint.footprintVertexOffset + footprint.footprintVertexLength) * 2);
+            const footprintIndices = this.footprintsIndices.uint16.subarray(footprint.footprintIndexOffset, footprint.footprintIndexOffset + footprint.footprintIndexLength);
+            if (pointInTriangleMesh(pt, footprintVertices, footprintIndices)) {
                 height = footprint.height;
                 this.footprintLookup[lookupKey] = footprint;
                 hidden = footprint.hiddenFlags !== BUILDING_VISIBLE;
@@ -30542,11 +30615,33 @@ class BuildingBucket {
         };
     }
 }
-function transformFootprintVertices(vertices, offset, count, footprintId, centroidId, out) {
+function pointInTriangleMesh(pt, vertices, indices) {
+    for (let triIndex = 0; triIndex < indices.length; triIndex += 3) {
+        const i0 = indices[triIndex];
+        const i1 = indices[triIndex + 1];
+        const i2 = indices[triIndex + 2];
+        const p0X = vertices[i0 * 2 + 0];
+        const p0Y = vertices[i0 * 2 + 1];
+        const p1X = vertices[i1 * 2 + 0];
+        const p1Y = vertices[i1 * 2 + 1];
+        const p2X = vertices[i2 * 2 + 0];
+        const p2Y = vertices[i2 * 2 + 1];
+        const s = (p0X - p2X) * (pt.y - p2Y) - (p0Y - p2Y) * (pt.x - p2X);
+        const t = (p1X - p0X) * (pt.y - p0Y) - (p1Y - p0Y) * (pt.x - p0X);
+        if (s < 0 !== t < 0 && s !== 0 && t !== 0)
+            continue;
+        const d = (p2X - p1X) * (pt.y - p1Y) - (p2Y - p1Y) * (pt.x - p1X);
+        if (d === 0 || d < 0 === s + t <= 0) {
+            return true;
+        }
+    }
+    return false;
+}
+function transformFootprintVerticesFloat32(vertices, offset, count, footprintId, centroidId, out) {
     const zDiff = Math.pow(2, footprintId.z - centroidId.z);
     for (let i = 0; i < count; i++) {
-        let x = vertices[i + offset].x;
-        let y = vertices[i + offset].y;
+        let x = vertices.float32[(i + offset) * 2 + 0];
+        let y = vertices.float32[(i + offset) * 2 + 1];
         x = (x + centroidId.x * EXTENT) * zDiff - footprintId.x * EXTENT;
         y = (y + centroidId.y * EXTENT) * zDiff - footprintId.y * EXTENT;
         out.push(new Point(x, y));
@@ -45041,424 +45136,424 @@ function sqDist(ax, ay, bx, by) {
     return dx * dx + dy * dy;
 }
 
-exports.$ = isBoolean;
-exports.A = ImageVariant;
-exports.B = makeFQID;
-exports.C = PATTERN_PADDING;
-exports.D = Dispatcher;
-exports.E = Evented;
-exports.F = ImagePosition;
-exports.G = potpack;
-exports.H = isObject;
-exports.I = ImageId;
-exports.J = unbundle;
-exports.K = getType;
-exports.L = isNumber;
-exports.M = supportsInterpolation;
-exports.N = supportsPropertyExpression;
-exports.O = supportsZoomExpression;
-exports.P = Point;
-exports.Q = isExpression;
-exports.R = ResourceType;
-exports.S = deepUnbundle;
-exports.T = Texture;
-exports.U = createExpression;
-exports.V = ValidationError;
-exports.W = createPropertyExpression;
-exports.X = isGlobalPropertyConstant;
-exports.Y = isFeatureConstant;
-exports.Z = isStateConstant;
-exports._ = CompoundExpression;
-exports.a = isMapboxHTTPCDNURL;
-exports.a$ = StructArrayLayout4i8;
-exports.a0 = isString;
-exports.a1 = csscolorparserExports;
-exports.a2 = isExpressionFilter;
-exports.a3 = ValidationWarning;
-exports.a4 = isFunction;
-exports.a5 = supportsLightExpression;
-exports.a6 = spec;
-exports.a7 = validateModel;
-exports.a8 = Transitionable;
-exports.a9 = Properties;
-exports.aA = clamp;
-exports.aB = multiply$2;
-exports.aC = transformMat4;
-exports.aD = GLOBE_RADIUS;
-exports.aE = polygonContainsPoint;
-exports.aF = mercatorXfromLng;
-exports.aG = resample$1;
-exports.aH = pick;
-exports.aI = LngLatBounds;
-exports.aJ = mercatorYfromLat;
-exports.aK = DedupedRequest;
-exports.aL = loadVectorTile;
-exports.aM = getExpiryDataFromHeaders;
-exports.aN = cacheEntryPossiblyAdded;
-exports.aO = prevPowerOfTwo;
-exports.aP = OverscaledTileID;
-exports.aQ = RasterStyleLayer;
-exports.aR = RasterParticleStyleLayer;
-exports.aS = LngLat;
-exports.aT = ImageSource;
-exports.aU = getVideo;
-exports.aV = UserManagedTexture;
-exports.aW = ModelSource;
-exports.aX = bindAll;
-exports.aY = tileTransform;
-exports.aZ = lngFromMercatorX;
-exports.a_ = latFromMercatorY;
-exports.aa = DataConstantProperty;
-exports.ab = PositionProperty;
-exports.ac = EvaluationParameters;
-exports.ad = ZoomDependentExpression;
-exports.ae = MercatorCoordinate;
-exports.af = transformMat4$1;
-exports.ag = length$3;
-exports.ah = smoothstep;
-exports.ai = PossiblyEvaluated;
-exports.aj = globeToMercatorTransition;
-exports.ak = number;
-exports.al = EXTENT;
-exports.am = array$1;
-exports.an = degToRad;
-exports.ao = Color;
-exports.ap = DirectionProperty;
-exports.aq = polygonizeBounds;
-exports.ar = bufferConvexPolygon;
-exports.as = getTilePoint;
-exports.at = polygonIntersectsBox;
-exports.au = getTileVec3;
-exports.av = sub$1;
-exports.aw = normalize$3;
-exports.ax = Ray;
-exports.ay = pixelsToTileUnits;
-exports.az = getBounds;
-exports.b = isMapboxHTTPFontsURL;
-exports.b$ = pointInFootprint;
-exports.b0 = StructArrayLayout3ui6;
-exports.b1 = uniqueId;
-exports.b2 = CollisionBoxArray;
-exports.b3 = SymbolBucket;
-exports.b4 = lazyLoadRTLTextPlugin;
-exports.b5 = createFilter;
-exports.b6 = toEvaluationFeature;
-exports.b7 = Feature;
-exports.b8 = parseCacheControl;
-exports.b9 = LineBucket;
-exports.bA = rotateZ$1;
-exports.bB = create$4;
-exports.bC = calculateGlobeLabelMatrix;
-exports.bD = invert$2;
-exports.bE = zero;
-exports.bF = distance;
-exports.bG = scaleAndAdd;
-exports.bH = cross;
-exports.bI = dot$3;
-exports.bJ = evaluateSizeForZoom;
-exports.bK = WritingMode;
-exports.bL = evaluateSizeForFeature;
-exports.bM = updateGlobeVertexNormal;
-exports.bN = addDynamicAttributes;
-exports.bO = fromValues;
-exports.bP = scale;
-exports.bQ = add;
-exports.bR = sub;
-exports.bS = wrap$1;
-exports.bT = fromValues$1;
-exports.bU = Elevation;
-exports.bV = clipLines;
-exports.bW = polygonIntersectsPolygon;
-exports.bX = ONE_EM;
-exports.bY = skipClipping;
-exports.bZ = LayerTypeMask;
-exports.b_ = transformPointToTile;
-exports.ba = FillBucket;
-exports.bb = loadGeometry;
-exports.bc = StructArrayLayout2i4;
-exports.bd = StructArrayLayout1ui2;
-exports.be = posAttributes;
-exports.bf = SegmentVector;
-exports.bg = earcut;
-exports.bh = boundsAttributes;
-exports.bi = transitionTileAABBinECEF;
-exports.bj = globeNormalizeECEF;
-exports.bk = invert;
-exports.bl = tileCoordToECEF;
-exports.bm = interpolateVec3;
-exports.bn = StructArrayLayout3i6;
-exports.bo = posAttributesGlobeExt;
-exports.bp = fromScaling;
-exports.bq = translate$1;
-exports.br = MapboxRasterTile;
-exports.bs = Pbf$1;
-exports.bt = getArrayBuffer;
-exports.bu = keysDifference;
-exports.bv = asyncAll;
-exports.bw = refProperties;
-exports.bx = deepEqual;
-exports.by = clone$2;
-exports.bz = identity$2;
-exports.c = isMapboxHTTPSpriteURL;
-exports.c$ = easeIn;
-exports.c0 = getAnchorAlignment;
-exports.c1 = evaluateVariableOffset;
-exports.c2 = getAnchorJustification;
-exports.c3 = KDBush;
-exports.c4 = scale$2;
-exports.c5 = len;
-exports.c6 = identity$1;
-exports.c7 = rotateZ;
-exports.c8 = rotateX;
-exports.c9 = getColumn;
-exports.cA = Frustum;
-exports.cB = getScaleAdjustment;
-exports.cC = CanonicalTileID;
-exports.cD = aabbForTileOnGlobe;
-exports.cE = tileAABB;
-exports.cF = min;
-exports.cG = max$1;
-exports.cH = furthestTileCorner;
-exports.cI = MAX_MERCATOR_LATITUDE;
-exports.cJ = scale$1;
-exports.cK = GLOBE_ZOOM_THRESHOLD_MAX;
-exports.cL = polesInViewport;
-exports.cM = getPixelsToTileUnitsMatrix;
-exports.cN = getProjectionInterpolationT;
-exports.cO = mul$2;
-exports.cP = getProjectionAdjustments;
-exports.cQ = getProjectionAdjustmentInverted;
-exports.cR = scale$3;
-exports.cS = FrustumCorners;
-exports.cT = rotateX$1;
-exports.cU = calculateGlobeMatrix;
-exports.cV = multiply$1;
-exports.cW = radToDeg;
-exports.cX = calculateKey;
-exports.cY = edgeIntersectsBox;
-exports.cZ = GLOBE_ZOOM_THRESHOLD_MIN;
-exports.c_ = getAABBPointSquareDist;
-exports.ca = conjugate;
-exports.cb = fromQuat;
-exports.cc = perspective;
-exports.cd = ortho;
-exports.ce = mercatorZfromAltitude;
-exports.cf = setColumn;
-exports.cg = Uniform1i;
-exports.ch = Uniform3f;
-exports.ci = Uniform1f;
-exports.cj = Uniform2f;
-exports.ck = UniformMatrix4f;
-exports.cl = getProjection;
-exports.cm = create$6;
-exports.cn = rotate$1;
-exports.co = exactEquals$1;
-exports.cp = exactEquals$3;
-exports.cq = length$1;
-exports.cr = normalize$1;
-exports.cs = transformQuat;
-exports.ct = UnwrappedTileID;
-exports.cu = NEAR_BL;
-exports.cv = NEAR_BR;
-exports.cw = FAR_BL;
-exports.cx = FAR_BR;
-exports.cy = lerp$2;
-exports.cz = create$3;
-exports.d = isMapboxHTTPTileJSONURL;
-exports.d$ = circleDefinesValues;
-exports.d0 = circumferenceAtLatitude;
-exports.d1 = GLOBE_SCALE_MATCH_LATITUDE;
-exports.d2 = Uniform4f;
-exports.d3 = cartesianPositionToSpherical;
-exports.d4 = fromValues$2;
-exports.d5 = sphericalPositionToCartesian;
-exports.d6 = tileToMeter;
-exports.d7 = add$1;
-exports.d8 = Aabb;
-exports.d9 = subtract$1;
-exports.dA = UniformColor;
-exports.dB = UniformMatrix3f;
-exports.dC = easeCubicInOut;
-exports.dD = globeUseCustomAntiAliasing;
-exports.dE = calculateGlobeMercatorMatrix;
-exports.dF = tileCornersToBounds;
-exports.dG = getLatitudinalLod;
-exports.dH = getGridMatrix;
-exports.dI = globeTileBounds;
-exports.dJ = globePoleMatrixForTile;
-exports.dK = Float32Image;
-exports.dL = globeMetersToEcef;
-exports.dM = sRGBToLinearAndScale;
-exports.dN = create$5;
-exports.dO = fromRotation$1;
-exports.dP = transformMat3;
-exports.dQ = globePixelsToTileUnits;
-exports.dR = contrastFactor;
-exports.dS = saturationFactor;
-exports.dT = COLOR_RAMP_RES$1;
-exports.dU = globeECEFOrigin;
-exports.dV = linePatternUniforms;
-exports.dW = lineUniforms;
-exports.dX = circleUniforms;
-exports.dY = StructArrayLayout2f1f2i16;
-exports.dZ = collisionCircleLayout;
-exports.d_ = Texture3D;
-exports.da = linearVec3TosRGB;
-exports.db = loadGLTF;
-exports.dc = convertModel;
-exports.dd = Model;
-exports.de = isValidUrl;
-exports.df = readIconSet;
-exports.dg = getGlobalWorkerPool;
-exports.dh = GlyphManager;
-exports.di = LocalGlyphMode;
-exports.dj = getReferrer;
-exports.dk = triggerPluginCompletionEvent;
-exports.dl = stripQueryParameters;
-exports.dm = murmur3;
-exports.dn = clone;
-exports.dp = getNameFromFQID;
-exports.dq = isFQID;
-exports.dr = getInnerScopeFromFQID;
-exports.ds = validateCustomStyleLayer;
-exports.dt = createStyleLayer;
-exports.du = filterObject;
-exports.dv = getOuterScopeFromFQID;
-exports.dw = TargetFeature;
-exports.dx = evented;
-exports.dy = makeRequest;
-exports.dz = registerForPluginStateChange;
-exports.e = config;
-exports.e$ = ecefToLatLng;
-exports.e0 = circleUniformValues;
-exports.e1 = lineDefinesValues;
-exports.e2 = ResolvedImage;
-exports.e3 = linePatternUniformValues;
-exports.e4 = lineUniformValues;
-exports.e5 = nextPowerOfTwo;
-exports.e6 = renderColorRamp;
-exports.e7 = altitudeFromMercatorZ;
-exports.e8 = neighborCoord;
-exports.e9 = FillExtrusionBucket;
-exports.eA = tileToLngLat;
-exports.eB = calculateModelMatrix;
-exports.eC = convertModelMatrixForGlobe;
-exports.eD = DefaultModelScale;
-exports.eE = DEMSampler;
-exports.eF = create$2;
-exports.eG = lerp$1;
-exports.eH = ModelTraits;
-exports.eI = StructArrayLayout2ui4;
-exports.eJ = StructArrayLayout2f8;
-exports.eK = fromValues$3;
-exports.eL = earthRadius;
-exports.eM = StructArrayLayout9f36;
-exports.eN = StructArrayLayout11f44;
-exports.eO = ReplacementSource;
-exports.eP = ReplacementOrderLandmark;
-exports.eQ = GlobeSharedBuffers;
-exports.eR = ReplacementOrderBuilding;
-exports.eS = bezier;
-exports.eT = isFullscreen;
-exports.eU = ease;
-exports.eV = mercatorScale;
-exports.eW = div;
-exports.eX = mul$1;
-exports.eY = latLngToECEF;
-exports.eZ = squaredLength;
-exports.e_ = set$1;
-exports.ea = fillExtrusionHeightLift;
-exports.eb = HIDDEN_BY_REPLACEMENT;
-exports.ec = ELEVATION_OFFSET;
-exports.ed = ELEVATION_SCALE;
-exports.ee = getMetersPerPixelAtLatitude;
-exports.ef = transpose;
-exports.eg = COLOR_MIX_FACTOR;
-exports.eh = createLayout;
-exports.ei = StructArrayLayout1i2;
-exports.ej = COLOR_RAMP_RES;
-exports.ek = globeDenormalizeECEF;
-exports.el = StructArrayLayout3f12;
-exports.em = rotateY$1;
-exports.en = fromMat4;
-exports.eo = StructArrayLayout5f20;
-exports.ep = StructArrayLayout7f28;
-exports.eq = mulberry32;
-exports.er = mapValue;
-exports.es = rotateY;
-exports.et = invert$1;
-exports.eu = BUILDING_HIDDEN_BY_TILE_BORDER_DEDUPLICATION;
-exports.ev = negate;
-exports.ew = create$1;
-exports.ex = getScaling;
-exports.ey = getRotation;
-exports.ez = getAxisAngle;
-exports.f = b64EncodeUnicode;
-exports.f0 = normalize$2;
-exports.f1 = getZoomAdjustment;
-exports.f2 = isSafariWithAntialiasingBug;
-exports.f3 = setCacheLimits;
-exports.f4 = isLngLatBehindGlobe;
-exports.f5 = globeTiltAtLngLat;
-exports.f6 = globeCenterToScreenPoint;
-exports.f7 = clearPrewarmedResources;
-exports.f8 = prewarm;
-exports.f9 = getRTLTextPluginStatus;
-exports.fA = VectorTileFeature;
-exports.fB = load3DTile;
-exports.fC = process3DTile;
-exports.fD = Tiled3dModelBucket;
-exports.fE = isWorker;
-exports.fF = Actor;
-exports.fG = plugin;
-exports.fH = rtlPluginStatus;
-exports.fI = enforceCacheSizeLimit;
-exports.fa = setRTLTextPlugin;
-exports.fb = setMeshoptUrl;
-exports.fc = getMeshoptUrl;
-exports.fd = setDracoUrl;
-exports.fe = getDracoUrl;
-exports.ff = WorkerClass;
-exports.fg = clearTileCache;
-exports.fh = WorkerPool;
-exports.fi = register;
-exports.fj = AlphaImage;
-exports.fk = SDF_SCALE;
-exports.fl = DictionaryCoder;
-exports.fm = FeatureIndex;
-exports.fn = LineAtlas;
-exports.fo = PROPERTY_ELEVATION_ID;
-exports.fp = HD_ELEVATION_SOURCE_LAYER;
-exports.fq = ElevationFeatures;
-exports.fr = mapObject;
-exports.fs = ElevationPortalGraph;
-exports.ft = getImagePosition;
-exports.fu = ICON_PADDING;
-exports.fv = performSymbolLayout;
-exports.fw = ImageAtlas;
-exports.fx = postRasterizationSymbolLayout;
-exports.fy = VectorTile;
-exports.fz = DEMData;
-exports.g = getData;
-exports.h = isMapboxURL;
-exports.i = isMapboxHTTPStyleURL;
-exports.j = isMapboxHTTPURL;
-exports.k = exported;
-exports.l = b64DecodeUnicode;
-exports.m = getJSON;
-exports.n = getImage;
-exports.o = exported$1;
-exports.p = postData;
-exports.q = RGBAImage;
-exports.r = offscreenCanvasSupported;
-exports.s = storageAvailable;
-exports.t = getImageRasterizerWorkerPool;
-exports.u = uuid;
-exports.v = validateUuid;
-exports.w = warnOnce;
-exports.x = ImageRasterizer;
-exports.y = ErrorEvent;
-exports.z = Event;
+exports$1.$ = isBoolean;
+exports$1.A = ImageVariant;
+exports$1.B = makeFQID;
+exports$1.C = PATTERN_PADDING;
+exports$1.D = Dispatcher;
+exports$1.E = Evented;
+exports$1.F = ImagePosition;
+exports$1.G = potpack;
+exports$1.H = isObject;
+exports$1.I = ImageId;
+exports$1.J = unbundle;
+exports$1.K = getType;
+exports$1.L = isNumber;
+exports$1.M = supportsInterpolation;
+exports$1.N = supportsPropertyExpression;
+exports$1.O = supportsZoomExpression;
+exports$1.P = Point;
+exports$1.Q = isExpression;
+exports$1.R = ResourceType;
+exports$1.S = deepUnbundle;
+exports$1.T = Texture;
+exports$1.U = createExpression;
+exports$1.V = ValidationError;
+exports$1.W = createPropertyExpression;
+exports$1.X = isGlobalPropertyConstant;
+exports$1.Y = isFeatureConstant;
+exports$1.Z = isStateConstant;
+exports$1._ = CompoundExpression;
+exports$1.a = isMapboxHTTPCDNURL;
+exports$1.a$ = StructArrayLayout4i8;
+exports$1.a0 = isString;
+exports$1.a1 = csscolorparserExports;
+exports$1.a2 = isExpressionFilter;
+exports$1.a3 = ValidationWarning;
+exports$1.a4 = isFunction;
+exports$1.a5 = supportsLightExpression;
+exports$1.a6 = spec;
+exports$1.a7 = validateModel;
+exports$1.a8 = Transitionable;
+exports$1.a9 = Properties;
+exports$1.aA = clamp;
+exports$1.aB = multiply$2;
+exports$1.aC = transformMat4;
+exports$1.aD = GLOBE_RADIUS;
+exports$1.aE = polygonContainsPoint;
+exports$1.aF = mercatorXfromLng;
+exports$1.aG = resample$1;
+exports$1.aH = pick;
+exports$1.aI = LngLatBounds;
+exports$1.aJ = mercatorYfromLat;
+exports$1.aK = DedupedRequest;
+exports$1.aL = loadVectorTile;
+exports$1.aM = getExpiryDataFromHeaders;
+exports$1.aN = cacheEntryPossiblyAdded;
+exports$1.aO = prevPowerOfTwo;
+exports$1.aP = OverscaledTileID;
+exports$1.aQ = RasterStyleLayer;
+exports$1.aR = RasterParticleStyleLayer;
+exports$1.aS = LngLat;
+exports$1.aT = ImageSource;
+exports$1.aU = getVideo;
+exports$1.aV = UserManagedTexture;
+exports$1.aW = ModelSource;
+exports$1.aX = bindAll;
+exports$1.aY = tileTransform;
+exports$1.aZ = lngFromMercatorX;
+exports$1.a_ = latFromMercatorY;
+exports$1.aa = DataConstantProperty;
+exports$1.ab = PositionProperty;
+exports$1.ac = EvaluationParameters;
+exports$1.ad = ZoomDependentExpression;
+exports$1.ae = MercatorCoordinate;
+exports$1.af = transformMat4$1;
+exports$1.ag = length$3;
+exports$1.ah = smoothstep;
+exports$1.ai = PossiblyEvaluated;
+exports$1.aj = globeToMercatorTransition;
+exports$1.ak = number;
+exports$1.al = EXTENT;
+exports$1.am = array$1;
+exports$1.an = degToRad;
+exports$1.ao = Color;
+exports$1.ap = DirectionProperty;
+exports$1.aq = polygonizeBounds;
+exports$1.ar = bufferConvexPolygon;
+exports$1.as = getTilePoint;
+exports$1.at = polygonIntersectsBox;
+exports$1.au = getTileVec3;
+exports$1.av = sub$1;
+exports$1.aw = normalize$3;
+exports$1.ax = Ray;
+exports$1.ay = pixelsToTileUnits;
+exports$1.az = getBounds;
+exports$1.b = isMapboxHTTPFontsURL;
+exports$1.b$ = pointInFootprint;
+exports$1.b0 = StructArrayLayout3ui6;
+exports$1.b1 = uniqueId;
+exports$1.b2 = CollisionBoxArray;
+exports$1.b3 = SymbolBucket;
+exports$1.b4 = lazyLoadRTLTextPlugin;
+exports$1.b5 = createFilter;
+exports$1.b6 = toEvaluationFeature;
+exports$1.b7 = Feature;
+exports$1.b8 = parseCacheControl;
+exports$1.b9 = LineBucket;
+exports$1.bA = rotateZ$1;
+exports$1.bB = create$4;
+exports$1.bC = calculateGlobeLabelMatrix;
+exports$1.bD = invert$2;
+exports$1.bE = zero;
+exports$1.bF = distance;
+exports$1.bG = scaleAndAdd;
+exports$1.bH = cross;
+exports$1.bI = dot$3;
+exports$1.bJ = evaluateSizeForZoom;
+exports$1.bK = WritingMode;
+exports$1.bL = evaluateSizeForFeature;
+exports$1.bM = updateGlobeVertexNormal;
+exports$1.bN = addDynamicAttributes;
+exports$1.bO = fromValues;
+exports$1.bP = scale;
+exports$1.bQ = add;
+exports$1.bR = sub;
+exports$1.bS = wrap$1;
+exports$1.bT = fromValues$1;
+exports$1.bU = Elevation;
+exports$1.bV = clipLines;
+exports$1.bW = polygonIntersectsPolygon;
+exports$1.bX = ONE_EM;
+exports$1.bY = skipClipping;
+exports$1.bZ = LayerTypeMask;
+exports$1.b_ = transformPointToTile;
+exports$1.ba = FillBucket;
+exports$1.bb = loadGeometry;
+exports$1.bc = StructArrayLayout2i4;
+exports$1.bd = StructArrayLayout1ui2;
+exports$1.be = posAttributes;
+exports$1.bf = SegmentVector;
+exports$1.bg = earcut;
+exports$1.bh = boundsAttributes;
+exports$1.bi = transitionTileAABBinECEF;
+exports$1.bj = globeNormalizeECEF;
+exports$1.bk = invert;
+exports$1.bl = tileCoordToECEF;
+exports$1.bm = interpolateVec3;
+exports$1.bn = StructArrayLayout3i6;
+exports$1.bo = posAttributesGlobeExt;
+exports$1.bp = fromScaling;
+exports$1.bq = translate$1;
+exports$1.br = MapboxRasterTile;
+exports$1.bs = Pbf$1;
+exports$1.bt = getArrayBuffer;
+exports$1.bu = keysDifference;
+exports$1.bv = asyncAll;
+exports$1.bw = refProperties;
+exports$1.bx = deepEqual;
+exports$1.by = clone$2;
+exports$1.bz = identity$2;
+exports$1.c = isMapboxHTTPSpriteURL;
+exports$1.c$ = easeIn;
+exports$1.c0 = getAnchorAlignment;
+exports$1.c1 = evaluateVariableOffset;
+exports$1.c2 = getAnchorJustification;
+exports$1.c3 = KDBush;
+exports$1.c4 = scale$2;
+exports$1.c5 = len;
+exports$1.c6 = identity$1;
+exports$1.c7 = rotateZ;
+exports$1.c8 = rotateX;
+exports$1.c9 = getColumn;
+exports$1.cA = Frustum;
+exports$1.cB = getScaleAdjustment;
+exports$1.cC = CanonicalTileID;
+exports$1.cD = aabbForTileOnGlobe;
+exports$1.cE = tileAABB;
+exports$1.cF = min;
+exports$1.cG = max$1;
+exports$1.cH = furthestTileCorner;
+exports$1.cI = MAX_MERCATOR_LATITUDE;
+exports$1.cJ = scale$1;
+exports$1.cK = GLOBE_ZOOM_THRESHOLD_MAX;
+exports$1.cL = polesInViewport;
+exports$1.cM = getPixelsToTileUnitsMatrix;
+exports$1.cN = getProjectionInterpolationT;
+exports$1.cO = mul$2;
+exports$1.cP = getProjectionAdjustments;
+exports$1.cQ = getProjectionAdjustmentInverted;
+exports$1.cR = scale$3;
+exports$1.cS = FrustumCorners;
+exports$1.cT = rotateX$1;
+exports$1.cU = calculateGlobeMatrix;
+exports$1.cV = multiply$1;
+exports$1.cW = radToDeg;
+exports$1.cX = calculateKey;
+exports$1.cY = edgeIntersectsBox;
+exports$1.cZ = GLOBE_ZOOM_THRESHOLD_MIN;
+exports$1.c_ = getAABBPointSquareDist;
+exports$1.ca = conjugate;
+exports$1.cb = fromQuat;
+exports$1.cc = perspective;
+exports$1.cd = ortho;
+exports$1.ce = mercatorZfromAltitude;
+exports$1.cf = setColumn;
+exports$1.cg = Uniform1i;
+exports$1.ch = Uniform3f;
+exports$1.ci = Uniform1f;
+exports$1.cj = Uniform2f;
+exports$1.ck = UniformMatrix4f;
+exports$1.cl = getProjection;
+exports$1.cm = create$6;
+exports$1.cn = rotate$1;
+exports$1.co = exactEquals$1;
+exports$1.cp = exactEquals$3;
+exports$1.cq = length$1;
+exports$1.cr = normalize$1;
+exports$1.cs = transformQuat;
+exports$1.ct = UnwrappedTileID;
+exports$1.cu = NEAR_BL;
+exports$1.cv = NEAR_BR;
+exports$1.cw = FAR_BL;
+exports$1.cx = FAR_BR;
+exports$1.cy = lerp$2;
+exports$1.cz = create$3;
+exports$1.d = isMapboxHTTPTileJSONURL;
+exports$1.d$ = circleDefinesValues;
+exports$1.d0 = circumferenceAtLatitude;
+exports$1.d1 = GLOBE_SCALE_MATCH_LATITUDE;
+exports$1.d2 = Uniform4f;
+exports$1.d3 = cartesianPositionToSpherical;
+exports$1.d4 = fromValues$2;
+exports$1.d5 = sphericalPositionToCartesian;
+exports$1.d6 = tileToMeter;
+exports$1.d7 = add$1;
+exports$1.d8 = Aabb;
+exports$1.d9 = subtract$1;
+exports$1.dA = UniformColor;
+exports$1.dB = UniformMatrix3f;
+exports$1.dC = easeCubicInOut;
+exports$1.dD = globeUseCustomAntiAliasing;
+exports$1.dE = calculateGlobeMercatorMatrix;
+exports$1.dF = tileCornersToBounds;
+exports$1.dG = getLatitudinalLod;
+exports$1.dH = getGridMatrix;
+exports$1.dI = globeTileBounds;
+exports$1.dJ = globePoleMatrixForTile;
+exports$1.dK = Float32Image;
+exports$1.dL = globeMetersToEcef;
+exports$1.dM = sRGBToLinearAndScale;
+exports$1.dN = create$5;
+exports$1.dO = fromRotation$1;
+exports$1.dP = transformMat3;
+exports$1.dQ = globePixelsToTileUnits;
+exports$1.dR = contrastFactor;
+exports$1.dS = saturationFactor;
+exports$1.dT = COLOR_RAMP_RES$1;
+exports$1.dU = globeECEFOrigin;
+exports$1.dV = linePatternUniforms;
+exports$1.dW = lineUniforms;
+exports$1.dX = circleUniforms;
+exports$1.dY = StructArrayLayout2f1f2i16;
+exports$1.dZ = collisionCircleLayout;
+exports$1.d_ = Texture3D;
+exports$1.da = linearVec3TosRGB;
+exports$1.db = loadGLTF;
+exports$1.dc = convertModel;
+exports$1.dd = Model;
+exports$1.de = isValidUrl;
+exports$1.df = readIconSet;
+exports$1.dg = getGlobalWorkerPool;
+exports$1.dh = GlyphManager;
+exports$1.di = LocalGlyphMode;
+exports$1.dj = getReferrer;
+exports$1.dk = triggerPluginCompletionEvent;
+exports$1.dl = stripQueryParameters;
+exports$1.dm = murmur3;
+exports$1.dn = clone;
+exports$1.dp = getNameFromFQID;
+exports$1.dq = isFQID;
+exports$1.dr = getInnerScopeFromFQID;
+exports$1.ds = validateCustomStyleLayer;
+exports$1.dt = createStyleLayer;
+exports$1.du = filterObject;
+exports$1.dv = getOuterScopeFromFQID;
+exports$1.dw = TargetFeature;
+exports$1.dx = evented;
+exports$1.dy = makeRequest;
+exports$1.dz = registerForPluginStateChange;
+exports$1.e = config;
+exports$1.e$ = ecefToLatLng;
+exports$1.e0 = circleUniformValues;
+exports$1.e1 = lineDefinesValues;
+exports$1.e2 = ResolvedImage;
+exports$1.e3 = linePatternUniformValues;
+exports$1.e4 = lineUniformValues;
+exports$1.e5 = nextPowerOfTwo;
+exports$1.e6 = renderColorRamp;
+exports$1.e7 = altitudeFromMercatorZ;
+exports$1.e8 = neighborCoord;
+exports$1.e9 = FillExtrusionBucket;
+exports$1.eA = tileToLngLat;
+exports$1.eB = calculateModelMatrix;
+exports$1.eC = convertModelMatrixForGlobe;
+exports$1.eD = DefaultModelScale;
+exports$1.eE = DEMSampler;
+exports$1.eF = create$2;
+exports$1.eG = lerp$1;
+exports$1.eH = ModelTraits;
+exports$1.eI = StructArrayLayout2ui4;
+exports$1.eJ = StructArrayLayout2f8;
+exports$1.eK = fromValues$3;
+exports$1.eL = earthRadius;
+exports$1.eM = StructArrayLayout9f36;
+exports$1.eN = StructArrayLayout11f44;
+exports$1.eO = ReplacementSource;
+exports$1.eP = ReplacementOrderLandmark;
+exports$1.eQ = GlobeSharedBuffers;
+exports$1.eR = ReplacementOrderBuilding;
+exports$1.eS = bezier;
+exports$1.eT = isFullscreen;
+exports$1.eU = ease;
+exports$1.eV = mercatorScale;
+exports$1.eW = div;
+exports$1.eX = mul$1;
+exports$1.eY = latLngToECEF;
+exports$1.eZ = squaredLength;
+exports$1.e_ = set$1;
+exports$1.ea = fillExtrusionHeightLift;
+exports$1.eb = HIDDEN_BY_REPLACEMENT;
+exports$1.ec = ELEVATION_OFFSET;
+exports$1.ed = ELEVATION_SCALE;
+exports$1.ee = getMetersPerPixelAtLatitude;
+exports$1.ef = transpose;
+exports$1.eg = COLOR_MIX_FACTOR;
+exports$1.eh = createLayout;
+exports$1.ei = StructArrayLayout1i2;
+exports$1.ej = COLOR_RAMP_RES;
+exports$1.ek = globeDenormalizeECEF;
+exports$1.el = StructArrayLayout3f12;
+exports$1.em = rotateY$1;
+exports$1.en = fromMat4;
+exports$1.eo = StructArrayLayout5f20;
+exports$1.ep = StructArrayLayout7f28;
+exports$1.eq = mulberry32;
+exports$1.er = mapValue;
+exports$1.es = rotateY;
+exports$1.et = invert$1;
+exports$1.eu = BUILDING_HIDDEN_BY_TILE_BORDER_DEDUPLICATION;
+exports$1.ev = negate;
+exports$1.ew = create$1;
+exports$1.ex = getScaling;
+exports$1.ey = getRotation;
+exports$1.ez = getAxisAngle;
+exports$1.f = b64EncodeUnicode;
+exports$1.f0 = normalize$2;
+exports$1.f1 = getZoomAdjustment;
+exports$1.f2 = isSafariWithAntialiasingBug;
+exports$1.f3 = setCacheLimits;
+exports$1.f4 = isLngLatBehindGlobe;
+exports$1.f5 = globeTiltAtLngLat;
+exports$1.f6 = globeCenterToScreenPoint;
+exports$1.f7 = clearPrewarmedResources;
+exports$1.f8 = prewarm;
+exports$1.f9 = getRTLTextPluginStatus;
+exports$1.fA = VectorTileFeature;
+exports$1.fB = load3DTile;
+exports$1.fC = process3DTile;
+exports$1.fD = Tiled3dModelBucket;
+exports$1.fE = isWorker;
+exports$1.fF = Actor;
+exports$1.fG = plugin;
+exports$1.fH = rtlPluginStatus;
+exports$1.fI = enforceCacheSizeLimit;
+exports$1.fa = setRTLTextPlugin;
+exports$1.fb = setMeshoptUrl;
+exports$1.fc = getMeshoptUrl;
+exports$1.fd = setDracoUrl;
+exports$1.fe = getDracoUrl;
+exports$1.ff = WorkerClass;
+exports$1.fg = clearTileCache;
+exports$1.fh = WorkerPool;
+exports$1.fi = register;
+exports$1.fj = AlphaImage;
+exports$1.fk = SDF_SCALE;
+exports$1.fl = DictionaryCoder;
+exports$1.fm = FeatureIndex;
+exports$1.fn = LineAtlas;
+exports$1.fo = PROPERTY_ELEVATION_ID;
+exports$1.fp = HD_ELEVATION_SOURCE_LAYER;
+exports$1.fq = ElevationFeatures;
+exports$1.fr = mapObject;
+exports$1.fs = ElevationPortalGraph;
+exports$1.ft = getImagePosition;
+exports$1.fu = ICON_PADDING;
+exports$1.fv = performSymbolLayout;
+exports$1.fw = ImageAtlas;
+exports$1.fx = postRasterizationSymbolLayout;
+exports$1.fy = VectorTile;
+exports$1.fz = DEMData;
+exports$1.g = getData;
+exports$1.h = isMapboxURL;
+exports$1.i = isMapboxHTTPStyleURL;
+exports$1.j = isMapboxHTTPURL;
+exports$1.k = exported;
+exports$1.l = b64DecodeUnicode;
+exports$1.m = getJSON;
+exports$1.n = getImage;
+exports$1.o = exported$1;
+exports$1.p = postData;
+exports$1.q = RGBAImage;
+exports$1.r = offscreenCanvasSupported;
+exports$1.s = storageAvailable;
+exports$1.t = getImageRasterizerWorkerPool;
+exports$1.u = uuid;
+exports$1.v = validateUuid;
+exports$1.w = warnOnce;
+exports$1.x = ImageRasterizer;
+exports$1.y = ErrorEvent;
+exports$1.z = Event;
 
 }));
 
@@ -71524,6 +71619,8 @@ const debugWireframe3DLayerProgramNames = [
     'snowParticle',
     'fillExtrusion',
     'fillExtrusionGroundEffect',
+    'building',
+    'buildingBloom',
     'elevatedStructures',
     'model',
     'symbol'

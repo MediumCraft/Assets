@@ -17,8 +17,8 @@
  */
 
 /**
- * pdfjsVersion = 5.4.423
- * pdfjsBuild = 5424d8b1d
+ * pdfjsVersion = 5.4.426
+ * pdfjsBuild = 4f2c1e231
  */
 /******/ // The require scope
 /******/ var __webpack_require__ = {};
@@ -1209,6 +1209,11 @@ class RefSetCache {
   *items() {
     for (const [ref, value] of this._map) {
       yield [primitives_Ref.fromString(ref), value];
+    }
+  }
+  *keys() {
+    for (const ref of this._map.keys()) {
+      yield primitives_Ref.fromString(ref);
     }
   }
 }

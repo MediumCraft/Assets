@@ -3745,6 +3745,9 @@ declare class GlyphManager {
 		glyph: StyleGlyph;
 	}>;
 	_warnOnMissingGlyphRange(glyph: StyleGlyph, range: number, id: number, err: Error): void;
+	/**
+	 * Returns whether the given codepoint should be rendered locally.
+	 */
 	_charUsesLocalIdeographFontFamily(id: number): boolean;
 	/**
 	 * Draws a glyph offscreen using TinySDF, creating a TinySDF instance lazily.

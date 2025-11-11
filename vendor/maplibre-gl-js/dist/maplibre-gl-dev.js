@@ -22148,14 +22148,14 @@ class ZoomHistory {
  * `localIdeographFontFamily` map option apply to the given codepoint.
  */
 function codePointUsesLocalIdeographFontFamily(codePoint) {
-    return /[\u1100-\u11FF\u3000-\u30FF\u3131-\u318E\u31F0-\u321E\u3260-\u327E\u32D0-\u32FE\u3300-\u3357\u3400-\u4DBF\u4E00-\u9FFF\uA960-\uA97C\uAC00-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFF00-\uFFEF]|\uD81B[\uDFE4\uDFF2-\uDFF6]|[\uD81C-\uD822\uD840-\uD868\uD86A-\uD86D\uD86F-\uD872\uD874-\uD879\uD880-\uD883\uD885-\uD88C][\uDC00-\uDFFF]|\uD823[\uDC00-\uDCD5\uDCFF-\uDD1E\uDD80-\uDDF2]|\uD82B[\uDFF0-\uDFF3\uDFF5-\uDFFB\uDFFD\uDFFE]|\uD82C[\uDC00-\uDD22\uDD32\uDD50-\uDD52\uDD55\uDD64-\uDD67\uDD70-\uDEFB]|\uD83C\uDE00|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEAD\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0\uDFF0-\uDFFF]|\uD87B[\uDC00-\uDE5D]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A\uDF50-\uDFFF]|\uD88D[\uDC00-\uDC79]/gim.test(String.fromCodePoint(codePoint));
+    return /[\u02EA\u02EB\u1100-\u11FF\u2E80-\u2FDF\u3000-\u30FF\u3105-\u312F\u3131-\u318E\u31A0-\u4DBF\u4E00-\uA48C\uA490-\uA4C6\uA960-\uA97C\uAC00-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFE10-\uFE1F\uFE30-\uFE4F\uFF00-\uFFEF]|\uD81B[\uDFE0-\uDFFF]|[\uD81C-\uD822\uD840-\uD868\uD86A-\uD86D\uD86F-\uD872\uD874-\uD879\uD880-\uD883\uD885-\uD88C][\uDC00-\uDFFF]|\uD823[\uDC00-\uDCD5\uDCFF-\uDD1E\uDD80-\uDDF2]|\uD82B[\uDFF0-\uDFFF]|\uD82C[\uDC00-\uDEFB]|\uD83C[\uDE00-\uDEFF]|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEAD\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0\uDFF0-\uDFFF]|\uD87B[\uDC00-\uDE5D]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A\uDF50-\uDFFF]|\uD88D[\uDC00-\uDC79]/gim.test(String.fromCodePoint(codePoint));
 }
 /**
  * Returns whether the given codepoint participates in ideographic line
  * breaking.
  */
 function codePointAllowsIdeographicBreaking(codePoint) {
-    return /[\u02EA\u02EB\u2E80-\u2E99\u2E9B-\u2EF3\u2F00-\u2FD5\u2FF0-\u303F\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FD-\u30FF\u3105-\u312F\u31A0-\u4DBF\u4E00-\uA48C\uA490-\uA4C6\uF900-\uFA6D\uFA70-\uFAD9\uFE10-\uFE1F\uFE30-\uFE4F\uFF00-\uFFEF]|\uD81B[\uDFE0-\uDFE4\uDFF0-\uDFF6]|[\uD81C-\uD822\uD840-\uD868\uD86A-\uD86D\uD86F-\uD872\uD874-\uD879\uD880-\uD883\uD885-\uD88C][\uDC00-\uDFFF]|\uD823[\uDC00-\uDCD5\uDCFF-\uDD1E\uDD80-\uDDF2]|\uD82B[\uDFF0-\uDFF3\uDFF5-\uDFFB\uDFFD\uDFFE]|\uD82C[\uDC00-\uDD22\uDD32\uDD50-\uDD52\uDD55\uDD64-\uDD67\uDD70-\uDEFB]|\uD83C\uDE00|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEAD\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0\uDFF0-\uDFFF]|\uD87B[\uDC00-\uDE5D]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A\uDF50-\uDFFF]|\uD88D[\uDC00-\uDC79]/gim.test(String.fromCodePoint(codePoint));
+    return /[\u02EA\u02EB\u2E80-\u2FDF\u2FF0-\u303F\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FD-\u30FF\u3105-\u312F\u31A0-\u4DBF\u4E00-\uA48C\uA490-\uA4C6\uF900-\uFA6D\uFA70-\uFAD9\uFE10-\uFE1F\uFE30-\uFE4F\uFF00-\uFFEF]|\uD81B[\uDFE0-\uDFFF]|[\uD81C-\uD822\uD840-\uD868\uD86A-\uD86D\uD86F-\uD872\uD874-\uD879\uD880-\uD883\uD885-\uD88C][\uDC00-\uDFFF]|\uD823[\uDC00-\uDCD5\uDCFF-\uDD1E\uDD80-\uDDF2]|\uD82B[\uDFF0-\uDFFF]|\uD82C[\uDC00-\uDEFB]|\uD83C[\uDE00-\uDEFF]|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEAD\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0\uDFF0-\uDFFF]|\uD87B[\uDC00-\uDE5D]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A\uDF50-\uDFFF]|\uD88D[\uDC00-\uDC79]/gim.test(String.fromCodePoint(codePoint));
 }
 /**
  * Returns true if the given Unicode codepoint identifies a character with
@@ -22168,7 +22168,7 @@ function codePointAllowsIdeographicBreaking(codePoint) {
  * “neutral” character to be drawn upright as well.
  */
 function codePointHasUprightVerticalOrientation(codePoint) {
-    return /[\u02EA\u02EB\u1100-\u11FF\u1400-\u167F\u18B0-\u18F5\u2E80-\u2E99\u2E9B-\u2EF3\u2F00-\u2FD5\u2FF0-\u3007\u3012\u3013\u3020-\u302F\u3031-\u303F\u3041-\u3096\u309D-\u30FB\u30FD-\u30FF\u3105-\u312F\u3131-\u318E\u3190-\uA48C\uA490-\uA4C6\uA960-\uA97C\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFE10-\uFE1F\uFE30-\uFE48\uFE50-\uFE57\uFE5F-\uFE62\uFE67-\uFE6F\uFF00-\uFF07\uFF0A-\uFF0C\uFF0E-\uFF19\uFF1F-\uFF3A\uFF3C\uFF3E\uFF40-\uFF5A\uFFE0-\uFFE2\uFFE4-\uFFE7]|\uD806[\uDEB0-\uDEBF]|\uD81B[\uDFE0-\uDFE4\uDFF0-\uDFF6]|[\uD81C-\uD822\uD840-\uD868\uD86A-\uD86D\uD86F-\uD872\uD874-\uD879\uD880-\uD883\uD885-\uD88C][\uDC00-\uDFFF]|\uD823[\uDC00-\uDCD5\uDCFF-\uDD1E\uDD80-\uDDF2]|\uD82B[\uDFF0-\uDFF3\uDFF5-\uDFFB\uDFFD\uDFFE]|\uD82C[\uDC00-\uDD22\uDD32\uDD50-\uDD52\uDD55\uDD64-\uDD67\uDD70-\uDEFB]|\uD83C\uDE00|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEAD\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0\uDFF0-\uDFFF]|\uD87B[\uDC00-\uDE5D]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A\uDF50-\uDFFF]|\uD88D[\uDC00-\uDC79]/gim.test(String.fromCodePoint(codePoint));
+    return /[\u02EA\u02EB\u1100-\u11FF\u1400-\u167F\u18B0-\u18F5\u2E80-\u2E99\u2E9B-\u2EF3\u2F00-\u2FD5\u2FF0-\u3007\u3012\u3013\u3020-\u302F\u3031-\u303F\u3041-\u3096\u309D-\u30FB\u30FD-\u30FF\u3105-\u312F\u3131-\u318E\u3190-\uA48C\uA490-\uA4C6\uA960-\uA97C\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFE10-\uFE1F\uFE30-\uFE48\uFE50-\uFE57\uFE5F-\uFE62\uFE67-\uFE6F\uFF00-\uFF07\uFF0A-\uFF0C\uFF0E-\uFF19\uFF1F-\uFF3A\uFF3C\uFF3E\uFF40-\uFF5A\uFFE0-\uFFE2\uFFE4-\uFFE7]|\uD802[\uDD80-\uDD9F]|\uD805[\uDD80-\uDDFF]|\uD806[\uDE00-\uDEBF]|\uD811[\uDC00-\uDE7F]|\uD81B[\uDFE0-\uDFE4\uDFF0-\uDFF6]|[\uD81C-\uD822\uD83D\uD840-\uD868\uD86A-\uD86D\uD86F-\uD872\uD874-\uD879\uD880-\uD883\uD885-\uD88C][\uDC00-\uDFFF]|\uD823[\uDC00-\uDCD5\uDCFF-\uDD1E\uDD80-\uDDF2]|\uD82B[\uDFF0-\uDFF3\uDFF5-\uDFFB\uDFFD\uDFFE]|\uD82C[\uDC00-\uDD22\uDD30-\uDEFB]|\uD833[\uDEC0-\uDFCF]|\uD834[\uDC00-\uDDFF\uDEE0-\uDF7F]|\uD836[\uDC00-\uDEAF]|\uD83C[\uDC00-\uDE00\uDF00-\uDFFF]|\uD83E[\uDD00-\uDEFF]|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEAD\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0\uDFF0-\uDFFF]|\uD87B[\uDC00-\uDE5D]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A\uDF50-\uDFFF]|\uD88D[\uDC00-\uDC79]/gim.test(String.fromCodePoint(codePoint));
 }
 /**
  * Returns true if the given Unicode codepoint identifies a character with
@@ -22182,7 +22182,7 @@ function codePointHasUprightVerticalOrientation(codePoint) {
  * adjacent character is drawn upright or rotated.
  */
 function codePointHasNeutralVerticalOrientation(codePoint) {
-    return /[\xA7\xA9\xAE\xB1\xBC-\xBE\xD7\xF7\u2016\u2020\u2021\u2030\u2031\u203B\u203C\u2042\u2047-\u2049\u2051\u2100-\u218F\u221E\u2234\u2235\u2300-\u2307\u230C-\u231F\u2324-\u2328\u232B\u237D-\u239A\u23BE-\u23CD\u23CF\u23D1-\u23DB\u23E2-\u2422\u2424-\u24FF\u25A0-\u2619\u2620-\u2767\u2776-\u2793\u2B12-\u2B2F\u2B50-\u2B59\u2BB8-\u2BEB\u3000-\u303F\u30A0-\u30FF\uE000-\uF8FF\uFE30-\uFE6F\uFF00-\uFFEF\uFFFC\uFFFD]/gim.test(String.fromCodePoint(codePoint));
+    return /[\xA7\xA9\xAE\xB1\xBC-\xBE\xD7\xF7\u2016\u2020\u2021\u2030\u2031\u203B\u203C\u2042\u2047-\u2049\u2051\u2100-\u218F\u221E\u2234\u2235\u2300-\u2307\u230C-\u231F\u2324-\u2328\u232B\u237D-\u239A\u23BE-\u23CD\u23CF\u23D1-\u23DB\u23E2-\u2422\u2424-\u24FF\u25A0-\u2619\u2620-\u2767\u2776-\u2793\u2B12-\u2B2F\u2B50-\u2B59\u2BB8-\u2BEB\u3000-\u303F\u30A0-\u30FF\uE000-\uF8FF\uFE30-\uFE6F\uFF00-\uFFEF\uFFFC\uFFFD]|[\uDB80-\uDBFF][\uDC00-\uDFFF]/gim.test(String.fromCodePoint(codePoint));
 }
 /**
  * Returns whether the give codepoint is likely to require complex text shaping.
@@ -22191,23 +22191,26 @@ function codePointRequiresComplexTextShaping(codePoint) {
     return /[\u0900-\u0DFF\u0F00-\u109F\u1780-\u17FF]/gim.test(String.fromCodePoint(codePoint));
 }
 
+function charIsWhitespace(char) {
+    return /\s/u.test(String.fromCodePoint(char));
+}
 function allowsIdeographicBreaking(chars) {
     for (const char of chars) {
-        if (!codePointAllowsIdeographicBreaking(char.charCodeAt(0)))
+        if (!codePointAllowsIdeographicBreaking(char.codePointAt(0)))
             return false;
     }
     return true;
 }
 function allowsVerticalWritingMode(chars) {
     for (const char of chars) {
-        if (codePointHasUprightVerticalOrientation(char.charCodeAt(0)))
+        if (codePointHasUprightVerticalOrientation(char.codePointAt(0)))
             return true;
     }
     return false;
 }
 function allowsLetterSpacing(chars) {
     for (const char of chars) {
-        if (!charAllowsLetterSpacing(char.charCodeAt(0)))
+        if (!charAllowsLetterSpacing(char.codePointAt(0)))
             return false;
     }
     return true;
@@ -22323,7 +22326,7 @@ function charInSupportedScript(char, canRenderRTL) {
 }
 function stringContainsRTLText(chars) {
     for (const char of chars) {
-        if (charInRTLScript(char.charCodeAt(0))) {
+        if (charInRTLScript(char.codePointAt(0))) {
             return true;
         }
     }
@@ -22331,7 +22334,7 @@ function stringContainsRTLText(chars) {
 }
 function isStringInSupportedScript(chars, canRenderRTL) {
     for (const char of chars) {
-        if (!charInSupportedScript(char.charCodeAt(0), canRenderRTL)) {
+        if (!charInSupportedScript(char.codePointAt(0), canRenderRTL)) {
             return false;
         }
     }
@@ -30072,6 +30075,9 @@ function mergeLines(features) {
     return mergedFeatures.filter((f) => f.geometry);
 }
 
+// ONE_EM constant used to go between "em" units used in style spec and "points" used internally for layout
+var ONE_EM = 24;
+
 const verticalizedCharacterMap = {
     '!': '︕',
     '#': '＃',
@@ -30116,6 +30122,7 @@ const verticalizedCharacterMap = {
     '“': '﹁',
     '”': '﹂',
     '…': '︙',
+    '⋯': '︙',
     '‧': '・',
     '₩': '￦',
     '、': '︑',
@@ -30159,23 +30166,302 @@ const verticalizedCharacterMap = {
 };
 function verticalizePunctuation(input) {
     let output = '';
-    for (let i = 0; i < input.length; i++) {
-        const nextCharCode = input.charCodeAt(i + 1) || null;
-        const prevCharCode = input.charCodeAt(i - 1) || null;
-        const canReplacePunctuation = ((!nextCharCode || !charHasRotatedVerticalOrientation(nextCharCode) || verticalizedCharacterMap[input[i + 1]]) &&
-            (!prevCharCode || !charHasRotatedVerticalOrientation(prevCharCode) || verticalizedCharacterMap[input[i - 1]]));
-        if (canReplacePunctuation && verticalizedCharacterMap[input[i]]) {
-            output += verticalizedCharacterMap[input[i]];
+    let prevChar = { premature: true, value: undefined };
+    const chars = input[Symbol.iterator]();
+    let char = chars.next();
+    const nextChars = input[Symbol.iterator]();
+    nextChars.next();
+    let nextChar = nextChars.next();
+    while (!char.done) {
+        const canReplacePunctuation = ((nextChar.done || !charHasRotatedVerticalOrientation(nextChar.value.codePointAt(0)) || verticalizedCharacterMap[nextChar.value]) &&
+            (prevChar.premature || !charHasRotatedVerticalOrientation(prevChar.value.codePointAt(0)) || verticalizedCharacterMap[prevChar.value]));
+        if (canReplacePunctuation && verticalizedCharacterMap[char.value]) {
+            output += verticalizedCharacterMap[char.value];
         }
         else {
-            output += input[i];
+            output += char.value;
         }
+        prevChar = { value: char.value, premature: false };
+        char = chars.next();
+        nextChar = nextChars.next();
     }
     return output;
 }
 
-// ONE_EM constant used to go between "em" units used in style spec and "points" used internally for layout
-var ONE_EM = 24;
+// Max number of images in label is 6401 U+E000–U+F8FF that covers
+// Basic Multilingual Plane Unicode Private Use Area (PUA).
+const PUAbegin = 0xE000;
+const PUAend = 0xF8FF;
+// using computed properties due to https://github.com/facebook/flow/issues/380
+/* eslint no-useless-computed-key: 0 */
+const breakable = {
+    [0x0a]: true, // newline
+    [0x20]: true, // space
+    [0x26]: true, // ampersand
+    [0x29]: true, // right parenthesis
+    [0x2b]: true, // plus sign
+    [0x2d]: true, // hyphen-minus
+    [0x2f]: true, // solidus
+    [0xad]: true, // soft hyphen
+    [0xb7]: true, // middle dot
+    [0x200b]: true, // zero-width space
+    [0x2010]: true, // hyphen
+    [0x2013]: true, // en dash
+    [0x2027]: true // interpunct
+    // Many other characters may be reasonable breakpoints
+    // Consider "neutral orientation" characters in codePointHasNeutralVerticalOrientation in unicode_properties
+    // See https://github.com/mapbox/mapbox-gl-js/issues/3658
+};
+// Allow breaks depending on the following character
+const breakableBefore = {
+    [0x28]: true, // left parenthesis
+};
+function getGlyphAdvance(codePoint, section, glyphMap, imagePositions, spacing, layoutTextSize) {
+    if ('fontStack' in section) {
+        const positions = glyphMap[section.fontStack];
+        const glyph = positions && positions[codePoint];
+        if (!glyph)
+            return 0;
+        return glyph.metrics.advance * section.scale + spacing;
+    }
+    else {
+        const imagePosition = imagePositions[section.imageName];
+        if (!imagePosition)
+            return 0;
+        return imagePosition.displaySize[0] * section.scale * ONE_EM / layoutTextSize + spacing;
+    }
+}
+function calculateBadness(lineWidth, targetWidth, penalty, isLastBreak) {
+    const raggedness = Math.pow(lineWidth - targetWidth, 2);
+    if (isLastBreak) {
+        // Favor finals lines shorter than average over longer than average
+        if (lineWidth < targetWidth) {
+            return raggedness / 2;
+        }
+        else {
+            return raggedness * 2;
+        }
+    }
+    return raggedness + Math.abs(penalty) * penalty;
+}
+function calculatePenalty(codePoint, nextCodePoint, penalizableIdeographicBreak) {
+    let penalty = 0;
+    // Force break on newline
+    if (codePoint === 0x0a) {
+        penalty -= 10000;
+    }
+    // Penalize breaks between characters that allow ideographic breaking because
+    // they are less preferable than breaks at spaces (or zero width spaces).
+    if (penalizableIdeographicBreak) {
+        penalty += 150;
+    }
+    // Penalize open parenthesis at end of line
+    if (codePoint === 0x28 || codePoint === 0xff08) {
+        penalty += 50;
+    }
+    // Penalize close parenthesis at beginning of line
+    if (nextCodePoint === 0x29 || nextCodePoint === 0xff09) {
+        penalty += 50;
+    }
+    return penalty;
+}
+function evaluateBreak(breakIndex, breakX, targetWidth, potentialBreaks, penalty, isLastBreak) {
+    // We could skip evaluating breaks where the line length (breakX - priorBreak.x) > maxWidth
+    //  ...but in fact we allow lines longer than maxWidth (if there's no break points)
+    //  ...and when targetWidth and maxWidth are close, strictly enforcing maxWidth can give
+    //     more lopsided results.
+    let bestPriorBreak = null;
+    let bestBreakBadness = calculateBadness(breakX, targetWidth, penalty, isLastBreak);
+    for (const potentialBreak of potentialBreaks) {
+        const lineWidth = breakX - potentialBreak.x;
+        const breakBadness = calculateBadness(lineWidth, targetWidth, penalty, isLastBreak) + potentialBreak.badness;
+        if (breakBadness <= bestBreakBadness) {
+            bestPriorBreak = potentialBreak;
+            bestBreakBadness = breakBadness;
+        }
+    }
+    return {
+        index: breakIndex,
+        x: breakX,
+        priorBreak: bestPriorBreak,
+        badness: bestBreakBadness
+    };
+}
+function leastBadBreaks(lastLineBreak) {
+    if (!lastLineBreak) {
+        return [];
+    }
+    return leastBadBreaks(lastLineBreak.priorBreak).concat(lastLineBreak.index);
+}
+class TaggedString {
+    constructor(text = '', sections = [], sectionIndex = []) {
+        this.text = text;
+        this.sections = sections;
+        this.sectionIndex = sectionIndex;
+        this.imageSectionID = null;
+    }
+    static fromFeature(text, defaultFontStack) {
+        const result = new TaggedString();
+        for (let i = 0; i < text.sections.length; i++) {
+            const section = text.sections[i];
+            if (!section.image) {
+                result.addTextSection(section, defaultFontStack);
+            }
+            else {
+                result.addImageSection(section);
+            }
+        }
+        return result;
+    }
+    length() {
+        return [...this.text].length;
+    }
+    getSection(index) {
+        return this.sections[this.sectionIndex[index]];
+    }
+    getSectionIndex(index) {
+        return this.sectionIndex[index];
+    }
+    verticalizePunctuation() {
+        this.text = verticalizePunctuation(this.text);
+    }
+    /**
+     * Returns whether the text contains zero-width spaces.
+     *
+     * Some tilesets such as Mapbox Streets insert ZWSPs as hints for line
+     * breaking in CJK text.
+     */
+    hasZeroWidthSpaces() {
+        return this.text.includes('\u200b');
+    }
+    trim() {
+        const leadingWhitespace = this.text.match(/^\s*/);
+        const leadingLength = leadingWhitespace ? leadingWhitespace[0].length : 0;
+        // Require a preceding non-space character to avoid overlapping leading and trailing matches.
+        const trailingWhitespace = this.text.match(/\S\s*$/);
+        const trailingLength = trailingWhitespace ? trailingWhitespace[0].length - 1 : 0;
+        this.text = this.text.substring(leadingLength, this.text.length - trailingLength);
+        this.sectionIndex = this.sectionIndex.slice(leadingLength, this.sectionIndex.length - trailingLength);
+    }
+    substring(start, end) {
+        const text = [...this.text].slice(start, end).join('');
+        const sectionIndex = this.sectionIndex.slice(start, end);
+        return new TaggedString(text, this.sections, sectionIndex);
+    }
+    /**
+     * Converts a UTF-16 character index to a UTF-16 code unit (JavaScript character index).
+     */
+    toCodeUnitIndex(unicodeIndex) {
+        return [...this.text].slice(0, unicodeIndex).join('').length;
+    }
+    toString() {
+        return this.text;
+    }
+    getMaxScale() {
+        return this.sectionIndex.reduce((max, index) => Math.max(max, this.sections[index].scale), 0);
+    }
+    getMaxImageSize(imagePositions) {
+        let maxImageWidth = 0;
+        let maxImageHeight = 0;
+        for (let i = 0; i < this.length(); i++) {
+            const section = this.getSection(i);
+            if ('imageName' in section) {
+                const imagePosition = imagePositions[section.imageName];
+                if (!imagePosition)
+                    continue;
+                const size = imagePosition.displaySize;
+                maxImageWidth = Math.max(maxImageWidth, size[0]);
+                maxImageHeight = Math.max(maxImageHeight, size[1]);
+            }
+        }
+        return { maxImageWidth, maxImageHeight };
+    }
+    addTextSection(section, defaultFontStack) {
+        this.text += section.text;
+        this.sections.push({
+            scale: section.scale || 1,
+            verticalAlign: section.verticalAlign || 'bottom',
+            fontStack: section.fontStack || defaultFontStack,
+        });
+        const index = this.sections.length - 1;
+        this.sectionIndex.push(...[...section.text].map(() => index));
+    }
+    addImageSection(section) {
+        const imageName = section.image ? section.image.name : '';
+        if (imageName.length === 0) {
+            warnOnce('Can\'t add FormattedSection with an empty image.');
+            return;
+        }
+        const nextImageSectionCharCode = this.getNextImageSectionCharCode();
+        if (!nextImageSectionCharCode) {
+            warnOnce(`Reached maximum number of images ${PUAend - PUAbegin + 2}`);
+            return;
+        }
+        this.text += String.fromCharCode(nextImageSectionCharCode);
+        this.sections.push({
+            scale: 1,
+            verticalAlign: section.verticalAlign || 'bottom',
+            imageName,
+        });
+        this.sectionIndex.push(this.sections.length - 1);
+    }
+    getNextImageSectionCharCode() {
+        if (!this.imageSectionID) {
+            this.imageSectionID = PUAbegin;
+            return this.imageSectionID;
+        }
+        if (this.imageSectionID >= PUAend)
+            return null;
+        return ++this.imageSectionID;
+    }
+    determineLineBreaks(spacing, maxWidth, glyphMap, imagePositions, layoutTextSize) {
+        const potentialLineBreaks = [];
+        const targetWidth = this.determineAverageLineWidth(spacing, maxWidth, glyphMap, imagePositions, layoutTextSize);
+        const hasZeroWidthSpaces = this.hasZeroWidthSpaces();
+        let currentX = 0;
+        let i = 0;
+        const chars = this.text[Symbol.iterator]();
+        let char = chars.next();
+        const nextChars = this.text[Symbol.iterator]();
+        nextChars.next();
+        let nextChar = nextChars.next();
+        const nextNextChars = this.text[Symbol.iterator]();
+        nextNextChars.next();
+        nextNextChars.next();
+        let nextNextChar = nextNextChars.next();
+        while (!char.done) {
+            const section = this.getSection(i);
+            const codePoint = char.value.codePointAt(0);
+            if (!charIsWhitespace(codePoint))
+                currentX += getGlyphAdvance(codePoint, section, glyphMap, imagePositions, spacing, layoutTextSize);
+            // Ideographic characters, spaces, and word-breaking punctuation that often appear without
+            // surrounding spaces.
+            if (!nextChar.done) {
+                const ideographicBreak = codePointAllowsIdeographicBreaking(codePoint);
+                const nextCodePoint = nextChar.value.codePointAt(0);
+                if (breakable[codePoint] || ideographicBreak || 'imageName' in section || (!nextNextChar.done && breakableBefore[nextCodePoint])) {
+                    potentialLineBreaks.push(evaluateBreak(i + 1, currentX, targetWidth, potentialLineBreaks, calculatePenalty(codePoint, nextCodePoint, ideographicBreak && hasZeroWidthSpaces), false));
+                }
+            }
+            i++;
+            char = chars.next();
+            nextChar = nextChars.next();
+            nextNextChar = nextNextChars.next();
+        }
+        return leastBadBreaks(evaluateBreak(this.length(), currentX, targetWidth, potentialLineBreaks, 0, true));
+    }
+    determineAverageLineWidth(spacing, maxWidth, glyphMap, imagePositions, layoutTextSize) {
+        let totalWidth = 0;
+        let index = 0;
+        for (const char of this.text) {
+            const section = this.getSection(index);
+            totalWidth += getGlyphAdvance(char.codePointAt(0), section, glyphMap, imagePositions, spacing, layoutTextSize);
+            index++;
+        }
+        const lineCount = Math.max(1, Math.ceil(totalWidth / maxWidth));
+        return totalWidth / lineCount;
+    }
+}
 
 const SHIFT_LEFT_32 = (1 << 16) * (1 << 16);
 const SHIFT_RIGHT_32 = 1 / SHIFT_LEFT_32;
@@ -31284,150 +31570,15 @@ function isEmpty(positionedLines) {
     }
     return true;
 }
-// Max number of images in label is 6401 U+E000–U+F8FF that covers
-// Basic Multilingual Plane Unicode Private Use Area (PUA).
-const PUAbegin = 0xE000;
-const PUAend = 0xF8FF;
-class SectionOptions {
-    constructor() {
-        this.scale = 1.0;
-        this.fontStack = '';
-        this.imageName = null;
-        this.verticalAlign = 'bottom';
-    }
-    static forText(scale, fontStack, verticalAlign) {
-        const textOptions = new SectionOptions();
-        textOptions.scale = scale || 1;
-        textOptions.fontStack = fontStack;
-        textOptions.verticalAlign = verticalAlign || 'bottom';
-        return textOptions;
-    }
-    static forImage(imageName, verticalAlign) {
-        const imageOptions = new SectionOptions();
-        imageOptions.imageName = imageName;
-        imageOptions.verticalAlign = verticalAlign || 'bottom';
-        return imageOptions;
-    }
-}
-class TaggedString {
-    constructor() {
-        this.text = '';
-        this.sectionIndex = [];
-        this.sections = [];
-        this.imageSectionID = null;
-    }
-    static fromFeature(text, defaultFontStack) {
-        const result = new TaggedString();
-        for (let i = 0; i < text.sections.length; i++) {
-            const section = text.sections[i];
-            if (!section.image) {
-                result.addTextSection(section, defaultFontStack);
-            }
-            else {
-                result.addImageSection(section);
-            }
-        }
-        return result;
-    }
-    length() {
-        return this.text.length;
-    }
-    getSection(index) {
-        return this.sections[this.sectionIndex[index]];
-    }
-    getSectionIndex(index) {
-        return this.sectionIndex[index];
-    }
-    getCharCode(index) {
-        return this.text.charCodeAt(index);
-    }
-    verticalizePunctuation() {
-        this.text = verticalizePunctuation(this.text);
-    }
-    trim() {
-        let beginningWhitespace = 0;
-        for (let i = 0; i < this.text.length && whitespace[this.text.charCodeAt(i)]; i++) {
-            beginningWhitespace++;
-        }
-        let trailingWhitespace = this.text.length;
-        for (let i = this.text.length - 1; i >= 0 && i >= beginningWhitespace && whitespace[this.text.charCodeAt(i)]; i--) {
-            trailingWhitespace--;
-        }
-        this.text = this.text.substring(beginningWhitespace, trailingWhitespace);
-        this.sectionIndex = this.sectionIndex.slice(beginningWhitespace, trailingWhitespace);
-    }
-    substring(start, end) {
-        const substring = new TaggedString();
-        substring.text = this.text.substring(start, end);
-        substring.sectionIndex = this.sectionIndex.slice(start, end);
-        substring.sections = this.sections;
-        return substring;
-    }
-    toString() {
-        return this.text;
-    }
-    getMaxScale() {
-        return this.sectionIndex.reduce((max, index) => Math.max(max, this.sections[index].scale), 0);
-    }
-    getMaxImageSize(imagePositions) {
-        let maxImageWidth = 0;
-        let maxImageHeight = 0;
-        for (let i = 0; i < this.length(); i++) {
-            const section = this.getSection(i);
-            if (section.imageName) {
-                const imagePosition = imagePositions[section.imageName];
-                if (!imagePosition)
-                    continue;
-                const size = imagePosition.displaySize;
-                maxImageWidth = Math.max(maxImageWidth, size[0]);
-                maxImageHeight = Math.max(maxImageHeight, size[1]);
-            }
-        }
-        return { maxImageWidth, maxImageHeight };
-    }
-    addTextSection(section, defaultFontStack) {
-        this.text += section.text;
-        this.sections.push(SectionOptions.forText(section.scale, section.fontStack || defaultFontStack, section.verticalAlign));
-        const index = this.sections.length - 1;
-        for (let i = 0; i < section.text.length; ++i) {
-            this.sectionIndex.push(index);
-        }
-    }
-    addImageSection(section) {
-        const imageName = section.image ? section.image.name : '';
-        if (imageName.length === 0) {
-            warnOnce('Can\'t add FormattedSection with an empty image.');
-            return;
-        }
-        const nextImageSectionCharCode = this.getNextImageSectionCharCode();
-        if (!nextImageSectionCharCode) {
-            warnOnce(`Reached maximum number of images ${PUAend - PUAbegin + 2}`);
-            return;
-        }
-        this.text += String.fromCharCode(nextImageSectionCharCode);
-        this.sections.push(SectionOptions.forImage(imageName, section.verticalAlign));
-        this.sectionIndex.push(this.sections.length - 1);
-    }
-    getNextImageSectionCharCode() {
-        if (!this.imageSectionID) {
-            this.imageSectionID = PUAbegin;
-            return this.imageSectionID;
-        }
-        if (this.imageSectionID >= PUAend)
-            return null;
-        return ++this.imageSectionID;
-    }
-}
 function breakLines(input, lineBreakPoints) {
     const lines = [];
-    const text = input.text;
     let start = 0;
     for (const lineBreak of lineBreakPoints) {
         lines.push(input.substring(start, lineBreak));
         start = lineBreak;
     }
-    if (start < text.length) {
-        lines.push(input.substring(start, text.length));
+    if (start < input.length()) {
+        lines.push(input.substring(start, input.length()));
     }
     return lines;
 }
@@ -31437,36 +31588,45 @@ function shapeText(text, glyphMap, glyphPositions, imagePositions, defaultFontSt
         logicalInput.verticalizePunctuation();
     }
     let lines;
+    let lineBreaks = logicalInput.determineLineBreaks(spacing, maxWidth, glyphMap, imagePositions, layoutTextSize);
     const { processBidirectionalText, processStyledBidirectionalText } = rtlWorkerPlugin;
     if (processBidirectionalText && logicalInput.sections.length === 1) {
         // Bidi doesn't have to be style-aware
         lines = [];
-        const untaggedLines = processBidirectionalText(logicalInput.toString(), determineLineBreaks(logicalInput, spacing, maxWidth, glyphMap, imagePositions, layoutTextSize));
+        // ICU operates on code units.
+        lineBreaks = lineBreaks.map(index => logicalInput.toCodeUnitIndex(index));
+        const untaggedLines = processBidirectionalText(logicalInput.toString(), lineBreaks);
         for (const line of untaggedLines) {
-            const taggedLine = new TaggedString();
-            taggedLine.text = line;
-            taggedLine.sections = logicalInput.sections;
-            for (let i = 0; i < line.length; i++) {
-                taggedLine.sectionIndex.push(0);
-            }
-            lines.push(taggedLine);
+            const sectionIndex = [...line].map(() => 0);
+            lines.push(new TaggedString(line, logicalInput.sections, sectionIndex));
         }
     }
     else if (processStyledBidirectionalText) {
         // Need version of mapbox-gl-rtl-text with style support for combining RTL text
         // with formatting
         lines = [];
-        const processedLines = processStyledBidirectionalText(logicalInput.text, logicalInput.sectionIndex, determineLineBreaks(logicalInput, spacing, maxWidth, glyphMap, imagePositions, layoutTextSize));
+        // ICU operates on code units.
+        lineBreaks = lineBreaks.map(index => logicalInput.toCodeUnitIndex(index));
+        // Convert character-based section index to be based on code units.
+        let i = 0;
+        const sectionIndex = [];
+        for (const char of logicalInput.text) {
+            sectionIndex.push(...Array(char.length).fill(logicalInput.sectionIndex[i]));
+            i++;
+        }
+        const processedLines = processStyledBidirectionalText(logicalInput.text, sectionIndex, lineBreaks);
         for (const line of processedLines) {
-            const taggedLine = new TaggedString();
-            taggedLine.text = line[0];
-            taggedLine.sectionIndex = line[1];
-            taggedLine.sections = logicalInput.sections;
-            lines.push(taggedLine);
+            const sectionIndex = [];
+            let elapsedChars = '';
+            for (const char of line[0]) {
+                sectionIndex.push(line[1][elapsedChars.length]);
+                elapsedChars += char;
+            }
+            lines.push(new TaggedString(line[0], logicalInput.sections, sectionIndex));
         }
     }
     else {
-        lines = breakLines(logicalInput, determineLineBreaks(logicalInput, spacing, maxWidth, glyphMap, imagePositions, layoutTextSize));
+        lines = breakLines(logicalInput, lineBreaks);
     }
     const positionedLines = [];
     const shaping = {
@@ -31484,147 +31644,6 @@ function shapeText(text, glyphMap, glyphPositions, imagePositions, defaultFontSt
     if (isEmpty(positionedLines))
         return false;
     return shaping;
-}
-// using computed properties due to https://github.com/facebook/flow/issues/380
-/* eslint no-useless-computed-key: 0 */
-const whitespace = {
-    [0x09]: true, // tab
-    [0x0a]: true, // newline
-    [0x0b]: true, // vertical tab
-    [0x0c]: true, // form feed
-    [0x0d]: true, // carriage return
-    [0x20]: true, // space
-};
-const breakable = {
-    [0x0a]: true, // newline
-    [0x20]: true, // space
-    [0x26]: true, // ampersand
-    [0x29]: true, // right parenthesis
-    [0x2b]: true, // plus sign
-    [0x2d]: true, // hyphen-minus
-    [0x2f]: true, // solidus
-    [0xad]: true, // soft hyphen
-    [0xb7]: true, // middle dot
-    [0x200b]: true, // zero-width space
-    [0x2010]: true, // hyphen
-    [0x2013]: true, // en dash
-    [0x2027]: true // interpunct
-    // Many other characters may be reasonable breakpoints
-    // Consider "neutral orientation" characters in codePointHasNeutralVerticalOrientation in unicode_properties
-    // See https://github.com/mapbox/mapbox-gl-js/issues/3658
-};
-// Allow breaks depending on the following character
-const breakableBefore = {
-    [0x28]: true, // left parenthesis
-};
-function getGlyphAdvance(codePoint, section, glyphMap, imagePositions, spacing, layoutTextSize) {
-    if (!section.imageName) {
-        const positions = glyphMap[section.fontStack];
-        const glyph = positions && positions[codePoint];
-        if (!glyph)
-            return 0;
-        return glyph.metrics.advance * section.scale + spacing;
-    }
-    else {
-        const imagePosition = imagePositions[section.imageName];
-        if (!imagePosition)
-            return 0;
-        return imagePosition.displaySize[0] * section.scale * ONE_EM / layoutTextSize + spacing;
-    }
-}
-function determineAverageLineWidth(logicalInput, spacing, maxWidth, glyphMap, imagePositions, layoutTextSize) {
-    let totalWidth = 0;
-    for (let index = 0; index < logicalInput.length(); index++) {
-        const section = logicalInput.getSection(index);
-        totalWidth += getGlyphAdvance(logicalInput.getCharCode(index), section, glyphMap, imagePositions, spacing, layoutTextSize);
-    }
-    const lineCount = Math.max(1, Math.ceil(totalWidth / maxWidth));
-    return totalWidth / lineCount;
-}
-function calculateBadness(lineWidth, targetWidth, penalty, isLastBreak) {
-    const raggedness = Math.pow(lineWidth - targetWidth, 2);
-    if (isLastBreak) {
-        // Favor finals lines shorter than average over longer than average
-        if (lineWidth < targetWidth) {
-            return raggedness / 2;
-        }
-        else {
-            return raggedness * 2;
-        }
-    }
-    return raggedness + Math.abs(penalty) * penalty;
-}
-function calculatePenalty(codePoint, nextCodePoint, penalizableIdeographicBreak) {
-    let penalty = 0;
-    // Force break on newline
-    if (codePoint === 0x0a) {
-        penalty -= 10000;
-    }
-    // Penalize breaks between characters that allow ideographic breaking because
-    // they are less preferable than breaks at spaces (or zero width spaces).
-    if (penalizableIdeographicBreak) {
-        penalty += 150;
-    }
-    // Penalize open parenthesis at end of line
-    if (codePoint === 0x28 || codePoint === 0xff08) {
-        penalty += 50;
-    }
-    // Penalize close parenthesis at beginning of line
-    if (nextCodePoint === 0x29 || nextCodePoint === 0xff09) {
-        penalty += 50;
-    }
-    return penalty;
-}
-function evaluateBreak(breakIndex, breakX, targetWidth, potentialBreaks, penalty, isLastBreak) {
-    // We could skip evaluating breaks where the line length (breakX - priorBreak.x) > maxWidth
-    //  ...but in fact we allow lines longer than maxWidth (if there's no break points)
-    //  ...and when targetWidth and maxWidth are close, strictly enforcing maxWidth can give
-    //     more lopsided results.
-    let bestPriorBreak = null;
-    let bestBreakBadness = calculateBadness(breakX, targetWidth, penalty, isLastBreak);
-    for (const potentialBreak of potentialBreaks) {
-        const lineWidth = breakX - potentialBreak.x;
-        const breakBadness = calculateBadness(lineWidth, targetWidth, penalty, isLastBreak) + potentialBreak.badness;
-        if (breakBadness <= bestBreakBadness) {
-            bestPriorBreak = potentialBreak;
-            bestBreakBadness = breakBadness;
-        }
-    }
-    return {
-        index: breakIndex,
-        x: breakX,
-        priorBreak: bestPriorBreak,
-        badness: bestBreakBadness
-    };
-}
-function leastBadBreaks(lastLineBreak) {
-    if (!lastLineBreak) {
-        return [];
-    }
-    return leastBadBreaks(lastLineBreak.priorBreak).concat(lastLineBreak.index);
-}
-function determineLineBreaks(logicalInput, spacing, maxWidth, glyphMap, imagePositions, layoutTextSize) {
-    if (!logicalInput)
-        return [];
-    const potentialLineBreaks = [];
-    const targetWidth = determineAverageLineWidth(logicalInput, spacing, maxWidth, glyphMap, imagePositions, layoutTextSize);
-    const hasServerSuggestedBreakpoints = logicalInput.text.indexOf('\u200b') >= 0;
-    let currentX = 0;
-    for (let i = 0; i < logicalInput.length(); i++) {
-        const section = logicalInput.getSection(i);
-        const codePoint = logicalInput.getCharCode(i);
-        if (!whitespace[codePoint])
-            currentX += getGlyphAdvance(codePoint, section, glyphMap, imagePositions, spacing, layoutTextSize);
-        // Ideographic characters, spaces, and word-breaking punctuation that often appear without
-        // surrounding spaces.
-        if ((i < logicalInput.length() - 1)) {
-            const ideographicBreak = codePointAllowsIdeographicBreaking(codePoint);
-            if (breakable[codePoint] || ideographicBreak || section.imageName || (i !== logicalInput.length() - 2 && breakableBefore[logicalInput.getCharCode(i + 1)])) {
-                potentialLineBreaks.push(evaluateBreak(i + 1, currentX, targetWidth, potentialLineBreaks, calculatePenalty(codePoint, logicalInput.getCharCode(i + 1), ideographicBreak && hasServerSuggestedBreakpoints), false));
-            }
-        }
-    }
-    return leastBadBreaks(evaluateBreak(logicalInput.length(), currentX, targetWidth, potentialLineBreaks, 0, true));
 }
 function getAnchorAlignment(anchor) {
     let horizontalAlign = 0.5, verticalAlign = 0.5;
@@ -31688,7 +31707,7 @@ function isLineVertical(writingMode, allowVerticalPlacement, codePoint) {
         (!allowVerticalPlacement && !codePointHasUprightVerticalOrientation(codePoint)) ||
         // If vertical placement is enabled, don't verticalize glyphs that
         // are from complex text layout script, or whitespaces.
-        (allowVerticalPlacement && (whitespace[codePoint] || charInComplexShapingScript(codePoint))));
+        (allowVerticalPlacement && (charIsWhitespace(codePoint) || charInComplexShapingScript(codePoint))));
 }
 function shapeLines(shaping, glyphMap, glyphPositions, imagePositions, lines, lineHeight, textAnchor, textJustify, writingMode, spacing, allowVerticalPlacement, layoutTextSizeThisZoom) {
     let x = 0;
@@ -31712,49 +31731,57 @@ function shapeLines(shaping, glyphMap, glyphPositions, imagePositions, lines, li
             continue;
         }
         const lineShapingSize = calculateLineContentSize(imagePositions, line, layoutTextSizeFactor);
-        for (let i = 0; i < line.length(); i++) {
+        let i = 0;
+        for (const char of line.text) {
             const section = line.getSection(i);
-            const sectionIndex = line.getSectionIndex(i);
-            const codePoint = line.getCharCode(i);
+            const codePoint = char.codePointAt(0);
             const vertical = isLineVertical(writingMode, allowVerticalPlacement, codePoint);
+            const positionedGlyph = {
+                glyph: codePoint,
+                imageName: null,
+                x,
+                y: y + SHAPING_DEFAULT_OFFSET,
+                vertical,
+                scale: 1,
+                fontStack: '',
+                sectionIndex: line.getSectionIndex(i),
+                metrics: null,
+                rect: null
+            };
             let sectionAttributes;
-            if (!section.imageName) {
+            if ('fontStack' in section) {
                 sectionAttributes = shapeTextSection(section, codePoint, vertical, lineShapingSize, glyphMap, glyphPositions);
                 if (!sectionAttributes)
                     continue;
+                positionedGlyph.fontStack = section.fontStack;
             }
             else {
                 shaping.iconsInText = true;
                 // If needed, allow to set scale factor for an image using
                 // alias "image-scale" that could be alias for "font-scale"
                 // when FormattedSection is an image section.
-                section.scale = section.scale * layoutTextSizeFactor;
+                section.scale *= layoutTextSizeFactor;
                 sectionAttributes = shapeImageSection(section, vertical, lineMaxScale, lineShapingSize, imagePositions);
                 if (!sectionAttributes)
                     continue;
                 imageOffset = Math.max(imageOffset, sectionAttributes.imageOffset);
+                positionedGlyph.imageName = section.imageName;
             }
             const { rect, metrics, baselineOffset } = sectionAttributes;
-            positionedGlyphs.push({
-                glyph: codePoint,
-                imageName: section.imageName,
-                x,
-                y: y + baselineOffset + SHAPING_DEFAULT_OFFSET,
-                vertical,
-                scale: section.scale,
-                fontStack: section.fontStack,
-                sectionIndex,
-                metrics,
-                rect
-            });
+            positionedGlyph.y += baselineOffset;
+            positionedGlyph.scale = section.scale;
+            positionedGlyph.metrics = metrics;
+            positionedGlyph.rect = rect;
+            positionedGlyphs.push(positionedGlyph);
             if (!vertical) {
                 x += metrics.advance * section.scale + spacing;
             }
             else {
                 shaping.verticalizable = true;
-                const verticalAdvance = section.imageName ? metrics.advance : ONE_EM;
+                const verticalAdvance = 'imageName' in section ? metrics.advance : ONE_EM;
                 x += verticalAdvance * section.scale + spacing;
             }
+            i++;
         }
         // Only justify if we placed at least one glyph
         if (positionedGlyphs.length !== 0) {
@@ -32219,12 +32246,12 @@ class SymbolBucket {
         this.textAnchorOffsets = new TextAnchorOffsetArray();
     }
     calculateGlyphDependencies(text, stack, textAlongLine, allowVerticalPlacement, doesAllowVerticalWritingMode) {
-        for (let i = 0; i < text.length; i++) {
-            stack[text.charCodeAt(i)] = true;
+        for (const char of text) {
+            stack[char.codePointAt(0)] = true;
             if ((textAlongLine || allowVerticalPlacement) && doesAllowVerticalWritingMode) {
-                const verticalChar = verticalizedCharacterMap[text.charAt(i)];
+                const verticalChar = verticalizedCharacterMap[char];
                 if (verticalChar) {
-                    stack[verticalChar.charCodeAt(0)] = true;
+                    stack[verticalChar.codePointAt(0)] = true;
                 }
             }
         }
@@ -42911,18 +42938,18 @@ var devDependencies = {
 	"@typescript-eslint/eslint-plugin": "^8.46.3",
 	"@typescript-eslint/parser": "^8.43.0",
 	"@unicode/unicode-17.0.0": "^1.6.14",
-	"@vitest/coverage-v8": "4.0.6",
-	"@vitest/eslint-plugin": "^1.4.0",
-	"@vitest/ui": "4.0.6",
+	"@vitest/coverage-v8": "4.0.7",
+	"@vitest/eslint-plugin": "^1.4.1",
+	"@vitest/ui": "4.0.7",
 	address: "^2.0.3",
 	autoprefixer: "^10.4.21",
 	benchmark: "^2.1.4",
 	canvas: "^3.2.0",
-	cspell: "^9.2.2",
+	cspell: "^9.3.0",
 	cssnano: "^7.1.2",
 	d3: "^7.9.0",
 	"d3-queue": "^3.0.7",
-	"devtools-protocol": "^0.0.1538951",
+	"devtools-protocol": "^0.0.1541592",
 	diff: "^8.0.2",
 	"dts-bundle-generator": "^9.5.1",
 	eslint: "^9.39.1",
@@ -42949,7 +42976,7 @@ var devDependencies = {
 	"postcss-cli": "^11.0.1",
 	"postcss-inline-svg": "^6.0.0",
 	"pretty-bytes": "^7.1.0",
-	puppeteer: "^24.28.0",
+	puppeteer: "^24.29.1",
 	react: "^19.1.1",
 	"react-dom": "^19.2.0",
 	regenerate: "^1.4.2",
@@ -42958,7 +42985,7 @@ var devDependencies = {
 	"rollup-plugin-visualizer": "^6.0.5",
 	rw: "^1.3.3",
 	semver: "^7.7.3",
-	sharp: "^0.34.4",
+	sharp: "^0.34.5",
 	"shuffle-seed": "^1.1.6",
 	st: "^3.0.3",
 	stylelint: "^16.25.0",
@@ -42968,7 +42995,7 @@ var devDependencies = {
 	typedoc: "^0.28.14",
 	"typedoc-plugin-markdown": "^4.9.0",
 	typescript: "^5.9.3",
-	vitest: "4.0.6",
+	vitest: "4.0.7",
 	"vitest-webgl-canvas-mock": "^1.1.0"
 };
 var scripts = {
@@ -44257,14 +44284,9 @@ class GlyphManager {
     }
     _downloadAndCacheRangePromise(stack, id) {
         return performance$1.__awaiter(this, void 0, void 0, function* () {
-            // Avoid requesting astral codepoints from the server because we can’t handle them anyways.
-            // https://github.com/maplibre/maplibre-gl-js/issues/2307
-            const range = Math.floor(id / 256);
-            if (range * 256 > 65535) {
-                throw new Error('glyphs > 65535 not supported');
-            }
             // Try to get the glyph from the cache of server-side glyphs by PBF range.
             const entry = this.entries[stack];
+            const range = Math.floor(id / 256);
             if (entry.ranges[range]) {
                 return { stack, id, glyph: null };
             }
@@ -44296,6 +44318,9 @@ class GlyphManager {
         const codePoint = id.toString(16).padStart(4, '0').toUpperCase();
         performance$1.warnOnce(`Unable to load glyph range ${range}, ${begin}-${end}. Rendering codepoint U+${codePoint} locally instead. ${err}`);
     }
+    /**
+     * Returns whether the given codepoint should be rendered locally.
+     */
     _charUsesLocalIdeographFontFamily(id) {
         return !!this.localIdeographFontFamily && performance$1.codePointUsesLocalIdeographFontFamily(id);
     }
@@ -44308,7 +44333,7 @@ class GlyphManager {
         // Keep a separate TinySDF instance for when we need to apply the localIdeographFontFamily fallback to keep the font selection from bleeding into non-CJK text.
         const tinySDFKey = usesLocalIdeographFontFamily ? 'ideographTinySDF' : 'tinySDF';
         entry[tinySDFKey] || (entry[tinySDFKey] = this._createTinySDF(usesLocalIdeographFontFamily ? this.localIdeographFontFamily : stack));
-        const char = entry[tinySDFKey].draw(String.fromCharCode(id));
+        const char = entry[tinySDFKey].draw(String.fromCodePoint(id));
         /**
          * TinySDF's "top" is the distance from the alphabetic baseline to the top of the glyph.
          * Server-generated fonts specify "top" relative to an origin above the em box (the origin

@@ -22729,7 +22729,7 @@ var hasRequiredJsonlint;
 function requireJsonlint () {
 	if (hasRequiredJsonlint) return jsonlint$1;
 	hasRequiredJsonlint = 1;
-	(function (exports) {
+	(function (exports$1) {
 		/*
 		  Returns a Parser object of the following structure:
 
@@ -23773,9 +23773,9 @@ function requireJsonlint () {
 		    return new Parser();
 		}());
 		if (typeof commonjsRequire !== 'undefined' && 'object' !== 'undefined') {
-		    exports.parser = parser;
-		    exports.Parser = parser.Parser;
-		    exports.parse = function () {
+		    exports$1.parser = parser;
+		    exports$1.Parser = parser.Parser;
+		    exports$1.parse = function () {
 		        return parser.parse.apply(parser, arguments);
 		    };
 		} 
