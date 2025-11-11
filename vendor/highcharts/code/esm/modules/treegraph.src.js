@@ -1,5 +1,5 @@
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-07)
+ * @license Highcharts JS v12.4.0-modified (2025-11-11)
  * Treegraph chart series type
  * @module highcharts/modules/treegraph
  * @requires highcharts
@@ -3562,7 +3562,7 @@ external_highcharts_src_js_default_SeriesRegistry_default().registerSeriesType('
 
 ;// ./code/es-modules/masters/modules/treemap.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-07)
+ * @license Highcharts JS v12.4.0-modified (2025-11-11)
  * @module highcharts/modules/treemap
  * @requires highcharts
  *

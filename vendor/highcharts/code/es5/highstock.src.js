@@ -1,5 +1,5 @@
 /**
- * @license Highchart Stock v12.4.0-modified (2025-11-07)
+ * @license Highchart Stock v12.4.0-modified (2025-11-11)
  * @module highcharts/highstock
  *
  * (c) 2009-2025 Highsoft AS
@@ -50688,7 +50688,7 @@ var Responsive;
 
 ;// ./code/es5/es-modules/masters/highcharts.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-07)
+ * @license Highcharts JS v12.4.0-modified (2025-11-11)
  * @module highcharts/highcharts
  *
  * (c) 2009-2025 Highsoft AS
@@ -62882,7 +62882,7 @@ var BrokenAxis;
 
 ;// ./code/es5/es-modules/masters/modules/broken-axis.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-07)
+ * @license Highcharts JS v12.4.0-modified (2025-11-11)
  * @module highcharts/modules/broken-axis
  * @requires highcharts
  *
@@ -64444,7 +64444,7 @@ var DataGroupingComposition = {
 
 ;// ./code/es5/es-modules/masters/modules/datagrouping.src.js
 /**
- * @license Highstock JS v12.4.0-modified (2025-11-07)
+ * @license Highstock JS v12.4.0-modified (2025-11-11)
  * @module highcharts/modules/datagrouping
  * @requires highcharts
  *
@@ -64799,7 +64799,7 @@ var MouseWheelZoomComposition = {
 
 ;// ./code/es5/es-modules/masters/modules/mouse-wheel-zoom.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-07)
+ * @license Highcharts JS v12.4.0-modified (2025-11-11)
  * @module highcharts/modules/mouse-wheel-zoom
  * @requires highcharts
  *
@@ -64819,7 +64819,7 @@ mouse_wheel_zoom_src_G.MouseWheelZoom.compose(mouse_wheel_zoom_src_G.Chart);
 
 ;// ./code/es5/es-modules/masters/modules/stock.src.js
 /**
- * @license Highstock JS v12.4.0-modified (2025-11-07)
+ * @license Highstock JS v12.4.0-modified (2025-11-11)
  * @module highcharts/modules/stock
  * @requires highcharts
  *

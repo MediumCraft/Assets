@@ -1,5 +1,5 @@
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-07)
+ * @license Highcharts JS v12.4.0-modified (2025-11-11)
  * @module highcharts/modules/solid-gauge
  * @requires highcharts
  * @requires highcharts/highcharts-more
@@ -3266,7 +3266,7 @@ const external_highcharts_more_src_js_default_Series_types_waterfall_namespaceOb
 var external_highcharts_more_src_js_default_Series_types_waterfall_default = /*#__PURE__*/__webpack_require__.n(external_highcharts_more_src_js_default_Series_types_waterfall_namespaceObject);
 ;// ./code/es-modules/masters/highcharts-more.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-07)
+ * @license Highcharts JS v12.4.0-modified (2025-11-11)
  * @module highcharts/highcharts-more
  * @requires highcharts
  *

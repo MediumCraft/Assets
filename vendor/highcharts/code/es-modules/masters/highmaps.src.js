@@ -1,5 +1,5 @@
 /**
- * @license Highcharts Maps v12.4.0-modified (2025-11-07)
+ * @license Highcharts Maps v12.4.0-modified (2025-11-11)
  * @module highcharts/highmaps
  *
  * (c) 2011-2025 Highsoft AS

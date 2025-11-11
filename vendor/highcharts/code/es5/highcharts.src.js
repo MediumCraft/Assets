@@ -1,5 +1,5 @@
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-07)
+ * @license Highcharts JS v12.4.0-modified (2025-11-11)
  * @module highcharts/highcharts
  *
  * (c) 2009-2025 Torstein Honsi
@@ -24,7 +24,7 @@ return /******/ (function() { // webpackBootstrap
 /***/ (function() {
 
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-07)
+ * @license Highcharts JS v12.4.0-modified (2025-11-11)
  * @module highcharts/polyfills
  *
  * (c) 2009-2025 Torstein Honsi
@@ -50861,7 +50861,7 @@ var Responsive;
 
 ;// ./code/es5/es-modules/masters/highcharts.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-07)
+ * @license Highcharts JS v12.4.0-modified (2025-11-11)
  * @module highcharts/highcharts
  *
  * (c) 2009-2025 Highsoft AS

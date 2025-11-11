@@ -1,5 +1,5 @@
 /**
- * @license Highcharts Maps v12.4.0-modified (2025-11-07)
+ * @license Highcharts Maps v12.4.0-modified (2025-11-11)
  * @module highcharts/highmaps
  *
  * (c) 2011-2025 Highsoft AS
@@ -3882,7 +3882,7 @@ const external_highcharts_src_js_default_Time_namespaceObject = __WEBPACK_EXTERN
 var external_highcharts_src_js_default_Time_default = /*#__PURE__*/__webpack_require__.n(external_highcharts_src_js_default_Time_namespaceObject);
 ;// ./code/es-modules/masters/highcharts.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-07)
+ * @license Highcharts JS v12.4.0-modified (2025-11-11)
  * @module highcharts/highcharts
  *
  * (c) 2009-2025 Highsoft AS
@@ -4004,7 +4004,7 @@ const coloraxis_src_js_default_ColorAxis_namespaceObject = __WEBPACK_EXTERNAL_MO
 var coloraxis_src_js_default_ColorAxis_default = /*#__PURE__*/__webpack_require__.n(coloraxis_src_js_default_ColorAxis_namespaceObject);
 ;// ./code/es-modules/masters/modules/coloraxis.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-07)
+ * @license Highcharts JS v12.4.0-modified (2025-11-11)
  * @module highcharts/modules/color-axis
  * @requires highcharts
  *
@@ -12066,7 +12066,7 @@ external_highcharts_src_js_default_SeriesRegistry_default().registerSeriesType('
 
 ;// ./code/es-modules/masters/modules/map.src.js
 /**
- * @license Highmaps JS v12.4.0-modified (2025-11-07)
+ * @license Highmaps JS v12.4.0-modified (2025-11-11)
  * @module highcharts/modules/map
  * @requires highcharts
  *

@@ -1,5 +1,5 @@
 /**
- * @license Highchart JS v12.4.0-modified (2025-11-07)
+ * @license Highchart JS v12.4.0-modified (2025-11-11)
  * @module highcharts/standalone-navigator
  *
  * Standalone Navigator for Highcharts.
@@ -47471,7 +47471,7 @@ var Responsive;
 
 ;// ./code/es-modules/masters/highcharts.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-07)
+ * @license Highcharts JS v12.4.0-modified (2025-11-11)
  * @module highcharts/highcharts
  *
  * (c) 2009-2025 Highsoft AS
@@ -51601,7 +51601,7 @@ class StandaloneNavigator {
 
 ;// ./code/es-modules/masters/modules/navigator.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-07)
+ * @license Highcharts JS v12.4.0-modified (2025-11-11)
  * @module highcharts/modules/navigator
  * @requires highcharts
  *

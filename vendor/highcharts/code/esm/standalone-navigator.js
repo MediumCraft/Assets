@@ -1,5 +1,5 @@
 /**
- * Highchart JS v12.4.0-modified (2025-11-07)
+ * Highchart JS v12.4.0-modified (2025-11-11)
  * @module highcharts/standalone-navigator
  *
  * Standalone Navigator for Highcharts.

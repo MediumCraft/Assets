@@ -1,5 +1,5 @@
 !/**
- * Highstock JS v12.4.0-modified (2025-11-07)
+ * Highstock JS v12.4.0-modified (2025-11-11)
  * @module highcharts/indicators/ao
  * @requires highcharts
  * @requires highcharts/modules/stock
