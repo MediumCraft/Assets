@@ -5493,7 +5493,7 @@ export declare class Tile {
 	buckets: {
 		[_: string]: Bucket;
 	};
-	latestFeatureIndex: FeatureIndex;
+	latestFeatureIndex: FeatureIndex | null;
 	latestRawTileData: ArrayBuffer;
 	latestEncoding: string;
 	imageAtlas: ImageAtlas;

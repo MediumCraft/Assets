@@ -37537,6 +37537,8 @@ class GeoJSONSource extends Evented {
      * @internal
      */
     shouldReloadTile(tile, { nextBounds, prevIds }) {
+        if (!tile.latestFeatureIndex)
+            return false;
         // Update the tile if it PREVIOUSLY contained an updated feature.
         const layers = tile.latestFeatureIndex.loadVTLayers();
         for (let i = 0; i < tile.latestFeatureIndex.featureIndexArray.length; i++) {
