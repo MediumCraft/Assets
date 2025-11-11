@@ -37558,6 +37558,7 @@ class SymbolBucket {
         this.hasAnySecondaryIcon = false;
         this.hasAppearances = null;
         this.lastActiveApperance = null;
+        this.featureToAppearanceIndex = {};
     }
     hasAnyAppearanceProperty(propertyName) {
         const layer = this.layers[0];
@@ -37747,6 +37748,7 @@ class SymbolBucket {
                 sortKey
             };
             this.features.push(symbolFeature);
+            this.featureToAppearanceIndex[index] = this.appearanceFeatureData.length;
             this.appearanceFeatureData.push({
                 id,
                 // This is already the promoted ID from IndexedFeature
@@ -37859,7 +37861,8 @@ class SymbolBucket {
         const iconScaleFactor = clamp(1, iconSizeScaleRangeMin, iconSizeScaleRangeMax);
         for (let s = 0; s < this.symbolInstances.length; s++) {
             const symbolInstance = this.symbolInstances.get(s);
-            const featureData = this.appearanceFeatureData[symbolInstance.featureIndex];
+            const appearanceFeatureDataIndex = this.featureToAppearanceIndex[symbolInstance.featureIndex];
+            const featureData = appearanceFeatureDataIndex !== void 0 ? this.appearanceFeatureData[appearanceFeatureDataIndex] : void 0;
             if (featureData && symbolInstance.placedIconSymbolIndex >= 0) {
                 const featureId = featureData.id;
                 const featureStateForThis = featureState && featureId !== void 0 ? featureState[String(featureId)] : void 0;
