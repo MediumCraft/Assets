@@ -39,7 +39,7 @@ function define(moduleName, _dependencies, moduleFactory) {
 
 
 
-define('shared', ['exports'], (function (exports) { 'use strict';
+define('shared', ['exports'], (function (exports$1) { 'use strict';
 
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
@@ -31554,13 +31554,13 @@ class ImageAtlas {
 register('ImagePosition', ImagePosition);
 register('ImageAtlas', ImageAtlas);
 
-exports.WritingMode = void 0;
+exports$1.WritingMode = void 0;
 (function (WritingMode) {
     WritingMode[WritingMode["none"] = 0] = "none";
     WritingMode[WritingMode["horizontal"] = 1] = "horizontal";
     WritingMode[WritingMode["vertical"] = 2] = "vertical";
     WritingMode[WritingMode["horizontalOnly"] = 3] = "horizontalOnly";
-})(exports.WritingMode || (exports.WritingMode = {}));
+})(exports$1.WritingMode || (exports$1.WritingMode = {}));
 const SHAPING_DEFAULT_OFFSET = -17;
 function isEmpty(positionedLines) {
     for (const line of positionedLines) {
@@ -31584,7 +31584,7 @@ function breakLines(input, lineBreakPoints) {
 }
 function shapeText(text, glyphMap, glyphPositions, imagePositions, defaultFontStack, maxWidth, lineHeight, textAnchor, textJustify, spacing, translate, writingMode, allowVerticalPlacement, layoutTextSize, layoutTextSizeThisZoom) {
     const logicalInput = TaggedString.fromFeature(text, defaultFontStack);
-    if (writingMode === exports.WritingMode.vertical) {
+    if (writingMode === exports$1.WritingMode.vertical) {
         logicalInput.verticalizePunctuation();
     }
     let lines;
@@ -31702,7 +31702,7 @@ function getRectAndMetrics(glyphPosition, glyphMap, section, codePoint) {
     return { rect: null, metrics };
 }
 function isLineVertical(writingMode, allowVerticalPlacement, codePoint) {
-    return !(writingMode === exports.WritingMode.horizontal ||
+    return !(writingMode === exports$1.WritingMode.horizontal ||
         // Don't verticalize glyphs that have no upright orientation if vertical placement is disabled.
         (!allowVerticalPlacement && !codePointHasUprightVerticalOrientation(codePoint)) ||
         // If vertical placement is enabled, don't verticalize glyphs that
@@ -32232,7 +32232,7 @@ class SymbolBucket {
         const zOrderByViewportY = zOrder === 'viewport-y' || (zOrder === 'auto' && !this.sortFeaturesByKey);
         this.sortFeaturesByY = zOrderByViewportY && this.canOverlap;
         if (layout.get('symbol-placement') === 'point') {
-            this.writingModes = layout.get('text-writing-mode').map(wm => exports.WritingMode[wm]);
+            this.writingModes = layout.get('text-writing-mode').map(wm => exports$1.WritingMode[wm]);
         }
         this.stateDependentLayerIds = this.layers.filter((l) => l.isStateDependent()).map((l) => l.id);
         this.sourceID = options.sourceID;
@@ -32341,7 +32341,7 @@ class SymbolBucket {
             if (text) {
                 const fontStack = textFont.evaluate(evaluationFeature, {}, canonical).join(',');
                 const textAlongLine = layout.get('text-rotation-alignment') !== 'viewport' && layout.get('symbol-placement') !== 'point';
-                this.allowVerticalPlacement = this.writingModes && this.writingModes.indexOf(exports.WritingMode.vertical) >= 0;
+                this.allowVerticalPlacement = this.writingModes && this.writingModes.indexOf(exports$1.WritingMode.vertical) >= 0;
                 for (const section of text.sections) {
                     if (!section.image) {
                         const doesAllowVerticalWritingMode = allowsVerticalWritingMode(text.toString());
@@ -32440,7 +32440,7 @@ class SymbolBucket {
         const segment = arrays.segments.prepareSegment(4 * quads.length, layoutVertexArray, indexArray, this.canOverlap ? feature.sortKey : undefined);
         const glyphOffsetArrayStart = this.glyphOffsetArray.length;
         const vertexStartIndex = segment.vertexLength;
-        const angle = (this.allowVerticalPlacement && writingMode === exports.WritingMode.vertical) ? Math.PI / 2 : 0;
+        const angle = (this.allowVerticalPlacement && writingMode === exports$1.WritingMode.vertical) ? Math.PI / 2 : 0;
         const sections = feature.text && feature.text.sections;
         for (let i = 0; i < quads.length; i++) {
             const { tl, tr, bl, br, tex, pixelOffsetTL, pixelOffsetBR, minFontScaleX, minFontScaleY, glyphOffset, isSDF, sectionIndex } = quads[i];
@@ -39266,7 +39266,7 @@ function getCentroidCell(polygon) {
     return new Cell(x / area, y / area, 0, polygon);
 }
 
-exports.TextAnchorEnum = void 0;
+exports$1.TextAnchorEnum = void 0;
 (function (TextAnchorEnum) {
     TextAnchorEnum[TextAnchorEnum["center"] = 1] = "center";
     TextAnchorEnum[TextAnchorEnum["left"] = 2] = "left";
@@ -39277,7 +39277,7 @@ exports.TextAnchorEnum = void 0;
     TextAnchorEnum[TextAnchorEnum["top-right"] = 7] = "top-right";
     TextAnchorEnum[TextAnchorEnum["bottom-left"] = 8] = "bottom-left";
     TextAnchorEnum[TextAnchorEnum["bottom-right"] = 9] = "bottom-right";
-})(exports.TextAnchorEnum || (exports.TextAnchorEnum = {}));
+})(exports$1.TextAnchorEnum || (exports$1.TextAnchorEnum = {}));
 // The radial offset is to the edge of the text box
 // In the horizontal direction, the edge of the text box is where glyphs start
 // But in the vertical direction, the glyphs appear to "start" at the baseline
@@ -39481,7 +39481,7 @@ function performSymbolLayout(args) {
                     // Vertical POI label placement is meant to be used for scripts that support vertical
                     // writing mode, thus, default left justification is used. If Latin
                     // scripts would need to be supported, this should take into account other justifications.
-                    shapedTextOrientations.vertical = shapeText(text, args.glyphMap, args.glyphPositions, args.imagePositions, fontstack, maxWidth, lineHeight, textAnchor, 'left', spacingIfAllowed, textOffset, exports.WritingMode.vertical, true, layoutTextSize, layoutTextSizeThisZoom);
+                    shapedTextOrientations.vertical = shapeText(text, args.glyphMap, args.glyphPositions, args.imagePositions, fontstack, maxWidth, lineHeight, textAnchor, 'left', spacingIfAllowed, textOffset, exports$1.WritingMode.vertical, true, layoutTextSize, layoutTextSizeThisZoom);
                 }
             };
             // If this layer uses text-variable-anchor, generate shapings for all justification possibilities.
@@ -39507,7 +39507,7 @@ function performSymbolLayout(args) {
                     else {
                         // If using text-variable-anchor for the layer, we use a center anchor for all shapings and apply
                         // the offsets for the anchor in the placement step.
-                        const shaping = shapeText(text, args.glyphMap, args.glyphPositions, args.imagePositions, fontstack, maxWidth, lineHeight, 'center', justification, spacingIfAllowed, textOffset, exports.WritingMode.horizontal, false, layoutTextSize, layoutTextSizeThisZoom);
+                        const shaping = shapeText(text, args.glyphMap, args.glyphPositions, args.imagePositions, fontstack, maxWidth, lineHeight, 'center', justification, spacingIfAllowed, textOffset, exports$1.WritingMode.horizontal, false, layoutTextSize, layoutTextSizeThisZoom);
                         if (shaping) {
                             shapedTextOrientations.horizontal[justification] = shaping;
                             singleLine = shaping.positionedLines.length === 1;
@@ -39521,14 +39521,14 @@ function performSymbolLayout(args) {
                     textJustify = getAnchorJustification(textAnchor);
                 }
                 // Horizontal point or line label.
-                const shaping = shapeText(text, args.glyphMap, args.glyphPositions, args.imagePositions, fontstack, maxWidth, lineHeight, textAnchor, textJustify, spacingIfAllowed, textOffset, exports.WritingMode.horizontal, false, layoutTextSize, layoutTextSizeThisZoom);
+                const shaping = shapeText(text, args.glyphMap, args.glyphPositions, args.imagePositions, fontstack, maxWidth, lineHeight, textAnchor, textJustify, spacingIfAllowed, textOffset, exports$1.WritingMode.horizontal, false, layoutTextSize, layoutTextSizeThisZoom);
                 if (shaping)
                     shapedTextOrientations.horizontal[textJustify] = shaping;
                 // Vertical point label (if allowVerticalPlacement is enabled).
                 addVerticalShapingForPointLabelIfNeeded();
                 // Verticalized line label.
                 if (allowsVerticalWritingMode(unformattedText) && textAlongLine && keepUpright) {
-                    shapedTextOrientations.vertical = shapeText(text, args.glyphMap, args.glyphPositions, args.imagePositions, fontstack, maxWidth, lineHeight, textAnchor, textJustify, spacingIfAllowed, textOffset, exports.WritingMode.vertical, false, layoutTextSize, layoutTextSizeThisZoom);
+                    shapedTextOrientations.vertical = shapeText(text, args.glyphMap, args.glyphPositions, args.imagePositions, fontstack, maxWidth, lineHeight, textAnchor, textJustify, spacingIfAllowed, textOffset, exports$1.WritingMode.vertical, false, layoutTextSize, layoutTextSizeThisZoom);
                 }
             }
         }
@@ -39671,7 +39671,7 @@ function addTextVariableAnchorOffsets(textAnchorOffsets, variableAnchorOffset) {
     const values = variableAnchorOffset === null || variableAnchorOffset === void 0 ? void 0 : variableAnchorOffset.values;
     if ((values === null || values === void 0 ? void 0 : values.length) > 0) {
         for (let i = 0; i < values.length; i += 2) {
-            const anchor = exports.TextAnchorEnum[values[i]];
+            const anchor = exports$1.TextAnchorEnum[values[i]];
             const offset = values[i + 1];
             textAnchorOffsets.emplaceBack(anchor, offset[0], offset[1]);
         }
@@ -39768,13 +39768,13 @@ function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, ima
                 warnOnce(`${bucket.layerIds[0]}: Value for "icon-size" is >= ${MAX_GLYPH_ICON_SIZE}. Reduce your "icon-size".`);
             }
         }
-        bucket.addSymbols(bucket.icon, iconQuads, iconSizeData, iconOffset, iconAlongLine, feature, exports.WritingMode.none, anchor, lineArray.lineStartIndex, lineArray.lineLength, 
+        bucket.addSymbols(bucket.icon, iconQuads, iconSizeData, iconOffset, iconAlongLine, feature, exports$1.WritingMode.none, anchor, lineArray.lineStartIndex, lineArray.lineLength, 
         // The icon itself does not have an associated symbol since the text isn't placed yet
         -1, canonical);
         placedIconSymbolIndex = bucket.icon.placedSymbolArray.length - 1;
         if (verticalIconQuads) {
             numVerticalIconVertices = verticalIconQuads.length * 4;
-            bucket.addSymbols(bucket.icon, verticalIconQuads, iconSizeData, iconOffset, iconAlongLine, feature, exports.WritingMode.vertical, anchor, lineArray.lineStartIndex, lineArray.lineLength, 
+            bucket.addSymbols(bucket.icon, verticalIconQuads, iconSizeData, iconOffset, iconAlongLine, feature, exports$1.WritingMode.vertical, anchor, lineArray.lineStartIndex, lineArray.lineLength, 
             // The icon itself does not have an associated symbol since the text isn't placed yet
             -1, canonical);
             verticalPlacedIconSymbolIndex = bucket.icon.placedSymbolArray.length - 1;
@@ -39791,13 +39791,13 @@ function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, ima
             textCollisionFeature = new CollisionFeature(collisionBoxArray, anchor, featureIndex, sourceLayerIndex, bucketIndex, shaping, textBoxScale, textPadding, textAlongLine, textRotate);
         }
         const singleLine = shaping.positionedLines.length === 1;
-        numHorizontalGlyphVertices += addTextVertices(bucket, anchor, shaping, imageMap, layer, textAlongLine, feature, textOffset, lineArray, shapedTextOrientations.vertical ? exports.WritingMode.horizontal : exports.WritingMode.horizontalOnly, singleLine ? justifications : [justification], placedTextSymbolIndices, placedIconSymbolIndex, sizes, canonical);
+        numHorizontalGlyphVertices += addTextVertices(bucket, anchor, shaping, imageMap, layer, textAlongLine, feature, textOffset, lineArray, shapedTextOrientations.vertical ? exports$1.WritingMode.horizontal : exports$1.WritingMode.horizontalOnly, singleLine ? justifications : [justification], placedTextSymbolIndices, placedIconSymbolIndex, sizes, canonical);
         if (singleLine) {
             break;
         }
     }
     if (shapedTextOrientations.vertical) {
-        numVerticalGlyphVertices += addTextVertices(bucket, anchor, shapedTextOrientations.vertical, imageMap, layer, textAlongLine, feature, textOffset, lineArray, exports.WritingMode.vertical, ['vertical'], placedTextSymbolIndices, verticalPlacedIconSymbolIndex, sizes, canonical);
+        numVerticalGlyphVertices += addTextVertices(bucket, anchor, shapedTextOrientations.vertical, imageMap, layer, textAlongLine, feature, textOffset, lineArray, exports$1.WritingMode.vertical, ['vertical'], placedTextSymbolIndices, verticalPlacedIconSymbolIndex, sizes, canonical);
     }
     const textBoxStartIndex = textCollisionFeature ? textCollisionFeature.boxStartIndex : bucket.collisionBoxArray.length;
     const textBoxEndIndex = textCollisionFeature ? textCollisionFeature.boxEndIndex : bucket.collisionBoxArray.length;
@@ -40179,12 +40179,12 @@ function sqDist(ax, ay, bx, by) {
     return dx * dx + dy * dy;
 }
 
-exports.PerformanceMarkers = void 0;
+exports$1.PerformanceMarkers = void 0;
 (function (PerformanceMarkers) {
     PerformanceMarkers["create"] = "create";
     PerformanceMarkers["load"] = "load";
     PerformanceMarkers["fullLoad"] = "fullLoad";
-})(exports.PerformanceMarkers || (exports.PerformanceMarkers = {}));
+})(exports$1.PerformanceMarkers || (exports$1.PerformanceMarkers = {}));
 let lastFrameTime = null;
 let frameTimes = [];
 const minFramerateTarget = 60;
@@ -40208,13 +40208,13 @@ const PerformanceUtils = {
         frameTimes = [];
         performance.clearMeasures(loadTimeKey);
         performance.clearMeasures(fullLoadTimeKey);
-        for (const marker in exports.PerformanceMarkers) {
-            performance.clearMarks(exports.PerformanceMarkers[marker]);
+        for (const marker in exports$1.PerformanceMarkers) {
+            performance.clearMarks(exports$1.PerformanceMarkers[marker]);
         }
     },
     getPerformanceMetrics() {
-        performance.measure(loadTimeKey, exports.PerformanceMarkers.create, exports.PerformanceMarkers.load);
-        performance.measure(fullLoadTimeKey, exports.PerformanceMarkers.create, exports.PerformanceMarkers.fullLoad);
+        performance.measure(loadTimeKey, exports$1.PerformanceMarkers.create, exports$1.PerformanceMarkers.load);
+        performance.measure(fullLoadTimeKey, exports$1.PerformanceMarkers.create, exports$1.PerformanceMarkers.fullLoad);
         const loadTime = performance.getEntriesByName(loadTimeKey)[0].duration;
         const fullLoadTime = performance.getEntriesByName(fullLoadTimeKey)[0].duration;
         const totalFrames = frameTimes.length;
@@ -40266,255 +40266,255 @@ class RequestPerformance {
 }
 var performance$1 = performance;
 
-exports.AJAXError = AJAXError;
-exports.Actor = Actor;
-exports.AlphaImage = AlphaImage;
-exports.BoundedLRUCache = BoundedLRUCache;
-exports.Bounds = Bounds;
-exports.CanonicalTileID = CanonicalTileID;
-exports.CollisionBoxArray = CollisionBoxArray;
-exports.CollisionCircleLayoutArray = CollisionCircleLayoutArray;
-exports.Color = Color;
-exports.DEMData = DEMData;
-exports.DataConstantProperty = DataConstantProperty;
-exports.DictionaryCoder = DictionaryCoder;
-exports.EXTENT = EXTENT$1;
-exports.ErrorEvent = ErrorEvent;
-exports.EvaluationParameters = EvaluationParameters;
-exports.Event = Event;
-exports.Evented = Evented;
-exports.FeatureIndex = FeatureIndex;
-exports.FillBucket = FillBucket;
-exports.FillExtrusionBucket = FillExtrusionBucket;
-exports.GLOBAL_DISPATCHER_ID = GLOBAL_DISPATCHER_ID;
-exports.GeoJSONFeature = GeoJSONFeature;
-exports.HEATMAP_FULL_RENDER_FBO_KEY = HEATMAP_FULL_RENDER_FBO_KEY;
-exports.ImageAtlas = ImageAtlas;
-exports.ImagePosition = ImagePosition;
-exports.KDBush = KDBush;
-exports.LineBucket = LineBucket;
-exports.LineStripIndexArray = LineStripIndexArray;
-exports.LngLat = LngLat;
-exports.MAX_TILE_ZOOM = MAX_TILE_ZOOM;
-exports.MAX_VALID_LATITUDE = MAX_VALID_LATITUDE;
-exports.MLTVectorTile = MLTVectorTile;
-exports.MercatorCoordinate = MercatorCoordinate;
-exports.NORTH_POLE_Y = NORTH_POLE_Y;
-exports.ONE_EM = ONE_EM;
-exports.OverscaledTileID = OverscaledTileID;
-exports.Pbf = Pbf;
-exports.PerformanceUtils = PerformanceUtils;
-exports.Point = Point;
-exports.Pos3dArray = Pos3dArray;
-exports.PosArray = PosArray;
-exports.ProjectionDefinition = ProjectionDefinition;
-exports.Properties = Properties;
-exports.QuadTriangleArray = QuadTriangleArray;
-exports.RGBAImage = RGBAImage;
-exports.RasterBoundsArray = RasterBoundsArray;
-exports.RequestPerformance = RequestPerformance;
-exports.SOUTH_POLE_Y = SOUTH_POLE_Y;
-exports.SegmentVector = SegmentVector;
-exports.SubdivisionGranularityExpression = SubdivisionGranularityExpression;
-exports.SubdivisionGranularitySetting = SubdivisionGranularitySetting;
-exports.SymbolBucket = SymbolBucket;
-exports.TRANSITION_SUFFIX = TRANSITION_SUFFIX;
-exports.Texture = Texture;
-exports.TileCache = TileCache;
-exports.Transitionable = Transitionable;
-exports.TriangleIndexArray = TriangleIndexArray;
-exports.Uniform1f = Uniform1f;
-exports.Uniform1i = Uniform1i;
-exports.Uniform2f = Uniform2f;
-exports.Uniform3f = Uniform3f;
-exports.Uniform4f = Uniform4f;
-exports.UniformColor = UniformColor;
-exports.UniformColorArray = UniformColorArray;
-exports.UniformFloatArray = UniformFloatArray;
-exports.UniformMatrix4f = UniformMatrix4f;
-exports.UnwrappedTileID = UnwrappedTileID;
-exports.ValidationError = ValidationError;
-exports.VectorTile = VectorTile;
-exports.VectorTileFeature = VectorTileFeature;
-exports.VectorTileLayer = VectorTileLayer;
-exports.ZoomHistory = ZoomHistory;
-exports.__awaiter = __awaiter;
-exports.add = add$4;
-exports.addDynamicAttributes = addDynamicAttributes;
-exports.addProtocol = addProtocol;
-exports.altitudeFromMercatorZ = altitudeFromMercatorZ;
-exports.angleToRotateBetweenVectors2D = angleToRotateBetweenVectors2D;
-exports.applySourceDiff = applySourceDiff;
-exports.arrayBufferToImage = arrayBufferToImage;
-exports.arrayBufferToImageBitmap = arrayBufferToImageBitmap;
-exports.bezier = bezier;
-exports.calculateTileKey = calculateTileKey;
-exports.clamp = clamp$2;
-exports.clipGeometry = clipGeometry;
-exports.clipLine = clipLine;
-exports.clone = clone$5;
-exports.clone$1 = clone$6;
-exports.clone$2 = clone;
-exports.codePointUsesLocalIdeographFontFamily = codePointUsesLocalIdeographFontFamily;
-exports.collisionCircleLayout = collisionCircleLayout;
-exports.config = config;
-exports.copy = copy$5;
-exports.create = create$5;
-exports.create$1 = create$8;
-exports.create$2 = create;
-exports.create$3 = create$6;
-exports.createAbortError = createAbortError;
-exports.createExpression = createExpression;
-exports.createIdentityMat4f32 = createIdentityMat4f32;
-exports.createIdentityMat4f64 = createIdentityMat4f64;
-exports.createLayout = createLayout;
-exports.createMat4f64 = createMat4f64;
-exports.createStyleLayer = createStyleLayer;
-exports.createVec3f64 = createVec3f64;
-exports.createVec4f64 = createVec4f64;
-exports.cross = cross$2;
-exports.deepEqual = deepEqual$1;
-exports.defaultEasing = defaultEasing;
-exports.degreesToRadians = degreesToRadians;
-exports.derefLayers = derefLayers;
-exports.diff = diff;
-exports.differenceOfAnglesDegrees = differenceOfAnglesDegrees;
-exports.distanceOfAnglesRadians = distanceOfAnglesRadians;
-exports.dot = dot$5;
-exports.earthRadius = earthRadius;
-exports.easeCubicInOut = easeCubicInOut;
-exports.emitValidationErrors = emitValidationErrors;
-exports.emptyStyle = emptyStyle;
-exports.equals = equals$6;
-exports.evaluateSizeForFeature = evaluateSizeForFeature;
-exports.evaluateSizeForZoom = evaluateSizeForZoom;
-exports.exactEquals = exactEquals$5;
-exports.extend = extend;
-exports.featureFilter = featureFilter;
-exports.filterObject = filterObject;
-exports.findLineIntersection = findLineIntersection;
-exports.fromEuler = fromEuler;
-exports.fromRotation = fromRotation$2;
-exports.fromScaling = fromScaling;
-exports.getAABB = getAABB;
-exports.getAnchorAlignment = getAnchorAlignment;
-exports.getAnchorJustification = getAnchorJustification;
-exports.getAngleDelta = getAngleDelta;
-exports.getArrayBuffer = getArrayBuffer;
-exports.getDefaultExportFromCjs = getDefaultExportFromCjs$1;
-exports.getEdgeTiles = getEdgeTiles;
-exports.getImageData = getImageData;
-exports.getJSON = getJSON;
-exports.getOverlapMode = getOverlapMode;
-exports.getProtocol = getProtocol;
-exports.getReferrer = getReferrer;
-exports.getRollPitchBearing = getRollPitchBearing;
-exports.getVideo = getVideo;
-exports.groupByLayout = groupByLayout;
-exports.identity = identity$2;
-exports.interpolateFactory = interpolateFactory;
-exports.invert = invert$5;
-exports.invert$1 = invert$2;
-exports.isAbortError = isAbortError;
-exports.isBackgroundStyleLayer = isBackgroundStyleLayer;
-exports.isCircleStyleLayer = isCircleStyleLayer;
-exports.isColorReliefStyleLayer = isColorReliefStyleLayer;
-exports.isCustomStyleLayer = isCustomStyleLayer;
-exports.isFillExtrusionStyleLayer = isFillExtrusionStyleLayer;
-exports.isFillStyleLayer = isFillStyleLayer;
-exports.isHeatmapStyleLayer = isHeatmapStyleLayer;
-exports.isHillshadeStyleLayer = isHillshadeStyleLayer;
-exports.isImageBitmap = isImageBitmap;
-exports.isInBoundsForZoomLngLat = isInBoundsForZoomLngLat;
-exports.isLineStyleLayer = isLineStyleLayer;
-exports.isOffscreenCanvasDistorted = isOffscreenCanvasDistorted;
-exports.isPointableEvent = isPointableEvent;
-exports.isRasterStyleLayer = isRasterStyleLayer;
-exports.isSafari = isSafari;
-exports.isSymbolStyleLayer = isSymbolStyleLayer;
-exports.isTouchableEvent = isTouchableEvent;
-exports.isTouchableOrPointableType = isTouchableOrPointableType;
-exports.isUpdateableGeoJSON = isUpdateableGeoJSON;
-exports.isWorker = isWorker;
-exports.latFromMercatorY = latFromMercatorY;
-exports.len = len$4;
-exports.length = length;
-exports.length$1 = length$4;
-exports.lerp = lerp;
-exports.lngFromMercatorX = lngFromMercatorX;
-exports.makeRequest = makeRequest;
-exports.mapObject = mapObject;
-exports.mercatorXfromLng = mercatorXfromLng;
-exports.mercatorYfromLat = mercatorYfromLat;
-exports.mercatorZfromAltitude = mercatorZfromAltitude;
-exports.mergeSourceDiffs = mergeSourceDiffs;
-exports.mod = mod;
-exports.mul = mul$3;
-exports.multiply = multiply$5;
-exports.nextPowerOfTwo = nextPowerOfTwo;
-exports.normalize = normalize$4;
-exports.offscreenCanvasSupported = offscreenCanvasSupported;
-exports.ortho = ortho;
-exports.parseCacheControl = parseCacheControl;
-exports.parseGlyphPbf = parseGlyphPbf;
-exports.performSymbolLayout = performSymbolLayout;
-exports.perspective = perspective;
-exports.pick = pick;
-exports.pixelsToTileUnits = pixelsToTileUnits;
-exports.pointPlaneSignedDistance = pointPlaneSignedDistance;
-exports.polygonIntersectsPolygon = polygonIntersectsPolygon;
-exports.potpack = potpack;
-exports.radiansToDegrees = radiansToDegrees;
-exports.rayPlaneIntersection = rayPlaneIntersection;
-exports.readImageUsingVideoFrame = readImageUsingVideoFrame;
-exports.register = register;
-exports.remapSaturate = remapSaturate;
-exports.removeProtocol = removeProtocol;
-exports.renderColorRamp = renderColorRamp;
-exports.rollPitchBearingEqual = rollPitchBearingEqual;
-exports.rollPitchBearingToQuat = rollPitchBearingToQuat;
-exports.rotate = rotate$4;
-exports.rotateX = rotateX$3;
-exports.rotateX$1 = rotateX$2;
-exports.rotateY = rotateY$2;
-exports.rotateY$1 = rotateY$3;
-exports.rotateZ = rotateZ$3;
-exports.rotateZ$1 = rotateZ$2;
-exports.rtlWorkerPlugin = rtlWorkerPlugin;
-exports.sameOrigin = sameOrigin;
-exports.scale = scale$5;
-exports.scale$1 = scale;
-exports.scale$2 = scale$4;
-exports.scale$3 = scale$3;
-exports.scaleAndAdd = scaleAndAdd$2;
-exports.scaleZoom = scaleZoom;
-exports.slerp = slerp;
-exports.sphericalToCartesian = sphericalToCartesian;
-exports.sqrLen = sqrLen;
-exports.sub = sub$2;
-exports.subscribe = subscribe;
-exports.threePlaneIntersection = threePlaneIntersection;
-exports.toEvaluationFeature = toEvaluationFeature;
-exports.toUpdateable = toUpdateable;
-exports.transformMat3 = transformMat3$1;
-exports.transformMat4 = transformMat4$1;
-exports.transformMat4$1 = transformMat4$2;
-exports.transformMat4$2 = transformMat4;
-exports.transformQuat = transformQuat$1;
-exports.translate = translate$2;
-exports.translatePosition = translatePosition;
-exports.uniqueId = uniqueId;
-exports.v8 = v8;
-exports.v8Spec = v8Spec;
-exports.validateCustomStyleLayer = validateCustomStyleLayer;
-exports.validateLight = validateLight;
-exports.validateSky = validateSky;
-exports.validateStyle = validateStyle;
-exports.warnOnce = warnOnce;
-exports.wrap = wrap;
-exports.zero = zero;
-exports.zero$1 = zero$2;
-exports.zoomScale = zoomScale;
+exports$1.AJAXError = AJAXError;
+exports$1.Actor = Actor;
+exports$1.AlphaImage = AlphaImage;
+exports$1.BoundedLRUCache = BoundedLRUCache;
+exports$1.Bounds = Bounds;
+exports$1.CanonicalTileID = CanonicalTileID;
+exports$1.CollisionBoxArray = CollisionBoxArray;
+exports$1.CollisionCircleLayoutArray = CollisionCircleLayoutArray;
+exports$1.Color = Color;
+exports$1.DEMData = DEMData;
+exports$1.DataConstantProperty = DataConstantProperty;
+exports$1.DictionaryCoder = DictionaryCoder;
+exports$1.EXTENT = EXTENT$1;
+exports$1.ErrorEvent = ErrorEvent;
+exports$1.EvaluationParameters = EvaluationParameters;
+exports$1.Event = Event;
+exports$1.Evented = Evented;
+exports$1.FeatureIndex = FeatureIndex;
+exports$1.FillBucket = FillBucket;
+exports$1.FillExtrusionBucket = FillExtrusionBucket;
+exports$1.GLOBAL_DISPATCHER_ID = GLOBAL_DISPATCHER_ID;
+exports$1.GeoJSONFeature = GeoJSONFeature;
+exports$1.HEATMAP_FULL_RENDER_FBO_KEY = HEATMAP_FULL_RENDER_FBO_KEY;
+exports$1.ImageAtlas = ImageAtlas;
+exports$1.ImagePosition = ImagePosition;
+exports$1.KDBush = KDBush;
+exports$1.LineBucket = LineBucket;
+exports$1.LineStripIndexArray = LineStripIndexArray;
+exports$1.LngLat = LngLat;
+exports$1.MAX_TILE_ZOOM = MAX_TILE_ZOOM;
+exports$1.MAX_VALID_LATITUDE = MAX_VALID_LATITUDE;
+exports$1.MLTVectorTile = MLTVectorTile;
+exports$1.MercatorCoordinate = MercatorCoordinate;
+exports$1.NORTH_POLE_Y = NORTH_POLE_Y;
+exports$1.ONE_EM = ONE_EM;
+exports$1.OverscaledTileID = OverscaledTileID;
+exports$1.Pbf = Pbf;
+exports$1.PerformanceUtils = PerformanceUtils;
+exports$1.Point = Point;
+exports$1.Pos3dArray = Pos3dArray;
+exports$1.PosArray = PosArray;
+exports$1.ProjectionDefinition = ProjectionDefinition;
+exports$1.Properties = Properties;
+exports$1.QuadTriangleArray = QuadTriangleArray;
+exports$1.RGBAImage = RGBAImage;
+exports$1.RasterBoundsArray = RasterBoundsArray;
+exports$1.RequestPerformance = RequestPerformance;
+exports$1.SOUTH_POLE_Y = SOUTH_POLE_Y;
+exports$1.SegmentVector = SegmentVector;
+exports$1.SubdivisionGranularityExpression = SubdivisionGranularityExpression;
+exports$1.SubdivisionGranularitySetting = SubdivisionGranularitySetting;
+exports$1.SymbolBucket = SymbolBucket;
+exports$1.TRANSITION_SUFFIX = TRANSITION_SUFFIX;
+exports$1.Texture = Texture;
+exports$1.TileCache = TileCache;
+exports$1.Transitionable = Transitionable;
+exports$1.TriangleIndexArray = TriangleIndexArray;
+exports$1.Uniform1f = Uniform1f;
+exports$1.Uniform1i = Uniform1i;
+exports$1.Uniform2f = Uniform2f;
+exports$1.Uniform3f = Uniform3f;
+exports$1.Uniform4f = Uniform4f;
+exports$1.UniformColor = UniformColor;
+exports$1.UniformColorArray = UniformColorArray;
+exports$1.UniformFloatArray = UniformFloatArray;
+exports$1.UniformMatrix4f = UniformMatrix4f;
+exports$1.UnwrappedTileID = UnwrappedTileID;
+exports$1.ValidationError = ValidationError;
+exports$1.VectorTile = VectorTile;
+exports$1.VectorTileFeature = VectorTileFeature;
+exports$1.VectorTileLayer = VectorTileLayer;
+exports$1.ZoomHistory = ZoomHistory;
+exports$1.__awaiter = __awaiter;
+exports$1.add = add$4;
+exports$1.addDynamicAttributes = addDynamicAttributes;
+exports$1.addProtocol = addProtocol;
+exports$1.altitudeFromMercatorZ = altitudeFromMercatorZ;
+exports$1.angleToRotateBetweenVectors2D = angleToRotateBetweenVectors2D;
+exports$1.applySourceDiff = applySourceDiff;
+exports$1.arrayBufferToImage = arrayBufferToImage;
+exports$1.arrayBufferToImageBitmap = arrayBufferToImageBitmap;
+exports$1.bezier = bezier;
+exports$1.calculateTileKey = calculateTileKey;
+exports$1.clamp = clamp$2;
+exports$1.clipGeometry = clipGeometry;
+exports$1.clipLine = clipLine;
+exports$1.clone = clone$5;
+exports$1.clone$1 = clone$6;
+exports$1.clone$2 = clone;
+exports$1.codePointUsesLocalIdeographFontFamily = codePointUsesLocalIdeographFontFamily;
+exports$1.collisionCircleLayout = collisionCircleLayout;
+exports$1.config = config;
+exports$1.copy = copy$5;
+exports$1.create = create$5;
+exports$1.create$1 = create$8;
+exports$1.create$2 = create;
+exports$1.create$3 = create$6;
+exports$1.createAbortError = createAbortError;
+exports$1.createExpression = createExpression;
+exports$1.createIdentityMat4f32 = createIdentityMat4f32;
+exports$1.createIdentityMat4f64 = createIdentityMat4f64;
+exports$1.createLayout = createLayout;
+exports$1.createMat4f64 = createMat4f64;
+exports$1.createStyleLayer = createStyleLayer;
+exports$1.createVec3f64 = createVec3f64;
+exports$1.createVec4f64 = createVec4f64;
+exports$1.cross = cross$2;
+exports$1.deepEqual = deepEqual$1;
+exports$1.defaultEasing = defaultEasing;
+exports$1.degreesToRadians = degreesToRadians;
+exports$1.derefLayers = derefLayers;
+exports$1.diff = diff;
+exports$1.differenceOfAnglesDegrees = differenceOfAnglesDegrees;
+exports$1.distanceOfAnglesRadians = distanceOfAnglesRadians;
+exports$1.dot = dot$5;
+exports$1.earthRadius = earthRadius;
+exports$1.easeCubicInOut = easeCubicInOut;
+exports$1.emitValidationErrors = emitValidationErrors;
+exports$1.emptyStyle = emptyStyle;
+exports$1.equals = equals$6;
+exports$1.evaluateSizeForFeature = evaluateSizeForFeature;
+exports$1.evaluateSizeForZoom = evaluateSizeForZoom;
+exports$1.exactEquals = exactEquals$5;
+exports$1.extend = extend;
+exports$1.featureFilter = featureFilter;
+exports$1.filterObject = filterObject;
+exports$1.findLineIntersection = findLineIntersection;
+exports$1.fromEuler = fromEuler;
+exports$1.fromRotation = fromRotation$2;
+exports$1.fromScaling = fromScaling;
+exports$1.getAABB = getAABB;
+exports$1.getAnchorAlignment = getAnchorAlignment;
+exports$1.getAnchorJustification = getAnchorJustification;
+exports$1.getAngleDelta = getAngleDelta;
+exports$1.getArrayBuffer = getArrayBuffer;
+exports$1.getDefaultExportFromCjs = getDefaultExportFromCjs$1;
+exports$1.getEdgeTiles = getEdgeTiles;
+exports$1.getImageData = getImageData;
+exports$1.getJSON = getJSON;
+exports$1.getOverlapMode = getOverlapMode;
+exports$1.getProtocol = getProtocol;
+exports$1.getReferrer = getReferrer;
+exports$1.getRollPitchBearing = getRollPitchBearing;
+exports$1.getVideo = getVideo;
+exports$1.groupByLayout = groupByLayout;
+exports$1.identity = identity$2;
+exports$1.interpolateFactory = interpolateFactory;
+exports$1.invert = invert$5;
+exports$1.invert$1 = invert$2;
+exports$1.isAbortError = isAbortError;
+exports$1.isBackgroundStyleLayer = isBackgroundStyleLayer;
+exports$1.isCircleStyleLayer = isCircleStyleLayer;
+exports$1.isColorReliefStyleLayer = isColorReliefStyleLayer;
+exports$1.isCustomStyleLayer = isCustomStyleLayer;
+exports$1.isFillExtrusionStyleLayer = isFillExtrusionStyleLayer;
+exports$1.isFillStyleLayer = isFillStyleLayer;
+exports$1.isHeatmapStyleLayer = isHeatmapStyleLayer;
+exports$1.isHillshadeStyleLayer = isHillshadeStyleLayer;
+exports$1.isImageBitmap = isImageBitmap;
+exports$1.isInBoundsForZoomLngLat = isInBoundsForZoomLngLat;
+exports$1.isLineStyleLayer = isLineStyleLayer;
+exports$1.isOffscreenCanvasDistorted = isOffscreenCanvasDistorted;
+exports$1.isPointableEvent = isPointableEvent;
+exports$1.isRasterStyleLayer = isRasterStyleLayer;
+exports$1.isSafari = isSafari;
+exports$1.isSymbolStyleLayer = isSymbolStyleLayer;
+exports$1.isTouchableEvent = isTouchableEvent;
+exports$1.isTouchableOrPointableType = isTouchableOrPointableType;
+exports$1.isUpdateableGeoJSON = isUpdateableGeoJSON;
+exports$1.isWorker = isWorker;
+exports$1.latFromMercatorY = latFromMercatorY;
+exports$1.len = len$4;
+exports$1.length = length;
+exports$1.length$1 = length$4;
+exports$1.lerp = lerp;
+exports$1.lngFromMercatorX = lngFromMercatorX;
+exports$1.makeRequest = makeRequest;
+exports$1.mapObject = mapObject;
+exports$1.mercatorXfromLng = mercatorXfromLng;
+exports$1.mercatorYfromLat = mercatorYfromLat;
+exports$1.mercatorZfromAltitude = mercatorZfromAltitude;
+exports$1.mergeSourceDiffs = mergeSourceDiffs;
+exports$1.mod = mod;
+exports$1.mul = mul$3;
+exports$1.multiply = multiply$5;
+exports$1.nextPowerOfTwo = nextPowerOfTwo;
+exports$1.normalize = normalize$4;
+exports$1.offscreenCanvasSupported = offscreenCanvasSupported;
+exports$1.ortho = ortho;
+exports$1.parseCacheControl = parseCacheControl;
+exports$1.parseGlyphPbf = parseGlyphPbf;
+exports$1.performSymbolLayout = performSymbolLayout;
+exports$1.perspective = perspective;
+exports$1.pick = pick;
+exports$1.pixelsToTileUnits = pixelsToTileUnits;
+exports$1.pointPlaneSignedDistance = pointPlaneSignedDistance;
+exports$1.polygonIntersectsPolygon = polygonIntersectsPolygon;
+exports$1.potpack = potpack;
+exports$1.radiansToDegrees = radiansToDegrees;
+exports$1.rayPlaneIntersection = rayPlaneIntersection;
+exports$1.readImageUsingVideoFrame = readImageUsingVideoFrame;
+exports$1.register = register;
+exports$1.remapSaturate = remapSaturate;
+exports$1.removeProtocol = removeProtocol;
+exports$1.renderColorRamp = renderColorRamp;
+exports$1.rollPitchBearingEqual = rollPitchBearingEqual;
+exports$1.rollPitchBearingToQuat = rollPitchBearingToQuat;
+exports$1.rotate = rotate$4;
+exports$1.rotateX = rotateX$3;
+exports$1.rotateX$1 = rotateX$2;
+exports$1.rotateY = rotateY$2;
+exports$1.rotateY$1 = rotateY$3;
+exports$1.rotateZ = rotateZ$3;
+exports$1.rotateZ$1 = rotateZ$2;
+exports$1.rtlWorkerPlugin = rtlWorkerPlugin;
+exports$1.sameOrigin = sameOrigin;
+exports$1.scale = scale$5;
+exports$1.scale$1 = scale;
+exports$1.scale$2 = scale$4;
+exports$1.scale$3 = scale$3;
+exports$1.scaleAndAdd = scaleAndAdd$2;
+exports$1.scaleZoom = scaleZoom;
+exports$1.slerp = slerp;
+exports$1.sphericalToCartesian = sphericalToCartesian;
+exports$1.sqrLen = sqrLen;
+exports$1.sub = sub$2;
+exports$1.subscribe = subscribe;
+exports$1.threePlaneIntersection = threePlaneIntersection;
+exports$1.toEvaluationFeature = toEvaluationFeature;
+exports$1.toUpdateable = toUpdateable;
+exports$1.transformMat3 = transformMat3$1;
+exports$1.transformMat4 = transformMat4$1;
+exports$1.transformMat4$1 = transformMat4$2;
+exports$1.transformMat4$2 = transformMat4;
+exports$1.transformQuat = transformQuat$1;
+exports$1.translate = translate$2;
+exports$1.translatePosition = translatePosition;
+exports$1.uniqueId = uniqueId;
+exports$1.v8 = v8;
+exports$1.v8Spec = v8Spec;
+exports$1.validateCustomStyleLayer = validateCustomStyleLayer;
+exports$1.validateLight = validateLight;
+exports$1.validateSky = validateSky;
+exports$1.validateStyle = validateStyle;
+exports$1.warnOnce = warnOnce;
+exports$1.wrap = wrap;
+exports$1.zero = zero;
+exports$1.zero$1 = zero$2;
+exports$1.zoomScale = zoomScale;
 
 }));
 
@@ -42862,7 +42862,7 @@ return Worker;
 
 }));
 
-define('index', ['exports', './shared'], (function (exports, performance$1) { 'use strict';
+define('index', ['exports', './shared'], (function (exports$1, performance$1) { 'use strict';
 
 var name = "maplibre-gl";
 var description = "BSD licensed community fork of mapbox-gl, a WebGL interactive maps library";
@@ -42938,9 +42938,9 @@ var devDependencies = {
 	"@typescript-eslint/eslint-plugin": "^8.46.3",
 	"@typescript-eslint/parser": "^8.43.0",
 	"@unicode/unicode-17.0.0": "^1.6.14",
-	"@vitest/coverage-v8": "4.0.7",
+	"@vitest/coverage-v8": "4.0.8",
 	"@vitest/eslint-plugin": "^1.4.1",
-	"@vitest/ui": "4.0.7",
+	"@vitest/ui": "4.0.8",
 	address: "^2.0.3",
 	autoprefixer: "^10.4.21",
 	benchmark: "^2.1.4",
@@ -42980,7 +42980,7 @@ var devDependencies = {
 	react: "^19.1.1",
 	"react-dom": "^19.2.0",
 	regenerate: "^1.4.2",
-	rollup: "^4.52.5",
+	rollup: "^4.53.1",
 	"rollup-plugin-sourcemaps2": "^0.5.4",
 	"rollup-plugin-visualizer": "^6.0.5",
 	rw: "^1.3.3",
@@ -42995,7 +42995,7 @@ var devDependencies = {
 	typedoc: "^0.28.14",
 	"typedoc-plugin-markdown": "^4.9.0",
 	typescript: "^5.9.3",
-	vitest: "4.0.7",
+	vitest: "4.0.8",
 	"vitest-webgl-canvas-mock": "^1.1.0"
 };
 var scripts = {
@@ -73582,69 +73582,69 @@ function setWorkerUrl(value) { performance$1.config.WORKER_URL = value; }
  */
 function importScriptInWorkers(workerUrl) { return getGlobalDispatcher().broadcast("IS" /* MessageType.importScript */, workerUrl); }
 
-exports.AJAXError = performance$1.AJAXError;
-exports.Event = performance$1.Event;
-exports.Evented = performance$1.Evented;
-exports.LngLat = performance$1.LngLat;
-exports.MercatorCoordinate = performance$1.MercatorCoordinate;
-exports.Point = performance$1.Point;
-exports.addProtocol = performance$1.addProtocol;
-exports.config = performance$1.config;
-exports.removeProtocol = performance$1.removeProtocol;
-exports.AttributionControl = AttributionControl;
-exports.BoxZoomHandler = BoxZoomHandler;
-exports.CanvasSource = CanvasSource;
-exports.CooperativeGesturesHandler = CooperativeGesturesHandler;
-exports.DoubleClickZoomHandler = DoubleClickZoomHandler;
-exports.DragPanHandler = DragPanHandler;
-exports.DragRotateHandler = DragRotateHandler;
-exports.EdgeInsets = EdgeInsets;
-exports.FullscreenControl = FullscreenControl;
-exports.GeoJSONSource = GeoJSONSource;
-exports.GeolocateControl = GeolocateControl;
-exports.GlobeControl = GlobeControl;
-exports.Hash = Hash;
-exports.ImageSource = ImageSource;
-exports.KeyboardHandler = KeyboardHandler;
-exports.LngLatBounds = LngLatBounds;
-exports.LogoControl = LogoControl;
-exports.Map = Map$1;
-exports.MapMouseEvent = MapMouseEvent;
-exports.MapTouchEvent = MapTouchEvent;
-exports.MapWheelEvent = MapWheelEvent;
-exports.Marker = Marker;
-exports.NavigationControl = NavigationControl;
-exports.Popup = Popup;
-exports.RasterDEMTileSource = RasterDEMTileSource;
-exports.RasterTileSource = RasterTileSource;
-exports.ScaleControl = ScaleControl;
-exports.ScrollZoomHandler = ScrollZoomHandler;
-exports.Style = Style;
-exports.TerrainControl = TerrainControl;
-exports.TwoFingersTouchPitchHandler = TwoFingersTouchPitchHandler;
-exports.TwoFingersTouchRotateHandler = TwoFingersTouchRotateHandler;
-exports.TwoFingersTouchZoomHandler = TwoFingersTouchZoomHandler;
-exports.TwoFingersTouchZoomRotateHandler = TwoFingersTouchZoomRotateHandler;
-exports.VectorTileSource = VectorTileSource;
-exports.VideoSource = VideoSource;
-exports.addSourceType = addSourceType;
-exports.clearPrewarmedResources = clearPrewarmedResources;
-exports.createTileMesh = createTileMesh;
-exports.getMaxParallelImageRequests = getMaxParallelImageRequests;
-exports.getRTLTextPluginStatus = getRTLTextPluginStatus;
-exports.getVersion = getVersion;
-exports.getWorkerCount = getWorkerCount;
-exports.getWorkerUrl = getWorkerUrl;
-exports.importScriptInWorkers = importScriptInWorkers;
-exports.isTimeFrozen = isTimeFrozen;
-exports.now = now;
-exports.prewarm = prewarm;
-exports.restoreNow = restoreNow;
-exports.setMaxParallelImageRequests = setMaxParallelImageRequests;
-exports.setNow = setNow;
-exports.setRTLTextPlugin = setRTLTextPlugin;
-exports.setWorkerCount = setWorkerCount;
-exports.setWorkerUrl = setWorkerUrl;
+exports$1.AJAXError = performance$1.AJAXError;
+exports$1.Event = performance$1.Event;
+exports$1.Evented = performance$1.Evented;
+exports$1.LngLat = performance$1.LngLat;
+exports$1.MercatorCoordinate = performance$1.MercatorCoordinate;
+exports$1.Point = performance$1.Point;
+exports$1.addProtocol = performance$1.addProtocol;
+exports$1.config = performance$1.config;
+exports$1.removeProtocol = performance$1.removeProtocol;
+exports$1.AttributionControl = AttributionControl;
+exports$1.BoxZoomHandler = BoxZoomHandler;
+exports$1.CanvasSource = CanvasSource;
+exports$1.CooperativeGesturesHandler = CooperativeGesturesHandler;
+exports$1.DoubleClickZoomHandler = DoubleClickZoomHandler;
+exports$1.DragPanHandler = DragPanHandler;
+exports$1.DragRotateHandler = DragRotateHandler;
+exports$1.EdgeInsets = EdgeInsets;
+exports$1.FullscreenControl = FullscreenControl;
+exports$1.GeoJSONSource = GeoJSONSource;
+exports$1.GeolocateControl = GeolocateControl;
+exports$1.GlobeControl = GlobeControl;
+exports$1.Hash = Hash;
+exports$1.ImageSource = ImageSource;
+exports$1.KeyboardHandler = KeyboardHandler;
+exports$1.LngLatBounds = LngLatBounds;
+exports$1.LogoControl = LogoControl;
+exports$1.Map = Map$1;
+exports$1.MapMouseEvent = MapMouseEvent;
+exports$1.MapTouchEvent = MapTouchEvent;
+exports$1.MapWheelEvent = MapWheelEvent;
+exports$1.Marker = Marker;
+exports$1.NavigationControl = NavigationControl;
+exports$1.Popup = Popup;
+exports$1.RasterDEMTileSource = RasterDEMTileSource;
+exports$1.RasterTileSource = RasterTileSource;
+exports$1.ScaleControl = ScaleControl;
+exports$1.ScrollZoomHandler = ScrollZoomHandler;
+exports$1.Style = Style;
+exports$1.TerrainControl = TerrainControl;
+exports$1.TwoFingersTouchPitchHandler = TwoFingersTouchPitchHandler;
+exports$1.TwoFingersTouchRotateHandler = TwoFingersTouchRotateHandler;
+exports$1.TwoFingersTouchZoomHandler = TwoFingersTouchZoomHandler;
+exports$1.TwoFingersTouchZoomRotateHandler = TwoFingersTouchZoomRotateHandler;
+exports$1.VectorTileSource = VectorTileSource;
+exports$1.VideoSource = VideoSource;
+exports$1.addSourceType = addSourceType;
+exports$1.clearPrewarmedResources = clearPrewarmedResources;
+exports$1.createTileMesh = createTileMesh;
+exports$1.getMaxParallelImageRequests = getMaxParallelImageRequests;
+exports$1.getRTLTextPluginStatus = getRTLTextPluginStatus;
+exports$1.getVersion = getVersion;
+exports$1.getWorkerCount = getWorkerCount;
+exports$1.getWorkerUrl = getWorkerUrl;
+exports$1.importScriptInWorkers = importScriptInWorkers;
+exports$1.isTimeFrozen = isTimeFrozen;
+exports$1.now = now;
+exports$1.prewarm = prewarm;
+exports$1.restoreNow = restoreNow;
+exports$1.setMaxParallelImageRequests = setMaxParallelImageRequests;
+exports$1.setNow = setNow;
+exports$1.setRTLTextPlugin = setRTLTextPlugin;
+exports$1.setWorkerCount = setWorkerCount;
+exports$1.setWorkerUrl = setWorkerUrl;
 
 }));
 
