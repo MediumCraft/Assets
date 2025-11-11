@@ -33832,6 +33832,13 @@ register('OverscaledTileID', OverscaledTileID, { omit: ['terrainRttPosMatrix32f'
 function getFeatureId(feature, promoteId) {
     return promoteId ? feature.properties[promoteId] : feature.id;
 }
+/**
+ * Returns true if the data is a valid GeoJSON object that can be updated.
+ *
+ * Features must have unique identifiers to be updateable. IDs can come from:
+ * - The feature's `id` property (standard GeoJSON)
+ * - A promoted property specified by `promoteId` (e.g., a "name" property)
+ */
 function isUpdateableGeoJSON(data, promoteId) {
     // null can be updated
     if (data == null) {
@@ -33874,13 +33881,18 @@ function toUpdateable(data, promoteId) {
     }
     return result;
 }
-// mutates updateable
+/**
+ * Mutates updateable and applies a GeoJSONSourceDiff. Operations are processed in a specific order to ensure predictable behavior:
+ * 1. Remove operations (removeAll, remove)
+ * 2. Add operations (add)
+ * 3. Update operations (update)
+ */
 function applySourceDiff(updateable, diff, promoteId) {
-    var _a, _b, _c, _d;
+    var _a, _b;
     if (diff.removeAll) {
         updateable.clear();
     }
-    if (diff.remove) {
+    else if (diff.remove) {
         for (const id of diff.remove) {
             updateable.delete(id);
         }
@@ -33896,203 +33908,204 @@ function applySourceDiff(updateable, diff, promoteId) {
     if (diff.update) {
         for (const update of diff.update) {
             let feature = updateable.get(update.id);
-            if (feature == null) {
+            if (!feature)
                 continue;
-            }
-            // be careful to clone the feature and/or properties objects to avoid mutating our input
-            const cloneFeature = update.newGeometry || update.removeAllProperties;
-            // note: removeAllProperties gives us a new properties object, so we can skip the clone step
-            const cloneProperties = !update.removeAllProperties && (((_a = update.removeProperties) === null || _a === void 0 ? void 0 : _a.length) > 0 || ((_b = update.addOrUpdateProperties) === null || _b === void 0 ? void 0 : _b.length) > 0);
-            if (cloneFeature || cloneProperties) {
-                feature = Object.assign({}, feature);
-                updateable.set(update.id, feature);
-                if (cloneProperties) {
-                    feature.properties = Object.assign({}, feature.properties);
-                }
-            }
-            if (update.newGeometry) {
+            const changeGeometry = !!update.newGeometry;
+            const changeProps = update.removeAllProperties ||
+                ((_a = update.removeProperties) === null || _a === void 0 ? void 0 : _a.length) > 0 ||
+                ((_b = update.addOrUpdateProperties) === null || _b === void 0 ? void 0 : _b.length) > 0;
+            // nothing to do
+            if (!changeGeometry && !changeProps)
+                continue;
+            // clone once since we'll mutate
+            feature = Object.assign({}, feature);
+            updateable.set(update.id, feature);
+            if (changeGeometry) {
                 feature.geometry = update.newGeometry;
             }
-            if (update.removeAllProperties) {
-                feature.properties = {};
-            }
-            else if (((_c = update.removeProperties) === null || _c === void 0 ? void 0 : _c.length) > 0) {
-                for (const prop of update.removeProperties) {
-                    if (Object.prototype.hasOwnProperty.call(feature.properties, prop)) {
-                        delete feature.properties[prop];
+            if (changeProps) {
+                if (update.removeAllProperties) {
+                    feature.properties = {};
+                }
+                else {
+                    feature.properties = Object.assign({}, feature.properties || {});
+                }
+                if (update.removeProperties) {
+                    for (const key of update.removeProperties) {
+                        delete feature.properties[key];
+                    }
+                }
+                if (update.addOrUpdateProperties) {
+                    for (const { key, value } of update.addOrUpdateProperties) {
+                        feature.properties[key] = value;
                     }
                 }
             }
-            if (((_d = update.addOrUpdateProperties) === null || _d === void 0 ? void 0 : _d.length) > 0) {
-                for (const { key, value } of update.addOrUpdateProperties) {
-                    feature.properties[key] = value;
-                }
-            }
         }
     }
 }
-function mergeSourceDiffs(existingDiff, newDiff) {
-    var _a, _b, _c, _d, _e;
-    if (!existingDiff) {
-        return newDiff !== null && newDiff !== void 0 ? newDiff : {};
+/**
+ * Merge two GeoJSONSourceDiffs, considering the order of operations as specified above (remove, add, update).
+ *
+ * For `add` features that use promoteId, the feature id will be set to the promoteId value temporarily so that
+ * the merge can be completed, then reverted to the original promoteId state after the merge.
+ */
+function mergeSourceDiffs(prevDiff, nextDiff, promoteId) {
+    if (!prevDiff)
+        return nextDiff || {};
+    if (!nextDiff)
+        return prevDiff || {};
+    if (promoteId) {
+        // Temporarily normalize diff.add for features using promoteId
+        promoteFeatureIds(prevDiff.add, promoteId);
+        promoteFeatureIds(nextDiff.add, promoteId);
     }
-    if (!newDiff) {
-        return existingDiff;
-    }
-    let merged = Object.assign({}, existingDiff);
-    if (newDiff.removeAll) {
-        merged = { removeAll: true };
-    }
-    if (newDiff.remove) {
-        const newRemovedSet = new Set(newDiff.remove);
-        if (merged.add) {
-            merged.add = merged.add.filter(f => !newRemovedSet.has(f.id));
+    // Hash for o(1) lookups while creating a mutatable copy of the collections
+    const prev = diffToHashed(prevDiff);
+    const next = diffToHashed(nextDiff);
+    // Resolve merge conflicts
+    resolveMergeConflicts(prev, next);
+    // Simply merge the two diffs now that conflicts have been resolved
+    const merged = {};
+    if (prev.removeAll || next.removeAll)
+        merged.removeAll = true;
+    merged.remove = new Set([...prev.remove, ...next.remove]);
+    merged.add = new Map([...prev.add, ...next.add]);
+    merged.update = new Map([...prev.update, ...next.update]);
+    // Squash the merge - removing then adding the same feature
+    if (merged.remove.size && merged.add.size) {
+        for (const id of merged.add.keys()) {
+            merged.remove.delete(id);
         }
-        if (merged.update) {
-            merged.update = merged.update.filter(f => !newRemovedSet.has(f.id));
+    }
+    // Convert back to array-based representation
+    const mergedDiff = hashedToDiff(merged);
+    if (promoteId) {
+        // Revert diff.add for features using promoteId
+        demoteFeatureIds(mergedDiff.add, promoteId);
+    }
+    return mergedDiff;
+}
+/**
+ * Resolve merge conflicts between two GeoJSONSourceDiffs considering the ordering above (remove/add/update).
+ *
+ * - If you `removeAll` and then `add` features in the same diff, the added features will be kept.
+ * - Updates only apply to features that exist after removes and adds have been processed.
+ */
+function resolveMergeConflicts(prev, next) {
+    // Removing all features with added or updated features in previous - and clear no-op removes
+    if (next.removeAll) {
+        prev.add.clear();
+        prev.update.clear();
+        prev.remove.clear();
+        next.remove.clear();
+    }
+    // Removing features that were added or updated in previous
+    for (const id of next.remove) {
+        prev.add.delete(id);
+        prev.update.delete(id);
+    }
+    // Updating features that were updated in previous
+    for (const [id, nextUpdate] of next.update) {
+        const prevUpdate = prev.update.get(id);
+        if (!prevUpdate)
+            continue;
+        next.update.set(id, mergeFeatureDiffs(prevUpdate, nextUpdate));
+        prev.update.delete(id);
+    }
+}
+/**
+ * Merge two feature diffs for the same feature id, considering the order of operations as specified above (remove, add/update).
+ */
+function mergeFeatureDiffs(prev, next) {
+    const merged = { id: prev.id };
+    // Removing all properties with added or updated properties in previous - and clear no-op removes
+    if (next.removeAllProperties) {
+        delete prev.removeProperties;
+        delete prev.addOrUpdateProperties;
+        delete next.removeProperties;
+    }
+    // Removing properties that were added or updated in previous
+    if (next.removeProperties) {
+        for (const key of next.removeProperties) {
+            const index = prev.addOrUpdateProperties.findIndex(prop => prop.key === key);
+            if (index > -1)
+                prev.addOrUpdateProperties.splice(index, 1);
         }
-        const existingAddSet = new Set(((_a = existingDiff.add) !== null && _a !== void 0 ? _a : []).map((f) => f.id));
-        newDiff.remove = newDiff.remove.filter(id => !existingAddSet.has(id));
     }
-    if (newDiff.remove) {
-        const removedSet = new Set(merged.remove ? merged.remove.concat(newDiff.remove) : newDiff.remove);
-        merged.remove = Array.from(removedSet.values());
+    // Merge the two diffs
+    if (prev.removeAllProperties || next.removeAllProperties) {
+        merged.removeAllProperties = true;
     }
-    if (newDiff.add) {
-        const combinedAdd = merged.add ? merged.add.concat(newDiff.add) : newDiff.add;
-        const addMap = new Map(combinedAdd.map((feature) => [feature.id, feature]));
-        merged.add = Array.from(addMap.values());
+    if (prev.removeProperties || next.removeProperties) {
+        merged.removeProperties = [...prev.removeProperties || [], ...next.removeProperties || []];
     }
-    if (newDiff.update) {
-        const updateMap = new Map((_b = merged.update) === null || _b === void 0 ? void 0 : _b.map((feature) => [feature.id, feature]));
-        for (const feature of newDiff.update) {
-            const featureUpdate = (_c = updateMap.get(feature.id)) !== null && _c !== void 0 ? _c : { id: feature.id };
-            if (feature.newGeometry) {
-                featureUpdate.newGeometry = feature.newGeometry;
-            }
-            if (feature.addOrUpdateProperties) {
-                featureUpdate.addOrUpdateProperties = ((_d = featureUpdate.addOrUpdateProperties) !== null && _d !== void 0 ? _d : []).concat(feature.addOrUpdateProperties);
-            }
-            if (feature.removeProperties) {
-                featureUpdate.removeProperties = ((_e = featureUpdate.removeProperties) !== null && _e !== void 0 ? _e : []).concat(feature.removeProperties);
-            }
-            if (feature.removeAllProperties) {
-                featureUpdate.removeAllProperties = true;
-            }
-            updateMap.set(feature.id, featureUpdate);
-        }
-        merged.update = Array.from(updateMap.values());
+    if (prev.addOrUpdateProperties || next.addOrUpdateProperties) {
+        merged.addOrUpdateProperties = [...prev.addOrUpdateProperties || [], ...next.addOrUpdateProperties || []];
     }
-    if (merged.remove && merged.add) {
-        merged.remove = merged.remove.filter(id => merged.add.findIndex((f) => f.id === id) === -1);
+    if (prev.newGeometry || next.newGeometry) {
+        merged.newGeometry = next.newGeometry || prev.newGeometry;
     }
     return merged;
 }
-
-/** A 2-d bounding box covering an X and Y range. */
-class Bounds {
-    constructor() {
-        this.minX = Infinity;
-        this.maxX = -Infinity;
-        this.minY = Infinity;
-        this.maxY = -Infinity;
+/**
+ * Mutates diff.add and applies a feature id using the promoteId property
+ */
+function promoteFeatureIds(add, promoteId) {
+    if (!add)
+        return;
+    for (const feature of add) {
+        const id = getFeatureId(feature, promoteId);
+        if (id != null)
+            feature.id = id;
     }
-    /**
-     * Expands this bounding box to include point.
-     *
-     * @param point - The point to include in this bounding box
-     * @returns This mutated bounding box
-     */
-    extend(point) {
-        this.minX = Math.min(this.minX, point.x);
-        this.minY = Math.min(this.minY, point.y);
-        this.maxX = Math.max(this.maxX, point.x);
-        this.maxY = Math.max(this.maxY, point.y);
-        return this;
+}
+/**
+ * Mutates diff.add and removes the feature id if using the promoteId property
+ */
+function demoteFeatureIds(add, promoteId) {
+    if (!add)
+        return;
+    for (const feature of add) {
+        const id = getFeatureId(feature, promoteId);
+        if (id != null)
+            delete feature.id;
     }
-    /**
-     * Expands this bounding box by a fixed amount in each direction.
-     *
-     * @param amount - The amount to expand the box by, or contract if negative
-     * @returns This mutated bounding box
-     */
-    expandBy(amount) {
-        this.minX -= amount;
-        this.minY -= amount;
-        this.maxX += amount;
-        this.maxY += amount;
-        // check if bounds collapsed in either dimension
-        if (this.minX > this.maxX || this.minY > this.maxY) {
-            this.minX = Infinity;
-            this.maxX = -Infinity;
-            this.minY = Infinity;
-            this.maxY = -Infinity;
-        }
-        return this;
+}
+/**
+ * @internal
+ * Convert a GeoJSONSourceDiff to an idempotent hashed representation using Sets and Maps
+ */
+function diffToHashed(diff) {
+    var _a, _b;
+    if (!diff)
+        return {};
+    const hashed = {};
+    hashed.removeAll = diff.removeAll;
+    hashed.remove = new Set(diff.remove || []);
+    hashed.add = new Map((_a = diff.add) === null || _a === void 0 ? void 0 : _a.map(feature => [feature.id, feature]));
+    hashed.update = new Map((_b = diff.update) === null || _b === void 0 ? void 0 : _b.map(update => [update.id, update]));
+    return hashed;
+}
+/**
+ * @internal
+ * Convert a hashed GeoJSONSourceDiff back to the array-based representation
+ */
+function hashedToDiff(hashed) {
+    const diff = {};
+    if (hashed.removeAll) {
+        diff.removeAll = hashed.removeAll;
     }
-    /**
-     * Shrinks this bounding box by a fixed amount in each direction.
-     *
-     * @param amount - The amount to shrink the box by
-     * @returns This mutated bounding box
-     */
-    shrinkBy(amount) {
-        return this.expandBy(-amount);
+    if (hashed.remove) {
+        diff.remove = Array.from(hashed.remove);
     }
-    /**
-     * Returns a new bounding box that contains all of the corners of this bounding
-     * box with a transform applied. Does not modify this bounding box.
-     *
-     * @param fn - The function to apply to each corner
-     * @returns A new bounding box containing all of the mapped points.
-     */
-    map(fn) {
-        const result = new Bounds();
-        result.extend(fn(new Point(this.minX, this.minY)));
-        result.extend(fn(new Point(this.maxX, this.minY)));
-        result.extend(fn(new Point(this.minX, this.maxY)));
-        result.extend(fn(new Point(this.maxX, this.maxY)));
-        return result;
+    if (hashed.add) {
+        diff.add = Array.from(hashed.add.values());
     }
-    /**
-     * Creates a new bounding box that includes all points provided.
-     *
-     * @param points - The points to include inside the bounding box
-     * @returns The new bounding box
-     */
-    static fromPoints(points) {
-        const result = new Bounds();
-        for (const p of points) {
-            result.extend(p);
-        }
-        return result;
+    if (hashed.update) {
+        diff.update = Array.from(hashed.update.values());
     }
-    contains(point) {
-        return point.x >= this.minX && point.x <= this.maxX && point.y >= this.minY && point.y <= this.maxY;
-    }
-    empty() {
-        return this.minX > this.maxX;
-    }
-    width() {
-        return this.maxX - this.minX;
-    }
-    height() {
-        return this.maxY - this.minY;
-    }
-    covers(other) {
-        return !this.empty() && !other.empty() &&
-            other.minX >= this.minX &&
-            other.maxX <= this.maxX &&
-            other.minY >= this.minY &&
-            other.maxY <= this.maxY;
-    }
-    intersects(other) {
-        return !this.empty() && !other.empty() &&
-            other.minX <= this.maxX &&
-            other.maxX >= this.minX &&
-            other.minY <= this.maxY &&
-            other.maxY >= this.minY;
-    }
+    return diff;
 }
 
 class DictionaryCoder {
@@ -38001,6 +38014,118 @@ class MLTVectorTile {
     }
 }
 
+/** A 2-d bounding box covering an X and Y range. */
+class Bounds {
+    constructor() {
+        this.minX = Infinity;
+        this.maxX = -Infinity;
+        this.minY = Infinity;
+        this.maxY = -Infinity;
+    }
+    /**
+     * Expands this bounding box to include point.
+     *
+     * @param point - The point to include in this bounding box
+     * @returns This mutated bounding box
+     */
+    extend(point) {
+        this.minX = Math.min(this.minX, point.x);
+        this.minY = Math.min(this.minY, point.y);
+        this.maxX = Math.max(this.maxX, point.x);
+        this.maxY = Math.max(this.maxY, point.y);
+        return this;
+    }
+    /**
+     * Expands this bounding box by a fixed amount in each direction.
+     *
+     * @param amount - The amount to expand the box by, or contract if negative
+     * @returns This mutated bounding box
+     */
+    expandBy(amount) {
+        this.minX -= amount;
+        this.minY -= amount;
+        this.maxX += amount;
+        this.maxY += amount;
+        // check if bounds collapsed in either dimension
+        if (this.minX > this.maxX || this.minY > this.maxY) {
+            this.minX = Infinity;
+            this.maxX = -Infinity;
+            this.minY = Infinity;
+            this.maxY = -Infinity;
+        }
+        return this;
+    }
+    /**
+     * Shrinks this bounding box by a fixed amount in each direction.
+     *
+     * @param amount - The amount to shrink the box by
+     * @returns This mutated bounding box
+     */
+    shrinkBy(amount) {
+        return this.expandBy(-amount);
+    }
+    /**
+     * Returns a new bounding box that contains all of the corners of this bounding
+     * box with a transform applied. Does not modify this bounding box.
+     *
+     * @param fn - The function to apply to each corner
+     * @returns A new bounding box containing all of the mapped points.
+     */
+    map(fn) {
+        const result = new Bounds();
+        result.extend(fn(new Point(this.minX, this.minY)));
+        result.extend(fn(new Point(this.maxX, this.minY)));
+        result.extend(fn(new Point(this.minX, this.maxY)));
+        result.extend(fn(new Point(this.maxX, this.maxY)));
+        return result;
+    }
+    /**
+     * Creates a new bounding box that includes all points provided.
+     *
+     * @param points - The points to include inside the bounding box
+     * @returns The new bounding box
+     */
+    static fromPoints(points) {
+        const result = new Bounds();
+        for (const p of points) {
+            result.extend(p);
+        }
+        return result;
+    }
+    contains(point) {
+        return point.x >= this.minX && point.x <= this.maxX && point.y >= this.minY && point.y <= this.maxY;
+    }
+    empty() {
+        return this.minX > this.maxX;
+    }
+    width() {
+        return this.maxX - this.minX;
+    }
+    height() {
+        return this.maxY - this.minY;
+    }
+    covers(other) {
+        return !this.empty() && !other.empty() &&
+            other.minX >= this.minX &&
+            other.maxX <= this.maxX &&
+            other.minY >= this.minY &&
+            other.maxY <= this.maxY;
+    }
+    intersects(other) {
+        return !this.empty() && !other.empty() &&
+            other.minX <= this.maxX &&
+            other.maxX >= this.minX &&
+            other.minY <= this.maxY &&
+            other.maxY >= this.minY;
+    }
+}
+
+/**
+ * This is the default layer name for a geojson source,
+ * as this source is not a real vector source, but a vector source needs layers,
+ * so this is default name for it.
+ */
+const GEOJSON_TILE_LAYER_NAME = '_geojsonTileLayer';
 /**
  * An in memory index class to allow fast interaction with features
  */
@@ -38042,7 +38167,7 @@ class FeatureIndex {
             this.vtLayers = this.encoding !== 'mlt'
                 ? new VectorTile(new Pbf(this.rawTileData)).layers
                 : new MLTVectorTile(this.rawTileData).layers;
-            this.sourceLayerCoder = new DictionaryCoder(this.vtLayers ? Object.keys(this.vtLayers).sort() : ['_geojsonTileLayer']);
+            this.sourceLayerCoder = new DictionaryCoder(this.vtLayers ? Object.keys(this.vtLayers).sort() : [GEOJSON_TILE_LAYER_NAME]);
         }
         return this.vtLayers;
     }
@@ -38122,7 +38247,7 @@ class FeatureIndex {
             let featureState = {};
             if (id && sourceFeatureState) {
                 // `feature-state` expression evaluation requires feature state to be available
-                featureState = sourceFeatureState.getState(styleLayer.sourceLayer || '_geojsonTileLayer', id);
+                featureState = sourceFeatureState.getState(styleLayer.sourceLayer || GEOJSON_TILE_LAYER_NAME, id);
             }
             const serializedLayer = extend({}, serializedLayers[layerID]);
             serializedLayer.paint = evaluateProperties(serializedLayer.paint, styleLayer.paint, feature, featureState, availableImages);
@@ -40286,6 +40411,7 @@ exports$1.Evented = Evented;
 exports$1.FeatureIndex = FeatureIndex;
 exports$1.FillBucket = FillBucket;
 exports$1.FillExtrusionBucket = FillExtrusionBucket;
+exports$1.GEOJSON_TILE_LAYER_NAME = GEOJSON_TILE_LAYER_NAME;
 exports$1.GLOBAL_DISPATCHER_ID = GLOBAL_DISPATCHER_ID;
 exports$1.GeoJSONFeature = GeoJSONFeature;
 exports$1.HEATMAP_FULL_RENDER_FBO_KEY = HEATMAP_FULL_RENDER_FBO_KEY;
@@ -40558,7 +40684,7 @@ class StyleLayerIndex {
             if (!sourceGroup) {
                 sourceGroup = this.familiesBySource[sourceId] = {};
             }
-            const sourceLayerId = layer.sourceLayer || '_geojsonTileLayer';
+            const sourceLayerId = layer.sourceLayer || performance.GEOJSON_TILE_LAYER_NAME;
             let sourceLayerFamilies = sourceGroup[sourceLayerId];
             if (!sourceLayerFamilies) {
                 sourceLayerFamilies = sourceGroup[sourceLayerId] = [];
@@ -46451,7 +46577,7 @@ class GeoJSONSource extends performance$1.Evented {
         const layers = tile.latestFeatureIndex.loadVTLayers();
         for (let i = 0; i < tile.latestFeatureIndex.featureIndexArray.length; i++) {
             const featureIndex = tile.latestFeatureIndex.featureIndexArray.get(i);
-            const feature = layers._geojsonTileLayer.feature(featureIndex.featureIndex);
+            const feature = layers[performance$1.GEOJSON_TILE_LAYER_NAME].feature(featureIndex.featureIndex);
             if (prevIds.has(feature.id)) {
                 return true;
             }
@@ -47498,7 +47624,7 @@ class Tile {
             return;
         const vtLayers = featureIndex.loadVTLayers();
         const sourceLayer = params && params.sourceLayer ? params.sourceLayer : '';
-        const layer = vtLayers._geojsonTileLayer || vtLayers[sourceLayer];
+        const layer = vtLayers[performance$1.GEOJSON_TILE_LAYER_NAME] || vtLayers[sourceLayer];
         if (!layer)
             return;
         const filter = performance$1.featureFilter(params === null || params === void 0 ? void 0 : params.filter, params === null || params === void 0 ? void 0 : params.globalState);
@@ -47596,7 +47722,7 @@ class Tile {
                 continue;
             const bucket = this.buckets[id];
             // Buckets are grouped by common source-layer
-            const sourceLayerId = bucket.layers[0]['sourceLayer'] || '_geojsonTileLayer';
+            const sourceLayerId = bucket.layers[0]['sourceLayer'] || performance$1.GEOJSON_TILE_LAYER_NAME;
             const sourceLayer = vtLayers[sourceLayerId];
             const sourceLayerStates = states[sourceLayerId];
             if (!sourceLayer || !sourceLayerStates || Object.keys(sourceLayerStates).length === 0)
@@ -48353,34 +48479,37 @@ class TileManager extends performance$1.Evented {
      * Analogy: imagine two sheets of paper in 3D space:
      *   - one sheet = ideal tiles at varying overscaledZ
      *   - the second sheet = maxCoveringZoom
+     *
+     * @param retainTileMap - this parameters will be updated with the child tiles to keep
+     * @param idealTilesWithoutData - which of the ideal tiles currently does not have loaded data
+     * @return a set of tiles that need to be loaded
      */
-    _retainLoadedChildren(targetTiles, retain) {
-        const targetTileIDs = Object.values(targetTiles);
-        const loadedDescendents = this._getLoadedDescendents(targetTileIDs);
-        const incomplete = {};
+    _retainLoadedChildren(retainTileMap, idealTilesWithoutData) {
+        const loadedDescendents = this._getLoadedDescendents(idealTilesWithoutData);
+        const incomplete = new Set();
         // retain the uppermost descendents of target tiles
-        for (const targetID of targetTileIDs) {
+        for (const targetID of idealTilesWithoutData) {
             const descendents = loadedDescendents[targetID.key];
             if (!(descendents === null || descendents === void 0 ? void 0 : descendents.length)) {
-                incomplete[targetID.key] = targetID;
+                incomplete.add(targetID);
                 continue;
             }
             // find descendents within the max covering zoom range
-            const maxCoveringZoom = targetID.overscaledZ + TileManager.maxUnderzooming;
+            const maxCoveringZoom = targetID.overscaledZ + TileManager.maxOverzooming;
             const candidates = descendents.filter(t => t.tileID.overscaledZ <= maxCoveringZoom);
             if (!candidates.length) {
-                incomplete[targetID.key] = targetID;
+                incomplete.add(targetID);
                 continue;
             }
             // retain the uppermost descendents in the topmost zoom below the target tile
             const topZoom = Math.min(...candidates.map(t => t.tileID.overscaledZ));
             const topIDs = candidates.filter(t => t.tileID.overscaledZ === topZoom).map(t => t.tileID);
             for (const tileID of topIDs) {
-                retain[tileID.key] = tileID;
+                retainTileMap[tileID.key] = tileID;
             }
             //determine if the retained generation is fully covered
             if (!this._areDescendentsComplete(topIDs, topZoom, targetID.overscaledZ)) {
-                incomplete[targetID.key] = targetID;
+                incomplete.add(targetID);
             }
         }
         return incomplete;
@@ -48498,7 +48627,7 @@ class TileManager extends performance$1.Evented {
         if (!this.used && !this.usedForTerrain) {
             idealTileIDs = [];
         }
-        else if (this._source.tileID) {
+        else if (this._source.tileID) { // image source
             idealTileIDs = transform.getVisibleUnwrappedCoordinates(this._source.tileID)
                 .map((unwrapped) => new performance$1.OverscaledTileID(unwrapped.canonical.z, unwrapped.wrap, unwrapped.canonical.z, unwrapped.canonical.x, unwrapped.canonical.y));
         }
@@ -48514,7 +48643,7 @@ class TileManager extends performance$1.Evented {
                 terrain,
                 calculateTileZoom: this._source.calculateTileZoom,
             });
-            if (this._source.hasTile) {
+            if (this._source.hasTile) { // tile should be in bounds
                 idealTileIDs = idealTileIDs.filter((coord) => this._source.hasTile(coord));
             }
         }
@@ -48612,23 +48741,21 @@ class TileManager extends performance$1.Evented {
      */
     _updateRetainedTiles(idealTileIDs, zoom) {
         var _a;
-        const retain = {};
-        const checked = {};
-        const minCoveringZoom = Math.max(zoom - TileManager.maxOverzooming, this._source.minzoom);
-        let missingIdealTiles = {};
+        const idealTilesWithoutData = new Set();
         for (const idealID of idealTileIDs) {
             const idealTile = this._addTile(idealID);
-            // retain the tile even if it's not loaded because it's an ideal tile.
-            retain[idealID.key] = idealID;
             if (!idealTile.hasData()) {
-                missingIdealTiles[idealID.key] = idealID;
+                idealTilesWithoutData.add(idealID);
             }
         }
-        missingIdealTiles = this._retainLoadedChildren(missingIdealTiles, retain);
+        // retain the tile even if it's not loaded because it's an ideal tile.
+        const retainTileMap = idealTileIDs.reduce((acc, t) => { acc[t.key] = t; return acc; }, {});
+        const tileIdsWithoutData = this._retainLoadedChildren(retainTileMap, idealTilesWithoutData);
         // for remaining missing tiles with incomplete child coverage, seek a loaded parent tile
-        for (const idealKey in missingIdealTiles) {
-            const tileID = missingIdealTiles[idealKey];
-            let tile = this._tiles[idealKey];
+        const checked = {};
+        const minCoveringZoom = Math.max(zoom - TileManager.maxUnderzooming, this._source.minzoom);
+        for (const tileID of tileIdsWithoutData) {
+            let tile = this._tiles[tileID.key];
             // As we ascend up the tile pyramid of the ideal tile, we check whether the parent
             // tile has been previously requested (and errored because we only loop over tiles with no data)
             // in order to determine if we need to request its parent.
@@ -48646,7 +48773,7 @@ class TileManager extends performance$1.Evented {
                 if (tile) {
                     const hasData = tile.hasData();
                     if (hasData || !((_a = this.map) === null || _a === void 0 ? void 0 : _a.cancelPendingTileRequestsWhileZooming) || parentWasRequested) {
-                        retain[parentId.key] = parentId;
+                        retainTileMap[parentId.key] = parentId;
                     }
                     // Save the current values, since they're the parent of the next iteration
                     // of the parent tile ascent loop.
@@ -48656,7 +48783,7 @@ class TileManager extends performance$1.Evented {
                 }
             }
         }
-        return retain;
+        return retainTileMap;
     }
     /**
      * Designate fading bases and parents using a many-to-one relationship where the lower children fade in/out
@@ -49038,21 +49165,21 @@ class TileManager extends performance$1.Evented {
      * Set the value of a particular state for a feature
      */
     setFeatureState(sourceLayer, featureId, state) {
-        sourceLayer = sourceLayer || '_geojsonTileLayer';
+        sourceLayer = sourceLayer || performance$1.GEOJSON_TILE_LAYER_NAME;
         this._state.updateState(sourceLayer, featureId, state);
     }
     /**
      * Resets the value of a particular state key for a feature
      */
     removeFeatureState(sourceLayer, featureId, key) {
-        sourceLayer = sourceLayer || '_geojsonTileLayer';
+        sourceLayer = sourceLayer || performance$1.GEOJSON_TILE_LAYER_NAME;
         this._state.removeFeatureState(sourceLayer, featureId, key);
     }
     /**
      * Get the entire state object for a feature
      */
     getFeatureState(sourceLayer, featureId) {
-        sourceLayer = sourceLayer || '_geojsonTileLayer';
+        sourceLayer = sourceLayer || performance$1.GEOJSON_TILE_LAYER_NAME;
         return this._state.getState(sourceLayer, featureId);
     }
     /**
@@ -49078,8 +49205,8 @@ class TileManager extends performance$1.Evented {
         this._cache.filter(tile => !tile.hasDependency(namespaces, keys));
     }
 }
-TileManager.maxOverzooming = 10;
-TileManager.maxUnderzooming = 3;
+TileManager.maxUnderzooming = 10;
+TileManager.maxOverzooming = 3;
 function compareTileId(a, b) {
     // Different copies of the world are sorted based on their distance to the center.
     // Wrap values are converted to unsigned distances by reserving odd number for copies
@@ -62255,7 +62382,7 @@ class Painter {
         this.setup();
         // Within each layer there are multiple distinct z-planes that can be drawn to.
         // This is implemented using the WebGL depth buffer.
-        this.numSublayers = TileManager.maxUnderzooming + TileManager.maxOverzooming + 1;
+        this.numSublayers = TileManager.maxOverzooming + TileManager.maxUnderzooming + 1;
         this.depthEpsilon = 1 / Math.pow(2, 16);
         this.crossTileSymbolIndex = new CrossTileSymbolIndex();
     }

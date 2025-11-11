@@ -2127,7 +2127,8 @@ export declare class Dispatcher {
  */
 export type GeoJSONFeatureId = number | string;
 /**
- * The geojson source diff object
+ * The geojson source diff object - processed in the following order: remove, add, update. Provides an efficient
+ * way to update GeoJSON data in a map source without having to replace the entire dataset.
  */
 export type GeoJSONSourceDiff = {
 	/**
@@ -2148,7 +2149,8 @@ export type GeoJSONSourceDiff = {
 	update?: Array<GeoJSONFeatureDiff>;
 };
 /**
- * A geojson feature diff object
+ * A geojson feature diff object - processed in the following order: new geometry, remove properties, add/update properties.
+ * Provides an efficient way to update GeoJSON features in a map source without replacing the entire feature.
  */
 export type GeoJSONFeatureDiff = {
 	/**
@@ -2967,12 +2969,16 @@ declare class TileManager extends Evented {
 	 * Analogy: imagine two sheets of paper in 3D space:
 	 *   - one sheet = ideal tiles at varying overscaledZ
 	 *   - the second sheet = maxCoveringZoom
+	 *
+	 * @param retainTileMap - this parameters will be updated with the child tiles to keep
+	 * @param idealTilesWithoutData - which of the ideal tiles currently does not have loaded data
+	 * @return a set of tiles that need to be loaded
 	 */
-	_retainLoadedChildren(targetTiles: Record<string, OverscaledTileID>, retain: Record<string, OverscaledTileID>): Record<string, OverscaledTileID>;
+	_retainLoadedChildren(retainTileMap: Record<string, OverscaledTileID>, idealTilesWithoutData: Set<OverscaledTileID>): Set<OverscaledTileID>;
 	/**
 	 * Return dictionary of qualified loaded descendents for each provided target tile id
 	 */
-	_getLoadedDescendents(targetTileIDs: OverscaledTileID[]): Record<string, Tile[]>;
+	_getLoadedDescendents(targetTileIDs: Set<OverscaledTileID>): Record<string, Tile[]>;
 	/**
 	 * Determine if tile ids fully cover the current generation.
 	 * - 1st generation: need 4 children or 1 overscaled child

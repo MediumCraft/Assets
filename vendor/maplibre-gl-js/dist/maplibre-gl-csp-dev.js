@@ -36987,6 +36987,13 @@ class RasterDEMTileSource extends RasterTileSource {
 function getFeatureId(feature, promoteId) {
     return promoteId ? feature.properties[promoteId] : feature.id;
 }
+/**
+ * Returns true if the data is a valid GeoJSON object that can be updated.
+ *
+ * Features must have unique identifiers to be updateable. IDs can come from:
+ * - The feature's `id` property (standard GeoJSON)
+ * - A promoted property specified by `promoteId` (e.g., a "name" property)
+ */
 function isUpdateableGeoJSON(data, promoteId) {
     // null can be updated
     if (data == null) {
@@ -37029,13 +37036,18 @@ function toUpdateable(data, promoteId) {
     }
     return result;
 }
-// mutates updateable
+/**
+ * Mutates updateable and applies a GeoJSONSourceDiff. Operations are processed in a specific order to ensure predictable behavior:
+ * 1. Remove operations (removeAll, remove)
+ * 2. Add operations (add)
+ * 3. Update operations (update)
+ */
 function applySourceDiff(updateable, diff, promoteId) {
-    var _a, _b, _c, _d;
+    var _a, _b;
     if (diff.removeAll) {
         updateable.clear();
     }
-    if (diff.remove) {
+    else if (diff.remove) {
         for (const id of diff.remove) {
             updateable.delete(id);
         }
@@ -37051,97 +37063,204 @@ function applySourceDiff(updateable, diff, promoteId) {
     if (diff.update) {
         for (const update of diff.update) {
             let feature = updateable.get(update.id);
-            if (feature == null) {
+            if (!feature)
                 continue;
-            }
-            // be careful to clone the feature and/or properties objects to avoid mutating our input
-            const cloneFeature = update.newGeometry || update.removeAllProperties;
-            // note: removeAllProperties gives us a new properties object, so we can skip the clone step
-            const cloneProperties = !update.removeAllProperties && (((_a = update.removeProperties) === null || _a === void 0 ? void 0 : _a.length) > 0 || ((_b = update.addOrUpdateProperties) === null || _b === void 0 ? void 0 : _b.length) > 0);
-            if (cloneFeature || cloneProperties) {
-                feature = Object.assign({}, feature);
-                updateable.set(update.id, feature);
-                if (cloneProperties) {
-                    feature.properties = Object.assign({}, feature.properties);
-                }
-            }
-            if (update.newGeometry) {
+            const changeGeometry = !!update.newGeometry;
+            const changeProps = update.removeAllProperties ||
+                ((_a = update.removeProperties) === null || _a === void 0 ? void 0 : _a.length) > 0 ||
+                ((_b = update.addOrUpdateProperties) === null || _b === void 0 ? void 0 : _b.length) > 0;
+            // nothing to do
+            if (!changeGeometry && !changeProps)
+                continue;
+            // clone once since we'll mutate
+            feature = Object.assign({}, feature);
+            updateable.set(update.id, feature);
+            if (changeGeometry) {
                 feature.geometry = update.newGeometry;
             }
-            if (update.removeAllProperties) {
-                feature.properties = {};
-            }
-            else if (((_c = update.removeProperties) === null || _c === void 0 ? void 0 : _c.length) > 0) {
-                for (const prop of update.removeProperties) {
-                    if (Object.prototype.hasOwnProperty.call(feature.properties, prop)) {
-                        delete feature.properties[prop];
+            if (changeProps) {
+                if (update.removeAllProperties) {
+                    feature.properties = {};
+                }
+                else {
+                    feature.properties = Object.assign({}, feature.properties || {});
+                }
+                if (update.removeProperties) {
+                    for (const key of update.removeProperties) {
+                        delete feature.properties[key];
                     }
                 }
-            }
-            if (((_d = update.addOrUpdateProperties) === null || _d === void 0 ? void 0 : _d.length) > 0) {
-                for (const { key, value } of update.addOrUpdateProperties) {
-                    feature.properties[key] = value;
+                if (update.addOrUpdateProperties) {
+                    for (const { key, value } of update.addOrUpdateProperties) {
+                        feature.properties[key] = value;
+                    }
                 }
             }
         }
     }
 }
-function mergeSourceDiffs(existingDiff, newDiff) {
-    var _a, _b, _c, _d, _e;
-    if (!existingDiff) {
-        return newDiff !== null && newDiff !== void 0 ? newDiff : {};
+/**
+ * Merge two GeoJSONSourceDiffs, considering the order of operations as specified above (remove, add, update).
+ *
+ * For `add` features that use promoteId, the feature id will be set to the promoteId value temporarily so that
+ * the merge can be completed, then reverted to the original promoteId state after the merge.
+ */
+function mergeSourceDiffs(prevDiff, nextDiff, promoteId) {
+    if (!prevDiff)
+        return nextDiff || {};
+    if (!nextDiff)
+        return prevDiff || {};
+    if (promoteId) {
+        // Temporarily normalize diff.add for features using promoteId
+        promoteFeatureIds(prevDiff.add, promoteId);
+        promoteFeatureIds(nextDiff.add, promoteId);
     }
-    if (!newDiff) {
-        return existingDiff;
-    }
-    let merged = Object.assign({}, existingDiff);
-    if (newDiff.removeAll) {
-        merged = { removeAll: true };
-    }
-    if (newDiff.remove) {
-        const newRemovedSet = new Set(newDiff.remove);
-        if (merged.add) {
-            merged.add = merged.add.filter(f => !newRemovedSet.has(f.id));
+    // Hash for o(1) lookups while creating a mutatable copy of the collections
+    const prev = diffToHashed(prevDiff);
+    const next = diffToHashed(nextDiff);
+    // Resolve merge conflicts
+    resolveMergeConflicts(prev, next);
+    // Simply merge the two diffs now that conflicts have been resolved
+    const merged = {};
+    if (prev.removeAll || next.removeAll)
+        merged.removeAll = true;
+    merged.remove = new Set([...prev.remove, ...next.remove]);
+    merged.add = new Map([...prev.add, ...next.add]);
+    merged.update = new Map([...prev.update, ...next.update]);
+    // Squash the merge - removing then adding the same feature
+    if (merged.remove.size && merged.add.size) {
+        for (const id of merged.add.keys()) {
+            merged.remove.delete(id);
         }
-        if (merged.update) {
-            merged.update = merged.update.filter(f => !newRemovedSet.has(f.id));
+    }
+    // Convert back to array-based representation
+    const mergedDiff = hashedToDiff(merged);
+    if (promoteId) {
+        // Revert diff.add for features using promoteId
+        demoteFeatureIds(mergedDiff.add, promoteId);
+    }
+    return mergedDiff;
+}
+/**
+ * Resolve merge conflicts between two GeoJSONSourceDiffs considering the ordering above (remove/add/update).
+ *
+ * - If you `removeAll` and then `add` features in the same diff, the added features will be kept.
+ * - Updates only apply to features that exist after removes and adds have been processed.
+ */
+function resolveMergeConflicts(prev, next) {
+    // Removing all features with added or updated features in previous - and clear no-op removes
+    if (next.removeAll) {
+        prev.add.clear();
+        prev.update.clear();
+        prev.remove.clear();
+        next.remove.clear();
+    }
+    // Removing features that were added or updated in previous
+    for (const id of next.remove) {
+        prev.add.delete(id);
+        prev.update.delete(id);
+    }
+    // Updating features that were updated in previous
+    for (const [id, nextUpdate] of next.update) {
+        const prevUpdate = prev.update.get(id);
+        if (!prevUpdate)
+            continue;
+        next.update.set(id, mergeFeatureDiffs(prevUpdate, nextUpdate));
+        prev.update.delete(id);
+    }
+}
+/**
+ * Merge two feature diffs for the same feature id, considering the order of operations as specified above (remove, add/update).
+ */
+function mergeFeatureDiffs(prev, next) {
+    const merged = { id: prev.id };
+    // Removing all properties with added or updated properties in previous - and clear no-op removes
+    if (next.removeAllProperties) {
+        delete prev.removeProperties;
+        delete prev.addOrUpdateProperties;
+        delete next.removeProperties;
+    }
+    // Removing properties that were added or updated in previous
+    if (next.removeProperties) {
+        for (const key of next.removeProperties) {
+            const index = prev.addOrUpdateProperties.findIndex(prop => prop.key === key);
+            if (index > -1)
+                prev.addOrUpdateProperties.splice(index, 1);
         }
-        const existingAddSet = new Set(((_a = existingDiff.add) !== null && _a !== void 0 ? _a : []).map((f) => f.id));
-        newDiff.remove = newDiff.remove.filter(id => !existingAddSet.has(id));
     }
-    if (newDiff.remove) {
-        const removedSet = new Set(merged.remove ? merged.remove.concat(newDiff.remove) : newDiff.remove);
-        merged.remove = Array.from(removedSet.values());
+    // Merge the two diffs
+    if (prev.removeAllProperties || next.removeAllProperties) {
+        merged.removeAllProperties = true;
     }
-    if (newDiff.add) {
-        const combinedAdd = merged.add ? merged.add.concat(newDiff.add) : newDiff.add;
-        const addMap = new Map(combinedAdd.map((feature) => [feature.id, feature]));
-        merged.add = Array.from(addMap.values());
+    if (prev.removeProperties || next.removeProperties) {
+        merged.removeProperties = [...prev.removeProperties || [], ...next.removeProperties || []];
     }
-    if (newDiff.update) {
-        const updateMap = new Map((_b = merged.update) === null || _b === void 0 ? void 0 : _b.map((feature) => [feature.id, feature]));
-        for (const feature of newDiff.update) {
-            const featureUpdate = (_c = updateMap.get(feature.id)) !== null && _c !== void 0 ? _c : { id: feature.id };
-            if (feature.newGeometry) {
-                featureUpdate.newGeometry = feature.newGeometry;
-            }
-            if (feature.addOrUpdateProperties) {
-                featureUpdate.addOrUpdateProperties = ((_d = featureUpdate.addOrUpdateProperties) !== null && _d !== void 0 ? _d : []).concat(feature.addOrUpdateProperties);
-            }
-            if (feature.removeProperties) {
-                featureUpdate.removeProperties = ((_e = featureUpdate.removeProperties) !== null && _e !== void 0 ? _e : []).concat(feature.removeProperties);
-            }
-            if (feature.removeAllProperties) {
-                featureUpdate.removeAllProperties = true;
-            }
-            updateMap.set(feature.id, featureUpdate);
-        }
-        merged.update = Array.from(updateMap.values());
+    if (prev.addOrUpdateProperties || next.addOrUpdateProperties) {
+        merged.addOrUpdateProperties = [...prev.addOrUpdateProperties || [], ...next.addOrUpdateProperties || []];
     }
-    if (merged.remove && merged.add) {
-        merged.remove = merged.remove.filter(id => merged.add.findIndex((f) => f.id === id) === -1);
+    if (prev.newGeometry || next.newGeometry) {
+        merged.newGeometry = next.newGeometry || prev.newGeometry;
     }
     return merged;
+}
+/**
+ * Mutates diff.add and applies a feature id using the promoteId property
+ */
+function promoteFeatureIds(add, promoteId) {
+    if (!add)
+        return;
+    for (const feature of add) {
+        const id = getFeatureId(feature, promoteId);
+        if (id != null)
+            feature.id = id;
+    }
+}
+/**
+ * Mutates diff.add and removes the feature id if using the promoteId property
+ */
+function demoteFeatureIds(add, promoteId) {
+    if (!add)
+        return;
+    for (const feature of add) {
+        const id = getFeatureId(feature, promoteId);
+        if (id != null)
+            delete feature.id;
+    }
+}
+/**
+ * @internal
+ * Convert a GeoJSONSourceDiff to an idempotent hashed representation using Sets and Maps
+ */
+function diffToHashed(diff) {
+    var _a, _b;
+    if (!diff)
+        return {};
+    const hashed = {};
+    hashed.removeAll = diff.removeAll;
+    hashed.remove = new Set(diff.remove || []);
+    hashed.add = new Map((_a = diff.add) === null || _a === void 0 ? void 0 : _a.map(feature => [feature.id, feature]));
+    hashed.update = new Map((_b = diff.update) === null || _b === void 0 ? void 0 : _b.map(update => [update.id, update]));
+    return hashed;
+}
+/**
+ * @internal
+ * Convert a hashed GeoJSONSourceDiff back to the array-based representation
+ */
+function hashedToDiff(hashed) {
+    const diff = {};
+    if (hashed.removeAll) {
+        diff.removeAll = hashed.removeAll;
+    }
+    if (hashed.remove) {
+        diff.remove = Array.from(hashed.remove);
+    }
+    if (hashed.add) {
+        diff.add = Array.from(hashed.add.values());
+    }
+    if (hashed.update) {
+        diff.update = Array.from(hashed.update.values());
+    }
+    return diff;
 }
 
 function getCoordinatesFromGeometry(geometry) {
@@ -37184,1203 +37303,6 @@ function tileIdToLngLatBounds({ x, y, z }, buffer = 0) {
     const lngMax = lngFromMercatorX((x + 1 + buffer) / Math.pow(2, z));
     const latMax = latFromMercatorY((y - buffer) / Math.pow(2, z));
     return new LngLatBounds([lngMin, latMin], [lngMax, latMax]);
-}
-
-/**
- * A source containing GeoJSON.
- * (See the [Style Specification](https://maplibre.org/maplibre-style-spec/#sources-geojson) for detailed documentation of options.)
- *
- * @group Sources
- *
- * @example
- * ```ts
- * map.addSource('some id', {
- *     type: 'geojson',
- *     data: 'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_10m_ports.geojson'
- * });
- * ```
- *
- * @example
- * ```ts
- * map.addSource('some id', {
- *    type: 'geojson',
- *    data: {
- *        "type": "FeatureCollection",
- *        "features": [{
- *            "type": "Feature",
- *            "properties": {},
- *            "geometry": {
- *                "type": "Point",
- *                "coordinates": [
- *                    -76.53063297271729,
- *                    39.18174077994108
- *                ]
- *            }
- *        }]
- *    }
- * });
- * ```
- *
- * @example
- * ```ts
- * map.getSource('some id').setData({
- *   "type": "FeatureCollection",
- *   "features": [{
- *       "type": "Feature",
- *       "properties": { "name": "Null Island" },
- *       "geometry": {
- *           "type": "Point",
- *           "coordinates": [ 0, 0 ]
- *       }
- *   }]
- * });
- * ```
- * @see [Draw GeoJSON points](https://maplibre.org/maplibre-gl-js/docs/examples/draw-geojson-points/)
- * @see [Add a GeoJSON line](https://maplibre.org/maplibre-gl-js/docs/examples/add-a-geojson-line/)
- * @see [Create a heatmap from points](https://maplibre.org/maplibre-gl-js/docs/examples/create-a-heatmap-layer/)
- * @see [Create and style clusters](https://maplibre.org/maplibre-gl-js/docs/examples/create-and-style-clusters/)
- */
-class GeoJSONSource extends Evented {
-    /** @internal */
-    constructor(id, options, dispatcher, eventedParent) {
-        super();
-        this.id = id;
-        // `type` is a property rather than a constant to make it easy for 3rd
-        // parties to use GeoJSONSource to build their own source types.
-        this.type = 'geojson';
-        this.minzoom = 0;
-        this.maxzoom = 18;
-        this.tileSize = 512;
-        this.isTileClipped = true;
-        this.reparseOverscaled = true;
-        this._removed = false;
-        this._isUpdatingWorker = false;
-        this._pendingWorkerUpdate = { data: options.data };
-        this.actor = dispatcher.getActor();
-        this.setEventedParent(eventedParent);
-        this._data = options.data;
-        this._options = extend({}, options);
-        this._collectResourceTiming = options.collectResourceTiming;
-        if (options.maxzoom !== undefined)
-            this.maxzoom = options.maxzoom;
-        if (options.type)
-            this.type = options.type;
-        if (options.attribution)
-            this.attribution = options.attribution;
-        this.promoteId = options.promoteId;
-        if (options.clusterMaxZoom !== undefined && this.maxzoom <= options.clusterMaxZoom) {
-            warnOnce(`The maxzoom value "${this.maxzoom}" is expected to be greater than the clusterMaxZoom value "${options.clusterMaxZoom}".`);
-        }
-        // sent to the worker, along with `url: ...` or `data: literal geojson`,
-        // so that it can load/parse/index the geojson data
-        // extending with `options.workerOptions` helps to make it easy for
-        // third-party sources to hack/reuse GeoJSONSource.
-        this.workerOptions = extend({
-            source: this.id,
-            cluster: options.cluster || false,
-            geojsonVtOptions: {
-                buffer: this._pixelsToTileUnits(options.buffer !== undefined ? options.buffer : 128),
-                tolerance: this._pixelsToTileUnits(options.tolerance !== undefined ? options.tolerance : 0.375),
-                extent: EXTENT$1,
-                maxZoom: this.maxzoom,
-                lineMetrics: options.lineMetrics || false,
-                generateId: options.generateId || false
-            },
-            superclusterOptions: {
-                maxZoom: this._getClusterMaxZoom(options.clusterMaxZoom),
-                minPoints: Math.max(2, options.clusterMinPoints || 2),
-                extent: EXTENT$1,
-                radius: this._pixelsToTileUnits(options.clusterRadius || 50),
-                log: false,
-                generateId: options.generateId || false
-            },
-            clusterProperties: options.clusterProperties,
-            filter: options.filter
-        }, options.workerOptions);
-        // send the promoteId to the worker to have more flexible updates, but only if it is a string
-        if (typeof this.promoteId === 'string') {
-            this.workerOptions.promoteId = this.promoteId;
-        }
-    }
-    _hasPendingWorkerUpdate() {
-        return this._pendingWorkerUpdate.data !== undefined || this._pendingWorkerUpdate.diff !== undefined || this._pendingWorkerUpdate.optionsChanged;
-    }
-    _pixelsToTileUnits(pixelValue) {
-        return pixelValue * (EXTENT$1 / this.tileSize);
-    }
-    _getClusterMaxZoom(clusterMaxZoom) {
-        const effectiveClusterMaxZoom = clusterMaxZoom ? Math.round(clusterMaxZoom) : this.maxzoom - 1;
-        if (!(Number.isInteger(clusterMaxZoom) || clusterMaxZoom === undefined)) {
-            warnOnce(`Integer expected for option 'clusterMaxZoom': provided value "${clusterMaxZoom}" rounded to "${effectiveClusterMaxZoom}"`);
-        }
-        return effectiveClusterMaxZoom;
-    }
-    load() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this._updateWorkerData();
-        });
-    }
-    onAdd(map) {
-        this.map = map;
-        this.load();
-    }
-    /**
-     * Sets the GeoJSON data and re-renders the map.
-     *
-     * @param data - A GeoJSON data object or a URL to one. The latter is preferable in the case of large GeoJSON files.
-     */
-    setData(data) {
-        this._data = data;
-        this._pendingWorkerUpdate = { data };
-        this._updateWorkerData();
-        return this;
-    }
-    /**
-     * Updates the source's GeoJSON, and re-renders the map.
-     *
-     * For sources with lots of features, this method can be used to make updates more quickly.
-     *
-     * This approach requires unique IDs for every feature in the source. The IDs can either be specified on the feature,
-     * or by using the promoteId option to specify which property should be used as the ID.
-     *
-     * It is an error to call updateData on a source that did not have unique IDs for each of its features already.
-     *
-     * Updates are applied on a best-effort basis, updating an ID that does not exist will not result in an error.
-     *
-     * @param diff - The changes that need to be applied.
-     */
-    updateData(diff) {
-        this._pendingWorkerUpdate.diff = mergeSourceDiffs(this._pendingWorkerUpdate.diff, diff);
-        this._updateWorkerData();
-        return this;
-    }
-    /**
-     * Allows to get the source's actual GeoJSON data.
-     *
-     * @returns a promise which resolves to the source's actual GeoJSON data
-     */
-    getData() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const options = extend({ type: this.type }, this.workerOptions);
-            return this.actor.sendAsync({ type: "GD" /* MessageType.getData */, data: options });
-        });
-    }
-    /**
-     * Allows getting the source's boundaries.
-     * If there's a problem with the source's data, it will return an empty {@link LngLatBounds}.
-     * @returns a promise which resolves to the source's boundaries
-     */
-    getBounds() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return getGeoJSONBounds(yield this.getData());
-        });
-    }
-    /**
-     * To disable/enable clustering on the source options
-     * @param options - The options to set
-     * @example
-     * ```ts
-     * map.getSource('some id').setClusterOptions({cluster: false});
-     * map.getSource('some id').setClusterOptions({cluster: false, clusterRadius: 50, clusterMaxZoom: 14});
-     * ```
-     */
-    setClusterOptions(options) {
-        this.workerOptions.cluster = options.cluster;
-        if (options.clusterRadius !== undefined) {
-            this.workerOptions.superclusterOptions.radius = this._pixelsToTileUnits(options.clusterRadius);
-        }
-        if (options.clusterMaxZoom !== undefined) {
-            this.workerOptions.superclusterOptions.maxZoom = this._getClusterMaxZoom(options.clusterMaxZoom);
-        }
-        this._pendingWorkerUpdate.optionsChanged = true;
-        this._updateWorkerData();
-        return this;
-    }
-    /**
-     * For clustered sources, fetches the zoom at which the given cluster expands.
-     *
-     * @param clusterId - The value of the cluster's `cluster_id` property.
-     * @returns a promise that is resolved with the zoom number
-     */
-    getClusterExpansionZoom(clusterId) {
-        return this.actor.sendAsync({ type: "GCEZ" /* MessageType.getClusterExpansionZoom */, data: { type: this.type, clusterId, source: this.id } });
-    }
-    /**
-     * For clustered sources, fetches the children of the given cluster on the next zoom level (as an array of GeoJSON features).
-     *
-     * @param clusterId - The value of the cluster's `cluster_id` property.
-     * @returns a promise that is resolved when the features are retrieved
-     */
-    getClusterChildren(clusterId) {
-        return this.actor.sendAsync({ type: "GCC" /* MessageType.getClusterChildren */, data: { type: this.type, clusterId, source: this.id } });
-    }
-    /**
-     * For clustered sources, fetches the original points that belong to the cluster (as an array of GeoJSON features).
-     *
-     * @param clusterId - The value of the cluster's `cluster_id` property.
-     * @param limit - The maximum number of features to return.
-     * @param offset - The number of features to skip (e.g. for pagination).
-     * @returns a promise that is resolved when the features are retrieved
-     * @example
-     * Retrieve cluster leaves on click
-     * ```ts
-     * map.on('click', 'clusters', (e) => {
-     *   let features = map.queryRenderedFeatures(e.point, {
-     *     layers: ['clusters']
-     *   });
-     *
-     *   let clusterId = features[0].properties.cluster_id;
-     *   let pointCount = features[0].properties.point_count;
-     *   let clusterSource = map.getSource('clusters');
-     *
-     *   const features = await clusterSource.getClusterLeaves(clusterId, pointCount);
-     *   // Print cluster leaves in the console
-     *   console.log('Cluster leaves:', features);
-     * });
-     * ```
-     */
-    getClusterLeaves(clusterId, limit, offset) {
-        return this.actor.sendAsync({ type: "GCL" /* MessageType.getClusterLeaves */, data: {
-                type: this.type,
-                source: this.id,
-                clusterId,
-                limit,
-                offset
-            } });
-    }
-    /**
-     * Responsible for invoking WorkerSource's geojson.loadData target, which
-     * handles loading the geojson data and preparing to serve it up as tiles,
-     * using geojson-vt or supercluster as appropriate.
-     */
-    _updateWorkerData() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (this._isUpdatingWorker)
-                return;
-            if (!this._hasPendingWorkerUpdate()) {
-                warnOnce(`No pending worker updates for GeoJSONSource ${this.id}.`);
-                return;
-            }
-            const { data, diff } = this._pendingWorkerUpdate;
-            const options = extend({ type: this.type }, this.workerOptions);
-            if (data) {
-                if (typeof data === 'string') {
-                    options.request = this.map._requestManager.transformRequest(browser.resolveURL(data), "Source" /* ResourceType.Source */);
-                    options.request.collectResourceTiming = this._collectResourceTiming;
-                }
-                else {
-                    options.data = JSON.stringify(data);
-                }
-                this._pendingWorkerUpdate.data = undefined;
-            }
-            else if (diff) {
-                options.dataDiff = diff;
-                this._pendingWorkerUpdate.diff = undefined;
-            }
-            // Reset the flag since this update is using the latest options
-            this._pendingWorkerUpdate.optionsChanged = undefined;
-            this._isUpdatingWorker = true;
-            this.fire(new Event('dataloading', { dataType: 'source' }));
-            try {
-                const result = yield this.actor.sendAsync({ type: "LD" /* MessageType.loadData */, data: options });
-                this._isUpdatingWorker = false;
-                if (this._removed || result.abandoned) {
-                    this.fire(new Event('dataabort', { dataType: 'source' }));
-                    return;
-                }
-                this._data = result.data;
-                let resourceTiming = null;
-                if (result.resourceTiming && result.resourceTiming[this.id]) {
-                    resourceTiming = result.resourceTiming[this.id].slice(0);
-                }
-                const eventData = { dataType: 'source' };
-                if (this._collectResourceTiming && resourceTiming && resourceTiming.length > 0) {
-                    extend(eventData, { resourceTiming });
-                }
-                // although GeoJSON sources contain no metadata, we fire this event to let the TileManager
-                // know its ok to start requesting tiles.
-                this.fire(new Event('data', Object.assign(Object.assign({}, eventData), { sourceDataType: 'metadata' })));
-                this.fire(new Event('data', Object.assign(Object.assign({}, eventData), { sourceDataType: 'content', shouldReloadTileOptions: this._getShouldReloadTileOptions(diff) })));
-            }
-            catch (err) {
-                this._isUpdatingWorker = false;
-                if (this._removed) {
-                    this.fire(new Event('dataabort', { dataType: 'source' }));
-                    return;
-                }
-                this.fire(new ErrorEvent(err));
-            }
-            finally {
-                // If there is more pending data, update worker again.
-                if (this._hasPendingWorkerUpdate()) {
-                    this._updateWorkerData();
-                }
-            }
-        });
-    }
-    _getShouldReloadTileOptions(diff) {
-        if (!diff || diff.removeAll)
-            return undefined;
-        const { add = [], update = [], remove = [] } = (diff || {});
-        const prevIds = new Set([...update.map(u => u.id), ...remove]);
-        const nextBounds = [
-            ...update.map(f => f.newGeometry),
-            ...add.map(f => f.geometry)
-        ].map(g => getGeoJSONBounds(g));
-        return {
-            nextBounds,
-            prevIds
-        };
-    }
-    /**
-     * Determine whether a tile should be reloaded based on a set of options associated with a {@link MapSourceDataChangedEvent}.
-     * @internal
-     */
-    shouldReloadTile(tile, { nextBounds, prevIds }) {
-        if (!tile.latestFeatureIndex)
-            return false;
-        // Update the tile if it PREVIOUSLY contained an updated feature.
-        const layers = tile.latestFeatureIndex.loadVTLayers();
-        for (let i = 0; i < tile.latestFeatureIndex.featureIndexArray.length; i++) {
-            const featureIndex = tile.latestFeatureIndex.featureIndexArray.get(i);
-            const feature = layers._geojsonTileLayer.feature(featureIndex.featureIndex);
-            if (prevIds.has(feature.id)) {
-                return true;
-            }
-        }
-        // Update the tile if it WILL NOW contain an updated feature.
-        const { buffer, extent } = this.workerOptions.geojsonVtOptions;
-        const tileBounds = tileIdToLngLatBounds(tile.tileID.canonical, buffer / extent);
-        for (const bounds of nextBounds) {
-            if (tileBounds.intersects(bounds)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    loaded() {
-        return !this._isUpdatingWorker && !this._hasPendingWorkerUpdate();
-    }
-    loadTile(tile) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const message = !tile.actor ? "LT" /* MessageType.loadTile */ : "RT" /* MessageType.reloadTile */;
-            tile.actor = this.actor;
-            const params = {
-                type: this.type,
-                uid: tile.uid,
-                tileID: tile.tileID,
-                zoom: tile.tileID.overscaledZ,
-                maxZoom: this.maxzoom,
-                tileSize: this.tileSize,
-                source: this.id,
-                pixelRatio: this.map.getPixelRatio(),
-                showCollisionBoxes: this.map.showCollisionBoxes,
-                promoteId: this.promoteId,
-                subdivisionGranularity: this.map.style.projection.subdivisionGranularity
-            };
-            tile.abortController = new AbortController();
-            const data = yield this.actor.sendAsync({ type: message, data: params }, tile.abortController);
-            delete tile.abortController;
-            tile.unloadVectorData();
-            if (!tile.aborted) {
-                tile.loadVectorData(data, this.map.painter, message === "RT" /* MessageType.reloadTile */);
-            }
-        });
-    }
-    abortTile(tile) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (tile.abortController) {
-                tile.abortController.abort();
-                delete tile.abortController;
-            }
-            tile.aborted = true;
-        });
-    }
-    unloadTile(tile) {
-        return __awaiter(this, void 0, void 0, function* () {
-            tile.unloadVectorData();
-            yield this.actor.sendAsync({ type: "RMT" /* MessageType.removeTile */, data: { uid: tile.uid, type: this.type, source: this.id } });
-        });
-    }
-    onRemove() {
-        this._removed = true;
-        this.actor.sendAsync({ type: "RS" /* MessageType.removeSource */, data: { type: this.type, source: this.id } });
-    }
-    serialize() {
-        return extend({}, this._options, {
-            type: this.type,
-            data: this._data
-        });
-    }
-    hasTransition() {
-        return false;
-    }
-}
-
-/** A 2-d bounding box covering an X and Y range. */
-class Bounds {
-    constructor() {
-        this.minX = Infinity;
-        this.maxX = -Infinity;
-        this.minY = Infinity;
-        this.maxY = -Infinity;
-    }
-    /**
-     * Expands this bounding box to include point.
-     *
-     * @param point - The point to include in this bounding box
-     * @returns This mutated bounding box
-     */
-    extend(point) {
-        this.minX = Math.min(this.minX, point.x);
-        this.minY = Math.min(this.minY, point.y);
-        this.maxX = Math.max(this.maxX, point.x);
-        this.maxY = Math.max(this.maxY, point.y);
-        return this;
-    }
-    /**
-     * Expands this bounding box by a fixed amount in each direction.
-     *
-     * @param amount - The amount to expand the box by, or contract if negative
-     * @returns This mutated bounding box
-     */
-    expandBy(amount) {
-        this.minX -= amount;
-        this.minY -= amount;
-        this.maxX += amount;
-        this.maxY += amount;
-        // check if bounds collapsed in either dimension
-        if (this.minX > this.maxX || this.minY > this.maxY) {
-            this.minX = Infinity;
-            this.maxX = -Infinity;
-            this.minY = Infinity;
-            this.maxY = -Infinity;
-        }
-        return this;
-    }
-    /**
-     * Shrinks this bounding box by a fixed amount in each direction.
-     *
-     * @param amount - The amount to shrink the box by
-     * @returns This mutated bounding box
-     */
-    shrinkBy(amount) {
-        return this.expandBy(-amount);
-    }
-    /**
-     * Returns a new bounding box that contains all of the corners of this bounding
-     * box with a transform applied. Does not modify this bounding box.
-     *
-     * @param fn - The function to apply to each corner
-     * @returns A new bounding box containing all of the mapped points.
-     */
-    map(fn) {
-        const result = new Bounds();
-        result.extend(fn(new Point(this.minX, this.minY)));
-        result.extend(fn(new Point(this.maxX, this.minY)));
-        result.extend(fn(new Point(this.minX, this.maxY)));
-        result.extend(fn(new Point(this.maxX, this.maxY)));
-        return result;
-    }
-    /**
-     * Creates a new bounding box that includes all points provided.
-     *
-     * @param points - The points to include inside the bounding box
-     * @returns The new bounding box
-     */
-    static fromPoints(points) {
-        const result = new Bounds();
-        for (const p of points) {
-            result.extend(p);
-        }
-        return result;
-    }
-    contains(point) {
-        return point.x >= this.minX && point.x <= this.maxX && point.y >= this.minY && point.y <= this.maxY;
-    }
-    empty() {
-        return this.minX > this.maxX;
-    }
-    width() {
-        return this.maxX - this.minX;
-    }
-    height() {
-        return this.maxY - this.minY;
-    }
-    covers(other) {
-        return !this.empty() && !other.empty() &&
-            other.minX >= this.minX &&
-            other.maxX <= this.maxX &&
-            other.minY >= this.minY &&
-            other.maxY <= this.maxY;
-    }
-    intersects(other) {
-        return !this.empty() && !other.empty() &&
-            other.minX <= this.maxX &&
-            other.maxX >= this.minX &&
-            other.minY <= this.maxY &&
-            other.maxY >= this.minY;
-    }
-}
-
-/**
- * A data source containing an image.
- * (See the [Style Specification](https://maplibre.org/maplibre-style-spec/#sources-image) for detailed documentation of options.)
- *
- * @group Sources
- *
- * @example
- * ```ts
- * // add to map
- * map.addSource('some id', {
- *    type: 'image',
- *    url: 'https://www.maplibre.org/images/foo.png',
- *    coordinates: [
- *        [-76.54, 39.18],
- *        [-76.52, 39.18],
- *        [-76.52, 39.17],
- *        [-76.54, 39.17]
- *    ]
- * });
- *
- * // update coordinates
- * let mySource = map.getSource('some id');
- * mySource.setCoordinates([
- *     [-76.54335737228394, 39.18579907229748],
- *     [-76.52803659439087, 39.1838364847587],
- *     [-76.5295386314392, 39.17683392507606],
- *     [-76.54520273208618, 39.17876344106642]
- * ]);
- *
- * // update url and coordinates simultaneously
- * mySource.updateImage({
- *    url: 'https://www.maplibre.org/images/bar.png',
- *    coordinates: [
- *        [-76.54335737228394, 39.18579907229748],
- *        [-76.52803659439087, 39.1838364847587],
- *        [-76.5295386314392, 39.17683392507606],
- *        [-76.54520273208618, 39.17876344106642]
- *    ]
- * })
- *
- * map.removeSource('some id');  // remove
- * ```
- */
-class ImageSource extends Evented {
-    /** @internal */
-    constructor(id, options, dispatcher, eventedParent) {
-        super();
-        this.flippedWindingOrder = false;
-        this.id = id;
-        this.dispatcher = dispatcher;
-        this.coordinates = options.coordinates;
-        this.type = 'image';
-        this.minzoom = 0;
-        this.maxzoom = 22;
-        this.tileSize = 512;
-        this.tiles = {};
-        this._loaded = false;
-        this.setEventedParent(eventedParent);
-        this.options = options;
-    }
-    load(newCoordinates) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this._loaded = false;
-            this.fire(new Event('dataloading', { dataType: 'source' }));
-            this.url = this.options.url;
-            this._request = new AbortController();
-            try {
-                const image = yield ImageRequest.getImage(this.map._requestManager.transformRequest(this.url, "Image" /* ResourceType.Image */), this._request);
-                this._request = null;
-                this._loaded = true;
-                if (image && image.data) {
-                    this.image = image.data;
-                    if (newCoordinates) {
-                        this.coordinates = newCoordinates;
-                    }
-                    this._finishLoading();
-                }
-            }
-            catch (err) {
-                this._request = null;
-                this._loaded = true;
-                this.fire(new ErrorEvent(err));
-            }
-        });
-    }
-    loaded() {
-        return this._loaded;
-    }
-    /**
-     * Updates the image URL and, optionally, the coordinates. To avoid having the image flash after changing,
-     * set the `raster-fade-duration` paint property on the raster layer to 0.
-     *
-     * @param options - The options object.
-     */
-    updateImage(options) {
-        if (!options.url) {
-            return this;
-        }
-        if (this._request) {
-            this._request.abort();
-            this._request = null;
-        }
-        this.options.url = options.url;
-        this.load(options.coordinates).finally(() => { this.texture = null; });
-        return this;
-    }
-    _finishLoading() {
-        if (this.map) {
-            this.setCoordinates(this.coordinates);
-            this.fire(new Event('data', { dataType: 'source', sourceDataType: 'metadata' }));
-        }
-    }
-    onAdd(map) {
-        this.map = map;
-        this.load();
-    }
-    onRemove() {
-        if (this._request) {
-            this._request.abort();
-            this._request = null;
-        }
-    }
-    /**
-     * Sets the image's coordinates and re-renders the map.
-     *
-     * @param coordinates - Four geographical coordinates,
-     * represented as arrays of longitude and latitude numbers, which define the corners of the image.
-     * The coordinates start at the top left corner of the image and proceed in clockwise order.
-     * They do not have to represent a rectangle.
-     */
-    setCoordinates(coordinates) {
-        this.coordinates = coordinates;
-        // Calculate which mercator tile is suitable for rendering the video in
-        // and create a buffer with the corner coordinates. These coordinates
-        // may be outside the tile, because raster tiles aren't clipped when rendering.
-        // transform the geo coordinates into (zoom 0) tile space coordinates
-        const cornerCoords = coordinates.map(MercatorCoordinate.fromLngLat);
-        // Compute the coordinates of the tile we'll use to hold this image's
-        // render data
-        this.tileID = getCoordinatesCenterTileID(cornerCoords);
-        // Compute tiles overlapping with the image. We need to know for which
-        // terrain tiles we have to render the image.
-        this.terrainTileRanges = this._getOverlappingTileRanges(cornerCoords);
-        // Constrain min/max zoom to our tile's zoom level in order to force
-        // TileManager to request this tile (no matter what the map's zoom
-        // level)
-        this.minzoom = this.maxzoom = this.tileID.z;
-        // Transform the corner coordinates into the coordinate space of our
-        // tile.
-        this.tileCoords = cornerCoords.map((coord) => this.tileID.getTilePoint(coord)._round());
-        this.flippedWindingOrder = hasWrongWindingOrder(this.tileCoords);
-        this.fire(new Event('data', { dataType: 'source', sourceDataType: 'content' }));
-        return this;
-    }
-    prepare() {
-        if (Object.keys(this.tiles).length === 0 || !this.image) {
-            return;
-        }
-        const context = this.map.painter.context;
-        const gl = context.gl;
-        if (!this.texture) {
-            this.texture = new Texture(context, this.image, gl.RGBA);
-            this.texture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
-        }
-        let newTilesLoaded = false;
-        for (const w in this.tiles) {
-            const tile = this.tiles[w];
-            if (tile.state !== 'loaded') {
-                tile.state = 'loaded';
-                tile.texture = this.texture;
-                newTilesLoaded = true;
-            }
-        }
-        if (newTilesLoaded) {
-            this.fire(new Event('data', { dataType: 'source', sourceDataType: 'idle', sourceId: this.id }));
-        }
-    }
-    loadTile(tile) {
-        return __awaiter(this, void 0, void 0, function* () {
-            // We have a single tile -- whose coordinates are this.tileID -- that
-            // covers the image we want to render.  If that's the one being
-            // requested, set it up with the image; otherwise, mark the tile as
-            // `errored` to indicate that we have no data for it.
-            // If the world wraps, we may have multiple "wrapped" copies of the
-            // single tile.
-            if (this.tileID && this.tileID.equals(tile.tileID.canonical)) {
-                this.tiles[String(tile.tileID.wrap)] = tile;
-                tile.buckets = {};
-            }
-            else {
-                tile.state = 'errored';
-            }
-        });
-    }
-    serialize() {
-        return {
-            type: 'image',
-            url: this.options.url,
-            coordinates: this.coordinates
-        };
-    }
-    hasTransition() {
-        return false;
-    }
-    /**
-     * Given a list of coordinates, determine overlapping tile ranges for all zoom levels.
-     *
-     * @returns Overlapping tile ranges for all zoom levels.
-     * @internal
-     */
-    _getOverlappingTileRanges(coords) {
-        const { minX, minY, maxX, maxY } = Bounds.fromPoints(coords);
-        const ranges = {};
-        for (let z = 0; z <= MAX_TILE_ZOOM; z++) {
-            const tilesAtZoom = Math.pow(2, z);
-            const minTileX = Math.floor(minX * tilesAtZoom);
-            const minTileY = Math.floor(minY * tilesAtZoom);
-            const maxTileX = Math.floor(maxX * tilesAtZoom);
-            const maxTileY = Math.floor(maxY * tilesAtZoom);
-            ranges[z] = {
-                minTileX,
-                minTileY,
-                maxTileX,
-                maxTileY
-            };
-        }
-        return ranges;
-    }
-}
-/**
- * Given a list of coordinates, get their center as a coordinate.
- *
- * @returns centerpoint
- * @internal
- */
-function getCoordinatesCenterTileID(coords) {
-    const bounds = Bounds.fromPoints(coords);
-    const dx = bounds.width();
-    const dy = bounds.height();
-    const dMax = Math.max(dx, dy);
-    const zoom = Math.max(0, Math.floor(-Math.log(dMax) / Math.LN2));
-    const tilesAtZoom = Math.pow(2, zoom);
-    return new CanonicalTileID(zoom, Math.floor((bounds.minX + bounds.maxX) / 2 * tilesAtZoom), Math.floor((bounds.minY + bounds.maxY) / 2 * tilesAtZoom));
-}
-function hasWrongWindingOrder(coords) {
-    const e0x = coords[1].x - coords[0].x;
-    const e0y = coords[1].y - coords[0].y;
-    const e1x = coords[2].x - coords[0].x;
-    const e1y = coords[2].y - coords[0].y;
-    const crossProduct = e0x * e1y - e0y * e1x;
-    return crossProduct < 0;
-}
-
-/**
- * A data source containing video.
- * (See the [Style Specification](https://maplibre.org/maplibre-style-spec/#sources-video) for detailed documentation of options.)
- *
- * @group Sources
- *
- * @example
- * ```ts
- * // add to map
- * map.addSource('some id', {
- *    type: 'video',
- *    url: [
- *        'https://www.mapbox.com/blog/assets/baltimore-smoke.mp4',
- *        'https://www.mapbox.com/blog/assets/baltimore-smoke.webm'
- *    ],
- *    coordinates: [
- *        [-76.54, 39.18],
- *        [-76.52, 39.18],
- *        [-76.52, 39.17],
- *        [-76.54, 39.17]
- *    ]
- * });
- *
- * // update
- * let mySource = map.getSource('some id');
- * mySource.setCoordinates([
- *     [-76.54335737228394, 39.18579907229748],
- *     [-76.52803659439087, 39.1838364847587],
- *     [-76.5295386314392, 39.17683392507606],
- *     [-76.54520273208618, 39.17876344106642]
- * ]);
- *
- * map.removeSource('some id');  // remove
- * ```
- * @see [Add a video](https://maplibre.org/maplibre-gl-js/docs/examples/video-on-a-map/)
- *
- * Note that when rendered as a raster layer, the layer's `raster-fade-duration` property will cause the video to fade in.
- * This happens when playback is started, paused and resumed, or when the video's coordinates are updated. To avoid this behavior,
- * set the layer's `raster-fade-duration` property to `0`.
- */
-class VideoSource extends ImageSource {
-    constructor(id, options, dispatcher, eventedParent) {
-        super(id, options, dispatcher, eventedParent);
-        this.roundZoom = true;
-        this.type = 'video';
-        this.options = options;
-    }
-    load() {
-        return __awaiter(this, void 0, void 0, function* () {
-            this._loaded = false;
-            const options = this.options;
-            this.urls = [];
-            for (const url of options.urls) {
-                this.urls.push(this.map._requestManager.transformRequest(url, "Source" /* ResourceType.Source */).url);
-            }
-            try {
-                const video = yield getVideo(this.urls);
-                this._loaded = true;
-                if (!video) {
-                    return;
-                }
-                this.video = video;
-                this.video.loop = true;
-                // Start repainting when video starts playing. hasTransition() will then return
-                // true to trigger additional frames as long as the videos continues playing.
-                this.video.addEventListener('playing', () => {
-                    this.map.triggerRepaint();
-                });
-                if (this.map) {
-                    this.video.play();
-                }
-                this._finishLoading();
-            }
-            catch (err) {
-                this.fire(new ErrorEvent(err));
-            }
-        });
-    }
-    /**
-     * Pauses the video.
-     */
-    pause() {
-        if (this.video) {
-            this.video.pause();
-        }
-    }
-    /**
-     * Plays the video.
-     */
-    play() {
-        if (this.video) {
-            this.video.play();
-        }
-    }
-    /**
-     * Sets playback to a timestamp, in seconds.
-     */
-    seek(seconds) {
-        if (this.video) {
-            const seekableRange = this.video.seekable;
-            if (seconds < seekableRange.start(0) || seconds > seekableRange.end(0)) {
-                this.fire(new ErrorEvent(new ValidationError(`sources.${this.id}`, null, `Playback for this video can be set only between the ${seekableRange.start(0)} and ${seekableRange.end(0)}-second mark.`)));
-            }
-            else
-                this.video.currentTime = seconds;
-        }
-    }
-    /**
-     * Returns the HTML `video` element.
-     *
-     * @returns The HTML `video` element.
-     */
-    getVideo() {
-        return this.video;
-    }
-    onAdd(map) {
-        if (this.map)
-            return;
-        this.map = map;
-        this.load();
-        if (this.video) {
-            this.video.play();
-            this.setCoordinates(this.coordinates);
-        }
-    }
-    /**
-     * Sets the video's coordinates and re-renders the map.
-     */
-    prepare() {
-        if (Object.keys(this.tiles).length === 0 || this.video.readyState < 2) {
-            return; // not enough data for current position
-        }
-        const context = this.map.painter.context;
-        const gl = context.gl;
-        if (!this.texture) {
-            this.texture = new Texture(context, this.video, gl.RGBA);
-            this.texture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
-        }
-        else if (!this.video.paused) {
-            this.texture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
-            gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.video);
-        }
-        let newTilesLoaded = false;
-        for (const w in this.tiles) {
-            const tile = this.tiles[w];
-            if (tile.state !== 'loaded') {
-                tile.state = 'loaded';
-                tile.texture = this.texture;
-                newTilesLoaded = true;
-            }
-        }
-        if (newTilesLoaded) {
-            this.fire(new Event('data', { dataType: 'source', sourceDataType: 'idle', sourceId: this.id }));
-        }
-    }
-    serialize() {
-        return {
-            type: 'video',
-            urls: this.urls,
-            coordinates: this.coordinates
-        };
-    }
-    hasTransition() {
-        return this.video && !this.video.paused;
-    }
-}
-
-/**
- * A data source containing the contents of an HTML canvas. See {@link CanvasSourceSpecification} for detailed documentation of options.
- *
- * @group Sources
- *
- * @example
- * ```ts
- * // add to map
- * map.addSource('some id', {
- *    type: 'canvas',
- *    canvas: 'idOfMyHTMLCanvas',
- *    animate: true,
- *    coordinates: [
- *        [-76.54, 39.18],
- *        [-76.52, 39.18],
- *        [-76.52, 39.17],
- *        [-76.54, 39.17]
- *    ]
- * });
- *
- * // update
- * let mySource = map.getSource('some id');
- * mySource.setCoordinates([
- *     [-76.54335737228394, 39.18579907229748],
- *     [-76.52803659439087, 39.1838364847587],
- *     [-76.5295386314392, 39.17683392507606],
- *     [-76.54520273208618, 39.17876344106642]
- * ]);
- *
- * map.removeSource('some id');  // remove
- * ```
- */
-class CanvasSource extends ImageSource {
-    /** @internal */
-    constructor(id, options, dispatcher, eventedParent) {
-        super(id, options, dispatcher, eventedParent);
-        // We build in some validation here, since canvas sources aren't included in the style spec:
-        if (!options.coordinates) {
-            this.fire(new ErrorEvent(new ValidationError(`sources.${id}`, null, 'missing required property "coordinates"')));
-        }
-        else if (!Array.isArray(options.coordinates) || options.coordinates.length !== 4 ||
-            options.coordinates.some(c => !Array.isArray(c) || c.length !== 2 || c.some(l => typeof l !== 'number'))) {
-            this.fire(new ErrorEvent(new ValidationError(`sources.${id}`, null, '"coordinates" property must be an array of 4 longitude/latitude array pairs')));
-        }
-        if (options.animate && typeof options.animate !== 'boolean') {
-            this.fire(new ErrorEvent(new ValidationError(`sources.${id}`, null, 'optional "animate" property must be a boolean value')));
-        }
-        if (!options.canvas) {
-            this.fire(new ErrorEvent(new ValidationError(`sources.${id}`, null, 'missing required property "canvas"')));
-        }
-        else if (typeof options.canvas !== 'string' && !(options.canvas instanceof HTMLCanvasElement)) {
-            this.fire(new ErrorEvent(new ValidationError(`sources.${id}`, null, '"canvas" must be either a string representing the ID of the canvas element from which to read, or an HTMLCanvasElement instance')));
-        }
-        this.options = options;
-        this.animate = options.animate !== undefined ? options.animate : true;
-    }
-    load() {
-        return __awaiter(this, void 0, void 0, function* () {
-            this._loaded = true;
-            if (!this.canvas) {
-                this.canvas = (this.options.canvas instanceof HTMLCanvasElement) ?
-                    this.options.canvas :
-                    document.getElementById(this.options.canvas);
-                // cast to HTMLCanvasElement in else of ternary
-                // should we do a safety check and throw if it's not actually HTMLCanvasElement?
-            }
-            this.width = this.canvas.width;
-            this.height = this.canvas.height;
-            if (this._hasInvalidDimensions()) {
-                this.fire(new ErrorEvent(new Error('Canvas dimensions cannot be less than or equal to zero.')));
-                return;
-            }
-            this.play = function () {
-                this._playing = true;
-                this.map.triggerRepaint();
-            };
-            this.pause = function () {
-                if (this._playing) {
-                    this.prepare();
-                    this._playing = false;
-                }
-            };
-            this._finishLoading();
-        });
-    }
-    /**
-     * Returns the HTML `canvas` element.
-     *
-     * @returns The HTML `canvas` element.
-     */
-    getCanvas() {
-        return this.canvas;
-    }
-    onAdd(map) {
-        this.map = map;
-        this.load();
-        if (this.canvas) {
-            if (this.animate)
-                this.play();
-        }
-    }
-    onRemove() {
-        this.pause();
-    }
-    prepare() {
-        let resize = false;
-        if (this.canvas.width !== this.width) {
-            this.width = this.canvas.width;
-            resize = true;
-        }
-        if (this.canvas.height !== this.height) {
-            this.height = this.canvas.height;
-            resize = true;
-        }
-        if (this._hasInvalidDimensions())
-            return;
-        if (Object.keys(this.tiles).length === 0)
-            return; // not enough data for current position
-        const context = this.map.painter.context;
-        const gl = context.gl;
-        if (!this.texture) {
-            this.texture = new Texture(context, this.canvas, gl.RGBA, { premultiply: true });
-        }
-        else if (resize || this._playing) {
-            this.texture.update(this.canvas, { premultiply: true });
-        }
-        let newTilesLoaded = false;
-        for (const w in this.tiles) {
-            const tile = this.tiles[w];
-            if (tile.state !== 'loaded') {
-                tile.state = 'loaded';
-                tile.texture = this.texture;
-                newTilesLoaded = true;
-            }
-        }
-        if (newTilesLoaded) {
-            this.fire(new Event('data', { dataType: 'source', sourceDataType: 'idle', sourceId: this.id }));
-        }
-    }
-    serialize() {
-        return {
-            type: 'canvas',
-            animate: this.animate,
-            canvas: this.options.canvas,
-            coordinates: this.coordinates
-        };
-    }
-    hasTransition() {
-        return this._playing;
-    }
-    _hasInvalidDimensions() {
-        for (const x of [this.canvas.width, this.canvas.height]) {
-            if (isNaN(x) || x <= 0)
-                return true;
-        }
-        return false;
-    }
-}
-
-const registeredSources = {};
-/**
- * Creates a tiled data source instance given an options object.
- *
- * @param id - The id for the source. Must not be used by any existing source.
- * @param specification - Source options, specific to the source type (except for `options.type`, which is always required).
- * @param source - A source definition object compliant with
- * [`maplibre-gl-style-spec`](https://maplibre.org/maplibre-style-spec/#sources) or, for a third-party source type,
-  * with that type's requirements.
- * @param dispatcher - A {@link Dispatcher} instance, which can be used to send messages to the workers.
- * @returns a newly created source
- */
-const create = (id, specification, dispatcher, eventedParent) => {
-    const Class = getSourceType(specification.type);
-    const source = new Class(id, specification, dispatcher, eventedParent);
-    if (source.id !== id) {
-        throw new Error(`Expected Source id to be ${id} instead of ${source.id}`);
-    }
-    return source;
-};
-const getSourceType = (name) => {
-    switch (name) {
-        case 'geojson':
-            return GeoJSONSource;
-        case 'image':
-            return ImageSource;
-        case 'raster':
-            return RasterTileSource;
-        case 'raster-dem':
-            return RasterDEMTileSource;
-        case 'vector':
-            return VectorTileSource;
-        case 'video':
-            return VideoSource;
-        case 'canvas':
-            return CanvasSource;
-    }
-    return registeredSources[name];
-};
-const setSourceType = (name, type) => {
-    registeredSources[name] = type;
-};
-/**
- * Adds a custom source type, making it available for use with {@link Map.addSource}.
- * @param name - The name of the source type; source definition objects use this name in the `{type: ...}` field.
- * @param SourceType - A {@link SourceClass} - which is a constructor for the `Source` interface.
- * @returns a promise that is resolved when the source type is ready or rejected with an error.
- */
-const addSourceType = (name, SourceType) => __awaiter(void 0, void 0, void 0, function* () {
-    if (getSourceType(name)) {
-        throw new Error(`A source type called "${name}" already exists.`);
-    }
-    setSourceType(name, SourceType);
-});
-
-function deserialize(input, style) {
-    const output = {};
-    // Guard against the case where the map's style has been set to null while
-    // this bucket has been parsing.
-    if (!style)
-        return output;
-    for (const bucket of input) {
-        const layers = bucket.layerIds
-            .map((id) => style.getLayer(id))
-            .filter(Boolean);
-        if (layers.length === 0) {
-            continue;
-        }
-        // look up StyleLayer objects from layer ids (since we don't
-        // want to waste time serializing/copying them from the worker)
-        bucket.layers = layers;
-        if (bucket.stateDependentLayerIds) {
-            bucket.stateDependentLayers = bucket.stateDependentLayerIds.map((lId) => layers.filter((l) => l.id === lId)[0]);
-        }
-        for (const layer of layers) {
-            output[layer.id] = bucket;
-        }
-    }
-    return output;
 }
 
 class DictionaryCoder {
@@ -42289,6 +41211,118 @@ class MLTVectorTile {
     }
 }
 
+/** A 2-d bounding box covering an X and Y range. */
+class Bounds {
+    constructor() {
+        this.minX = Infinity;
+        this.maxX = -Infinity;
+        this.minY = Infinity;
+        this.maxY = -Infinity;
+    }
+    /**
+     * Expands this bounding box to include point.
+     *
+     * @param point - The point to include in this bounding box
+     * @returns This mutated bounding box
+     */
+    extend(point) {
+        this.minX = Math.min(this.minX, point.x);
+        this.minY = Math.min(this.minY, point.y);
+        this.maxX = Math.max(this.maxX, point.x);
+        this.maxY = Math.max(this.maxY, point.y);
+        return this;
+    }
+    /**
+     * Expands this bounding box by a fixed amount in each direction.
+     *
+     * @param amount - The amount to expand the box by, or contract if negative
+     * @returns This mutated bounding box
+     */
+    expandBy(amount) {
+        this.minX -= amount;
+        this.minY -= amount;
+        this.maxX += amount;
+        this.maxY += amount;
+        // check if bounds collapsed in either dimension
+        if (this.minX > this.maxX || this.minY > this.maxY) {
+            this.minX = Infinity;
+            this.maxX = -Infinity;
+            this.minY = Infinity;
+            this.maxY = -Infinity;
+        }
+        return this;
+    }
+    /**
+     * Shrinks this bounding box by a fixed amount in each direction.
+     *
+     * @param amount - The amount to shrink the box by
+     * @returns This mutated bounding box
+     */
+    shrinkBy(amount) {
+        return this.expandBy(-amount);
+    }
+    /**
+     * Returns a new bounding box that contains all of the corners of this bounding
+     * box with a transform applied. Does not modify this bounding box.
+     *
+     * @param fn - The function to apply to each corner
+     * @returns A new bounding box containing all of the mapped points.
+     */
+    map(fn) {
+        const result = new Bounds();
+        result.extend(fn(new Point(this.minX, this.minY)));
+        result.extend(fn(new Point(this.maxX, this.minY)));
+        result.extend(fn(new Point(this.minX, this.maxY)));
+        result.extend(fn(new Point(this.maxX, this.maxY)));
+        return result;
+    }
+    /**
+     * Creates a new bounding box that includes all points provided.
+     *
+     * @param points - The points to include inside the bounding box
+     * @returns The new bounding box
+     */
+    static fromPoints(points) {
+        const result = new Bounds();
+        for (const p of points) {
+            result.extend(p);
+        }
+        return result;
+    }
+    contains(point) {
+        return point.x >= this.minX && point.x <= this.maxX && point.y >= this.minY && point.y <= this.maxY;
+    }
+    empty() {
+        return this.minX > this.maxX;
+    }
+    width() {
+        return this.maxX - this.minX;
+    }
+    height() {
+        return this.maxY - this.minY;
+    }
+    covers(other) {
+        return !this.empty() && !other.empty() &&
+            other.minX >= this.minX &&
+            other.maxX <= this.maxX &&
+            other.minY >= this.minY &&
+            other.maxY <= this.maxY;
+    }
+    intersects(other) {
+        return !this.empty() && !other.empty() &&
+            other.minX <= this.maxX &&
+            other.maxX >= this.minX &&
+            other.minY <= this.maxY &&
+            other.maxY >= this.minY;
+    }
+}
+
+/**
+ * This is the default layer name for a geojson source,
+ * as this source is not a real vector source, but a vector source needs layers,
+ * so this is default name for it.
+ */
+const GEOJSON_TILE_LAYER_NAME = '_geojsonTileLayer';
 /**
  * An in memory index class to allow fast interaction with features
  */
@@ -42330,7 +41364,7 @@ class FeatureIndex {
             this.vtLayers = this.encoding !== 'mlt'
                 ? new VectorTile(new Pbf(this.rawTileData)).layers
                 : new MLTVectorTile(this.rawTileData).layers;
-            this.sourceLayerCoder = new DictionaryCoder(this.vtLayers ? Object.keys(this.vtLayers).sort() : ['_geojsonTileLayer']);
+            this.sourceLayerCoder = new DictionaryCoder(this.vtLayers ? Object.keys(this.vtLayers).sort() : [GEOJSON_TILE_LAYER_NAME]);
         }
         return this.vtLayers;
     }
@@ -42410,7 +41444,7 @@ class FeatureIndex {
             let featureState = {};
             if (id && sourceFeatureState) {
                 // `feature-state` expression evaluation requires feature state to be available
-                featureState = sourceFeatureState.getState(styleLayer.sourceLayer || '_geojsonTileLayer', id);
+                featureState = sourceFeatureState.getState(styleLayer.sourceLayer || GEOJSON_TILE_LAYER_NAME, id);
             }
             const serializedLayer = extend({}, serializedLayers[layerID]);
             serializedLayer.paint = evaluateProperties(serializedLayer.paint, styleLayer.paint, feature, featureState, availableImages);
@@ -42474,6 +41508,1097 @@ function evaluateProperties(serializedProperties, styleLayerProperties, feature,
 }
 function topDownFeatureComparator(a, b) {
     return b - a;
+}
+
+/**
+ * A source containing GeoJSON.
+ * (See the [Style Specification](https://maplibre.org/maplibre-style-spec/#sources-geojson) for detailed documentation of options.)
+ *
+ * @group Sources
+ *
+ * @example
+ * ```ts
+ * map.addSource('some id', {
+ *     type: 'geojson',
+ *     data: 'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_10m_ports.geojson'
+ * });
+ * ```
+ *
+ * @example
+ * ```ts
+ * map.addSource('some id', {
+ *    type: 'geojson',
+ *    data: {
+ *        "type": "FeatureCollection",
+ *        "features": [{
+ *            "type": "Feature",
+ *            "properties": {},
+ *            "geometry": {
+ *                "type": "Point",
+ *                "coordinates": [
+ *                    -76.53063297271729,
+ *                    39.18174077994108
+ *                ]
+ *            }
+ *        }]
+ *    }
+ * });
+ * ```
+ *
+ * @example
+ * ```ts
+ * map.getSource('some id').setData({
+ *   "type": "FeatureCollection",
+ *   "features": [{
+ *       "type": "Feature",
+ *       "properties": { "name": "Null Island" },
+ *       "geometry": {
+ *           "type": "Point",
+ *           "coordinates": [ 0, 0 ]
+ *       }
+ *   }]
+ * });
+ * ```
+ * @see [Draw GeoJSON points](https://maplibre.org/maplibre-gl-js/docs/examples/draw-geojson-points/)
+ * @see [Add a GeoJSON line](https://maplibre.org/maplibre-gl-js/docs/examples/add-a-geojson-line/)
+ * @see [Create a heatmap from points](https://maplibre.org/maplibre-gl-js/docs/examples/create-a-heatmap-layer/)
+ * @see [Create and style clusters](https://maplibre.org/maplibre-gl-js/docs/examples/create-and-style-clusters/)
+ */
+class GeoJSONSource extends Evented {
+    /** @internal */
+    constructor(id, options, dispatcher, eventedParent) {
+        super();
+        this.id = id;
+        // `type` is a property rather than a constant to make it easy for 3rd
+        // parties to use GeoJSONSource to build their own source types.
+        this.type = 'geojson';
+        this.minzoom = 0;
+        this.maxzoom = 18;
+        this.tileSize = 512;
+        this.isTileClipped = true;
+        this.reparseOverscaled = true;
+        this._removed = false;
+        this._isUpdatingWorker = false;
+        this._pendingWorkerUpdate = { data: options.data };
+        this.actor = dispatcher.getActor();
+        this.setEventedParent(eventedParent);
+        this._data = options.data;
+        this._options = extend({}, options);
+        this._collectResourceTiming = options.collectResourceTiming;
+        if (options.maxzoom !== undefined)
+            this.maxzoom = options.maxzoom;
+        if (options.type)
+            this.type = options.type;
+        if (options.attribution)
+            this.attribution = options.attribution;
+        this.promoteId = options.promoteId;
+        if (options.clusterMaxZoom !== undefined && this.maxzoom <= options.clusterMaxZoom) {
+            warnOnce(`The maxzoom value "${this.maxzoom}" is expected to be greater than the clusterMaxZoom value "${options.clusterMaxZoom}".`);
+        }
+        // sent to the worker, along with `url: ...` or `data: literal geojson`,
+        // so that it can load/parse/index the geojson data
+        // extending with `options.workerOptions` helps to make it easy for
+        // third-party sources to hack/reuse GeoJSONSource.
+        this.workerOptions = extend({
+            source: this.id,
+            cluster: options.cluster || false,
+            geojsonVtOptions: {
+                buffer: this._pixelsToTileUnits(options.buffer !== undefined ? options.buffer : 128),
+                tolerance: this._pixelsToTileUnits(options.tolerance !== undefined ? options.tolerance : 0.375),
+                extent: EXTENT$1,
+                maxZoom: this.maxzoom,
+                lineMetrics: options.lineMetrics || false,
+                generateId: options.generateId || false
+            },
+            superclusterOptions: {
+                maxZoom: this._getClusterMaxZoom(options.clusterMaxZoom),
+                minPoints: Math.max(2, options.clusterMinPoints || 2),
+                extent: EXTENT$1,
+                radius: this._pixelsToTileUnits(options.clusterRadius || 50),
+                log: false,
+                generateId: options.generateId || false
+            },
+            clusterProperties: options.clusterProperties,
+            filter: options.filter
+        }, options.workerOptions);
+        // send the promoteId to the worker to have more flexible updates, but only if it is a string
+        if (typeof this.promoteId === 'string') {
+            this.workerOptions.promoteId = this.promoteId;
+        }
+    }
+    _hasPendingWorkerUpdate() {
+        return this._pendingWorkerUpdate.data !== undefined || this._pendingWorkerUpdate.diff !== undefined || this._pendingWorkerUpdate.optionsChanged;
+    }
+    _pixelsToTileUnits(pixelValue) {
+        return pixelValue * (EXTENT$1 / this.tileSize);
+    }
+    _getClusterMaxZoom(clusterMaxZoom) {
+        const effectiveClusterMaxZoom = clusterMaxZoom ? Math.round(clusterMaxZoom) : this.maxzoom - 1;
+        if (!(Number.isInteger(clusterMaxZoom) || clusterMaxZoom === undefined)) {
+            warnOnce(`Integer expected for option 'clusterMaxZoom': provided value "${clusterMaxZoom}" rounded to "${effectiveClusterMaxZoom}"`);
+        }
+        return effectiveClusterMaxZoom;
+    }
+    load() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this._updateWorkerData();
+        });
+    }
+    onAdd(map) {
+        this.map = map;
+        this.load();
+    }
+    /**
+     * Sets the GeoJSON data and re-renders the map.
+     *
+     * @param data - A GeoJSON data object or a URL to one. The latter is preferable in the case of large GeoJSON files.
+     */
+    setData(data) {
+        this._data = data;
+        this._pendingWorkerUpdate = { data };
+        this._updateWorkerData();
+        return this;
+    }
+    /**
+     * Updates the source's GeoJSON, and re-renders the map.
+     *
+     * For sources with lots of features, this method can be used to make updates more quickly.
+     *
+     * This approach requires unique IDs for every feature in the source. The IDs can either be specified on the feature,
+     * or by using the promoteId option to specify which property should be used as the ID.
+     *
+     * It is an error to call updateData on a source that did not have unique IDs for each of its features already.
+     *
+     * Updates are applied on a best-effort basis, updating an ID that does not exist will not result in an error.
+     *
+     * @param diff - The changes that need to be applied.
+     */
+    updateData(diff) {
+        this._pendingWorkerUpdate.diff = mergeSourceDiffs(this._pendingWorkerUpdate.diff, diff);
+        this._updateWorkerData();
+        return this;
+    }
+    /**
+     * Allows to get the source's actual GeoJSON data.
+     *
+     * @returns a promise which resolves to the source's actual GeoJSON data
+     */
+    getData() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const options = extend({ type: this.type }, this.workerOptions);
+            return this.actor.sendAsync({ type: "GD" /* MessageType.getData */, data: options });
+        });
+    }
+    /**
+     * Allows getting the source's boundaries.
+     * If there's a problem with the source's data, it will return an empty {@link LngLatBounds}.
+     * @returns a promise which resolves to the source's boundaries
+     */
+    getBounds() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return getGeoJSONBounds(yield this.getData());
+        });
+    }
+    /**
+     * To disable/enable clustering on the source options
+     * @param options - The options to set
+     * @example
+     * ```ts
+     * map.getSource('some id').setClusterOptions({cluster: false});
+     * map.getSource('some id').setClusterOptions({cluster: false, clusterRadius: 50, clusterMaxZoom: 14});
+     * ```
+     */
+    setClusterOptions(options) {
+        this.workerOptions.cluster = options.cluster;
+        if (options.clusterRadius !== undefined) {
+            this.workerOptions.superclusterOptions.radius = this._pixelsToTileUnits(options.clusterRadius);
+        }
+        if (options.clusterMaxZoom !== undefined) {
+            this.workerOptions.superclusterOptions.maxZoom = this._getClusterMaxZoom(options.clusterMaxZoom);
+        }
+        this._pendingWorkerUpdate.optionsChanged = true;
+        this._updateWorkerData();
+        return this;
+    }
+    /**
+     * For clustered sources, fetches the zoom at which the given cluster expands.
+     *
+     * @param clusterId - The value of the cluster's `cluster_id` property.
+     * @returns a promise that is resolved with the zoom number
+     */
+    getClusterExpansionZoom(clusterId) {
+        return this.actor.sendAsync({ type: "GCEZ" /* MessageType.getClusterExpansionZoom */, data: { type: this.type, clusterId, source: this.id } });
+    }
+    /**
+     * For clustered sources, fetches the children of the given cluster on the next zoom level (as an array of GeoJSON features).
+     *
+     * @param clusterId - The value of the cluster's `cluster_id` property.
+     * @returns a promise that is resolved when the features are retrieved
+     */
+    getClusterChildren(clusterId) {
+        return this.actor.sendAsync({ type: "GCC" /* MessageType.getClusterChildren */, data: { type: this.type, clusterId, source: this.id } });
+    }
+    /**
+     * For clustered sources, fetches the original points that belong to the cluster (as an array of GeoJSON features).
+     *
+     * @param clusterId - The value of the cluster's `cluster_id` property.
+     * @param limit - The maximum number of features to return.
+     * @param offset - The number of features to skip (e.g. for pagination).
+     * @returns a promise that is resolved when the features are retrieved
+     * @example
+     * Retrieve cluster leaves on click
+     * ```ts
+     * map.on('click', 'clusters', (e) => {
+     *   let features = map.queryRenderedFeatures(e.point, {
+     *     layers: ['clusters']
+     *   });
+     *
+     *   let clusterId = features[0].properties.cluster_id;
+     *   let pointCount = features[0].properties.point_count;
+     *   let clusterSource = map.getSource('clusters');
+     *
+     *   const features = await clusterSource.getClusterLeaves(clusterId, pointCount);
+     *   // Print cluster leaves in the console
+     *   console.log('Cluster leaves:', features);
+     * });
+     * ```
+     */
+    getClusterLeaves(clusterId, limit, offset) {
+        return this.actor.sendAsync({ type: "GCL" /* MessageType.getClusterLeaves */, data: {
+                type: this.type,
+                source: this.id,
+                clusterId,
+                limit,
+                offset
+            } });
+    }
+    /**
+     * Responsible for invoking WorkerSource's geojson.loadData target, which
+     * handles loading the geojson data and preparing to serve it up as tiles,
+     * using geojson-vt or supercluster as appropriate.
+     */
+    _updateWorkerData() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this._isUpdatingWorker)
+                return;
+            if (!this._hasPendingWorkerUpdate()) {
+                warnOnce(`No pending worker updates for GeoJSONSource ${this.id}.`);
+                return;
+            }
+            const { data, diff } = this._pendingWorkerUpdate;
+            const options = extend({ type: this.type }, this.workerOptions);
+            if (data) {
+                if (typeof data === 'string') {
+                    options.request = this.map._requestManager.transformRequest(browser.resolveURL(data), "Source" /* ResourceType.Source */);
+                    options.request.collectResourceTiming = this._collectResourceTiming;
+                }
+                else {
+                    options.data = JSON.stringify(data);
+                }
+                this._pendingWorkerUpdate.data = undefined;
+            }
+            else if (diff) {
+                options.dataDiff = diff;
+                this._pendingWorkerUpdate.diff = undefined;
+            }
+            // Reset the flag since this update is using the latest options
+            this._pendingWorkerUpdate.optionsChanged = undefined;
+            this._isUpdatingWorker = true;
+            this.fire(new Event('dataloading', { dataType: 'source' }));
+            try {
+                const result = yield this.actor.sendAsync({ type: "LD" /* MessageType.loadData */, data: options });
+                this._isUpdatingWorker = false;
+                if (this._removed || result.abandoned) {
+                    this.fire(new Event('dataabort', { dataType: 'source' }));
+                    return;
+                }
+                this._data = result.data;
+                let resourceTiming = null;
+                if (result.resourceTiming && result.resourceTiming[this.id]) {
+                    resourceTiming = result.resourceTiming[this.id].slice(0);
+                }
+                const eventData = { dataType: 'source' };
+                if (this._collectResourceTiming && resourceTiming && resourceTiming.length > 0) {
+                    extend(eventData, { resourceTiming });
+                }
+                // although GeoJSON sources contain no metadata, we fire this event to let the TileManager
+                // know its ok to start requesting tiles.
+                this.fire(new Event('data', Object.assign(Object.assign({}, eventData), { sourceDataType: 'metadata' })));
+                this.fire(new Event('data', Object.assign(Object.assign({}, eventData), { sourceDataType: 'content', shouldReloadTileOptions: this._getShouldReloadTileOptions(diff) })));
+            }
+            catch (err) {
+                this._isUpdatingWorker = false;
+                if (this._removed) {
+                    this.fire(new Event('dataabort', { dataType: 'source' }));
+                    return;
+                }
+                this.fire(new ErrorEvent(err));
+            }
+            finally {
+                // If there is more pending data, update worker again.
+                if (this._hasPendingWorkerUpdate()) {
+                    this._updateWorkerData();
+                }
+            }
+        });
+    }
+    _getShouldReloadTileOptions(diff) {
+        if (!diff || diff.removeAll)
+            return undefined;
+        const { add = [], update = [], remove = [] } = (diff || {});
+        const prevIds = new Set([...update.map(u => u.id), ...remove]);
+        const nextBounds = [
+            ...update.map(f => f.newGeometry),
+            ...add.map(f => f.geometry)
+        ].map(g => getGeoJSONBounds(g));
+        return {
+            nextBounds,
+            prevIds
+        };
+    }
+    /**
+     * Determine whether a tile should be reloaded based on a set of options associated with a {@link MapSourceDataChangedEvent}.
+     * @internal
+     */
+    shouldReloadTile(tile, { nextBounds, prevIds }) {
+        if (!tile.latestFeatureIndex)
+            return false;
+        // Update the tile if it PREVIOUSLY contained an updated feature.
+        const layers = tile.latestFeatureIndex.loadVTLayers();
+        for (let i = 0; i < tile.latestFeatureIndex.featureIndexArray.length; i++) {
+            const featureIndex = tile.latestFeatureIndex.featureIndexArray.get(i);
+            const feature = layers[GEOJSON_TILE_LAYER_NAME].feature(featureIndex.featureIndex);
+            if (prevIds.has(feature.id)) {
+                return true;
+            }
+        }
+        // Update the tile if it WILL NOW contain an updated feature.
+        const { buffer, extent } = this.workerOptions.geojsonVtOptions;
+        const tileBounds = tileIdToLngLatBounds(tile.tileID.canonical, buffer / extent);
+        for (const bounds of nextBounds) {
+            if (tileBounds.intersects(bounds)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    loaded() {
+        return !this._isUpdatingWorker && !this._hasPendingWorkerUpdate();
+    }
+    loadTile(tile) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const message = !tile.actor ? "LT" /* MessageType.loadTile */ : "RT" /* MessageType.reloadTile */;
+            tile.actor = this.actor;
+            const params = {
+                type: this.type,
+                uid: tile.uid,
+                tileID: tile.tileID,
+                zoom: tile.tileID.overscaledZ,
+                maxZoom: this.maxzoom,
+                tileSize: this.tileSize,
+                source: this.id,
+                pixelRatio: this.map.getPixelRatio(),
+                showCollisionBoxes: this.map.showCollisionBoxes,
+                promoteId: this.promoteId,
+                subdivisionGranularity: this.map.style.projection.subdivisionGranularity
+            };
+            tile.abortController = new AbortController();
+            const data = yield this.actor.sendAsync({ type: message, data: params }, tile.abortController);
+            delete tile.abortController;
+            tile.unloadVectorData();
+            if (!tile.aborted) {
+                tile.loadVectorData(data, this.map.painter, message === "RT" /* MessageType.reloadTile */);
+            }
+        });
+    }
+    abortTile(tile) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (tile.abortController) {
+                tile.abortController.abort();
+                delete tile.abortController;
+            }
+            tile.aborted = true;
+        });
+    }
+    unloadTile(tile) {
+        return __awaiter(this, void 0, void 0, function* () {
+            tile.unloadVectorData();
+            yield this.actor.sendAsync({ type: "RMT" /* MessageType.removeTile */, data: { uid: tile.uid, type: this.type, source: this.id } });
+        });
+    }
+    onRemove() {
+        this._removed = true;
+        this.actor.sendAsync({ type: "RS" /* MessageType.removeSource */, data: { type: this.type, source: this.id } });
+    }
+    serialize() {
+        return extend({}, this._options, {
+            type: this.type,
+            data: this._data
+        });
+    }
+    hasTransition() {
+        return false;
+    }
+}
+
+/**
+ * A data source containing an image.
+ * (See the [Style Specification](https://maplibre.org/maplibre-style-spec/#sources-image) for detailed documentation of options.)
+ *
+ * @group Sources
+ *
+ * @example
+ * ```ts
+ * // add to map
+ * map.addSource('some id', {
+ *    type: 'image',
+ *    url: 'https://www.maplibre.org/images/foo.png',
+ *    coordinates: [
+ *        [-76.54, 39.18],
+ *        [-76.52, 39.18],
+ *        [-76.52, 39.17],
+ *        [-76.54, 39.17]
+ *    ]
+ * });
+ *
+ * // update coordinates
+ * let mySource = map.getSource('some id');
+ * mySource.setCoordinates([
+ *     [-76.54335737228394, 39.18579907229748],
+ *     [-76.52803659439087, 39.1838364847587],
+ *     [-76.5295386314392, 39.17683392507606],
+ *     [-76.54520273208618, 39.17876344106642]
+ * ]);
+ *
+ * // update url and coordinates simultaneously
+ * mySource.updateImage({
+ *    url: 'https://www.maplibre.org/images/bar.png',
+ *    coordinates: [
+ *        [-76.54335737228394, 39.18579907229748],
+ *        [-76.52803659439087, 39.1838364847587],
+ *        [-76.5295386314392, 39.17683392507606],
+ *        [-76.54520273208618, 39.17876344106642]
+ *    ]
+ * })
+ *
+ * map.removeSource('some id');  // remove
+ * ```
+ */
+class ImageSource extends Evented {
+    /** @internal */
+    constructor(id, options, dispatcher, eventedParent) {
+        super();
+        this.flippedWindingOrder = false;
+        this.id = id;
+        this.dispatcher = dispatcher;
+        this.coordinates = options.coordinates;
+        this.type = 'image';
+        this.minzoom = 0;
+        this.maxzoom = 22;
+        this.tileSize = 512;
+        this.tiles = {};
+        this._loaded = false;
+        this.setEventedParent(eventedParent);
+        this.options = options;
+    }
+    load(newCoordinates) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this._loaded = false;
+            this.fire(new Event('dataloading', { dataType: 'source' }));
+            this.url = this.options.url;
+            this._request = new AbortController();
+            try {
+                const image = yield ImageRequest.getImage(this.map._requestManager.transformRequest(this.url, "Image" /* ResourceType.Image */), this._request);
+                this._request = null;
+                this._loaded = true;
+                if (image && image.data) {
+                    this.image = image.data;
+                    if (newCoordinates) {
+                        this.coordinates = newCoordinates;
+                    }
+                    this._finishLoading();
+                }
+            }
+            catch (err) {
+                this._request = null;
+                this._loaded = true;
+                this.fire(new ErrorEvent(err));
+            }
+        });
+    }
+    loaded() {
+        return this._loaded;
+    }
+    /**
+     * Updates the image URL and, optionally, the coordinates. To avoid having the image flash after changing,
+     * set the `raster-fade-duration` paint property on the raster layer to 0.
+     *
+     * @param options - The options object.
+     */
+    updateImage(options) {
+        if (!options.url) {
+            return this;
+        }
+        if (this._request) {
+            this._request.abort();
+            this._request = null;
+        }
+        this.options.url = options.url;
+        this.load(options.coordinates).finally(() => { this.texture = null; });
+        return this;
+    }
+    _finishLoading() {
+        if (this.map) {
+            this.setCoordinates(this.coordinates);
+            this.fire(new Event('data', { dataType: 'source', sourceDataType: 'metadata' }));
+        }
+    }
+    onAdd(map) {
+        this.map = map;
+        this.load();
+    }
+    onRemove() {
+        if (this._request) {
+            this._request.abort();
+            this._request = null;
+        }
+    }
+    /**
+     * Sets the image's coordinates and re-renders the map.
+     *
+     * @param coordinates - Four geographical coordinates,
+     * represented as arrays of longitude and latitude numbers, which define the corners of the image.
+     * The coordinates start at the top left corner of the image and proceed in clockwise order.
+     * They do not have to represent a rectangle.
+     */
+    setCoordinates(coordinates) {
+        this.coordinates = coordinates;
+        // Calculate which mercator tile is suitable for rendering the video in
+        // and create a buffer with the corner coordinates. These coordinates
+        // may be outside the tile, because raster tiles aren't clipped when rendering.
+        // transform the geo coordinates into (zoom 0) tile space coordinates
+        const cornerCoords = coordinates.map(MercatorCoordinate.fromLngLat);
+        // Compute the coordinates of the tile we'll use to hold this image's
+        // render data
+        this.tileID = getCoordinatesCenterTileID(cornerCoords);
+        // Compute tiles overlapping with the image. We need to know for which
+        // terrain tiles we have to render the image.
+        this.terrainTileRanges = this._getOverlappingTileRanges(cornerCoords);
+        // Constrain min/max zoom to our tile's zoom level in order to force
+        // TileManager to request this tile (no matter what the map's zoom
+        // level)
+        this.minzoom = this.maxzoom = this.tileID.z;
+        // Transform the corner coordinates into the coordinate space of our
+        // tile.
+        this.tileCoords = cornerCoords.map((coord) => this.tileID.getTilePoint(coord)._round());
+        this.flippedWindingOrder = hasWrongWindingOrder(this.tileCoords);
+        this.fire(new Event('data', { dataType: 'source', sourceDataType: 'content' }));
+        return this;
+    }
+    prepare() {
+        if (Object.keys(this.tiles).length === 0 || !this.image) {
+            return;
+        }
+        const context = this.map.painter.context;
+        const gl = context.gl;
+        if (!this.texture) {
+            this.texture = new Texture(context, this.image, gl.RGBA);
+            this.texture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
+        }
+        let newTilesLoaded = false;
+        for (const w in this.tiles) {
+            const tile = this.tiles[w];
+            if (tile.state !== 'loaded') {
+                tile.state = 'loaded';
+                tile.texture = this.texture;
+                newTilesLoaded = true;
+            }
+        }
+        if (newTilesLoaded) {
+            this.fire(new Event('data', { dataType: 'source', sourceDataType: 'idle', sourceId: this.id }));
+        }
+    }
+    loadTile(tile) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // We have a single tile -- whose coordinates are this.tileID -- that
+            // covers the image we want to render.  If that's the one being
+            // requested, set it up with the image; otherwise, mark the tile as
+            // `errored` to indicate that we have no data for it.
+            // If the world wraps, we may have multiple "wrapped" copies of the
+            // single tile.
+            if (this.tileID && this.tileID.equals(tile.tileID.canonical)) {
+                this.tiles[String(tile.tileID.wrap)] = tile;
+                tile.buckets = {};
+            }
+            else {
+                tile.state = 'errored';
+            }
+        });
+    }
+    serialize() {
+        return {
+            type: 'image',
+            url: this.options.url,
+            coordinates: this.coordinates
+        };
+    }
+    hasTransition() {
+        return false;
+    }
+    /**
+     * Given a list of coordinates, determine overlapping tile ranges for all zoom levels.
+     *
+     * @returns Overlapping tile ranges for all zoom levels.
+     * @internal
+     */
+    _getOverlappingTileRanges(coords) {
+        const { minX, minY, maxX, maxY } = Bounds.fromPoints(coords);
+        const ranges = {};
+        for (let z = 0; z <= MAX_TILE_ZOOM; z++) {
+            const tilesAtZoom = Math.pow(2, z);
+            const minTileX = Math.floor(minX * tilesAtZoom);
+            const minTileY = Math.floor(minY * tilesAtZoom);
+            const maxTileX = Math.floor(maxX * tilesAtZoom);
+            const maxTileY = Math.floor(maxY * tilesAtZoom);
+            ranges[z] = {
+                minTileX,
+                minTileY,
+                maxTileX,
+                maxTileY
+            };
+        }
+        return ranges;
+    }
+}
+/**
+ * Given a list of coordinates, get their center as a coordinate.
+ *
+ * @returns centerpoint
+ * @internal
+ */
+function getCoordinatesCenterTileID(coords) {
+    const bounds = Bounds.fromPoints(coords);
+    const dx = bounds.width();
+    const dy = bounds.height();
+    const dMax = Math.max(dx, dy);
+    const zoom = Math.max(0, Math.floor(-Math.log(dMax) / Math.LN2));
+    const tilesAtZoom = Math.pow(2, zoom);
+    return new CanonicalTileID(zoom, Math.floor((bounds.minX + bounds.maxX) / 2 * tilesAtZoom), Math.floor((bounds.minY + bounds.maxY) / 2 * tilesAtZoom));
+}
+function hasWrongWindingOrder(coords) {
+    const e0x = coords[1].x - coords[0].x;
+    const e0y = coords[1].y - coords[0].y;
+    const e1x = coords[2].x - coords[0].x;
+    const e1y = coords[2].y - coords[0].y;
+    const crossProduct = e0x * e1y - e0y * e1x;
+    return crossProduct < 0;
+}
+
+/**
+ * A data source containing video.
+ * (See the [Style Specification](https://maplibre.org/maplibre-style-spec/#sources-video) for detailed documentation of options.)
+ *
+ * @group Sources
+ *
+ * @example
+ * ```ts
+ * // add to map
+ * map.addSource('some id', {
+ *    type: 'video',
+ *    url: [
+ *        'https://www.mapbox.com/blog/assets/baltimore-smoke.mp4',
+ *        'https://www.mapbox.com/blog/assets/baltimore-smoke.webm'
+ *    ],
+ *    coordinates: [
+ *        [-76.54, 39.18],
+ *        [-76.52, 39.18],
+ *        [-76.52, 39.17],
+ *        [-76.54, 39.17]
+ *    ]
+ * });
+ *
+ * // update
+ * let mySource = map.getSource('some id');
+ * mySource.setCoordinates([
+ *     [-76.54335737228394, 39.18579907229748],
+ *     [-76.52803659439087, 39.1838364847587],
+ *     [-76.5295386314392, 39.17683392507606],
+ *     [-76.54520273208618, 39.17876344106642]
+ * ]);
+ *
+ * map.removeSource('some id');  // remove
+ * ```
+ * @see [Add a video](https://maplibre.org/maplibre-gl-js/docs/examples/video-on-a-map/)
+ *
+ * Note that when rendered as a raster layer, the layer's `raster-fade-duration` property will cause the video to fade in.
+ * This happens when playback is started, paused and resumed, or when the video's coordinates are updated. To avoid this behavior,
+ * set the layer's `raster-fade-duration` property to `0`.
+ */
+class VideoSource extends ImageSource {
+    constructor(id, options, dispatcher, eventedParent) {
+        super(id, options, dispatcher, eventedParent);
+        this.roundZoom = true;
+        this.type = 'video';
+        this.options = options;
+    }
+    load() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this._loaded = false;
+            const options = this.options;
+            this.urls = [];
+            for (const url of options.urls) {
+                this.urls.push(this.map._requestManager.transformRequest(url, "Source" /* ResourceType.Source */).url);
+            }
+            try {
+                const video = yield getVideo(this.urls);
+                this._loaded = true;
+                if (!video) {
+                    return;
+                }
+                this.video = video;
+                this.video.loop = true;
+                // Start repainting when video starts playing. hasTransition() will then return
+                // true to trigger additional frames as long as the videos continues playing.
+                this.video.addEventListener('playing', () => {
+                    this.map.triggerRepaint();
+                });
+                if (this.map) {
+                    this.video.play();
+                }
+                this._finishLoading();
+            }
+            catch (err) {
+                this.fire(new ErrorEvent(err));
+            }
+        });
+    }
+    /**
+     * Pauses the video.
+     */
+    pause() {
+        if (this.video) {
+            this.video.pause();
+        }
+    }
+    /**
+     * Plays the video.
+     */
+    play() {
+        if (this.video) {
+            this.video.play();
+        }
+    }
+    /**
+     * Sets playback to a timestamp, in seconds.
+     */
+    seek(seconds) {
+        if (this.video) {
+            const seekableRange = this.video.seekable;
+            if (seconds < seekableRange.start(0) || seconds > seekableRange.end(0)) {
+                this.fire(new ErrorEvent(new ValidationError(`sources.${this.id}`, null, `Playback for this video can be set only between the ${seekableRange.start(0)} and ${seekableRange.end(0)}-second mark.`)));
+            }
+            else
+                this.video.currentTime = seconds;
+        }
+    }
+    /**
+     * Returns the HTML `video` element.
+     *
+     * @returns The HTML `video` element.
+     */
+    getVideo() {
+        return this.video;
+    }
+    onAdd(map) {
+        if (this.map)
+            return;
+        this.map = map;
+        this.load();
+        if (this.video) {
+            this.video.play();
+            this.setCoordinates(this.coordinates);
+        }
+    }
+    /**
+     * Sets the video's coordinates and re-renders the map.
+     */
+    prepare() {
+        if (Object.keys(this.tiles).length === 0 || this.video.readyState < 2) {
+            return; // not enough data for current position
+        }
+        const context = this.map.painter.context;
+        const gl = context.gl;
+        if (!this.texture) {
+            this.texture = new Texture(context, this.video, gl.RGBA);
+            this.texture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
+        }
+        else if (!this.video.paused) {
+            this.texture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
+            gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.video);
+        }
+        let newTilesLoaded = false;
+        for (const w in this.tiles) {
+            const tile = this.tiles[w];
+            if (tile.state !== 'loaded') {
+                tile.state = 'loaded';
+                tile.texture = this.texture;
+                newTilesLoaded = true;
+            }
+        }
+        if (newTilesLoaded) {
+            this.fire(new Event('data', { dataType: 'source', sourceDataType: 'idle', sourceId: this.id }));
+        }
+    }
+    serialize() {
+        return {
+            type: 'video',
+            urls: this.urls,
+            coordinates: this.coordinates
+        };
+    }
+    hasTransition() {
+        return this.video && !this.video.paused;
+    }
+}
+
+/**
+ * A data source containing the contents of an HTML canvas. See {@link CanvasSourceSpecification} for detailed documentation of options.
+ *
+ * @group Sources
+ *
+ * @example
+ * ```ts
+ * // add to map
+ * map.addSource('some id', {
+ *    type: 'canvas',
+ *    canvas: 'idOfMyHTMLCanvas',
+ *    animate: true,
+ *    coordinates: [
+ *        [-76.54, 39.18],
+ *        [-76.52, 39.18],
+ *        [-76.52, 39.17],
+ *        [-76.54, 39.17]
+ *    ]
+ * });
+ *
+ * // update
+ * let mySource = map.getSource('some id');
+ * mySource.setCoordinates([
+ *     [-76.54335737228394, 39.18579907229748],
+ *     [-76.52803659439087, 39.1838364847587],
+ *     [-76.5295386314392, 39.17683392507606],
+ *     [-76.54520273208618, 39.17876344106642]
+ * ]);
+ *
+ * map.removeSource('some id');  // remove
+ * ```
+ */
+class CanvasSource extends ImageSource {
+    /** @internal */
+    constructor(id, options, dispatcher, eventedParent) {
+        super(id, options, dispatcher, eventedParent);
+        // We build in some validation here, since canvas sources aren't included in the style spec:
+        if (!options.coordinates) {
+            this.fire(new ErrorEvent(new ValidationError(`sources.${id}`, null, 'missing required property "coordinates"')));
+        }
+        else if (!Array.isArray(options.coordinates) || options.coordinates.length !== 4 ||
+            options.coordinates.some(c => !Array.isArray(c) || c.length !== 2 || c.some(l => typeof l !== 'number'))) {
+            this.fire(new ErrorEvent(new ValidationError(`sources.${id}`, null, '"coordinates" property must be an array of 4 longitude/latitude array pairs')));
+        }
+        if (options.animate && typeof options.animate !== 'boolean') {
+            this.fire(new ErrorEvent(new ValidationError(`sources.${id}`, null, 'optional "animate" property must be a boolean value')));
+        }
+        if (!options.canvas) {
+            this.fire(new ErrorEvent(new ValidationError(`sources.${id}`, null, 'missing required property "canvas"')));
+        }
+        else if (typeof options.canvas !== 'string' && !(options.canvas instanceof HTMLCanvasElement)) {
+            this.fire(new ErrorEvent(new ValidationError(`sources.${id}`, null, '"canvas" must be either a string representing the ID of the canvas element from which to read, or an HTMLCanvasElement instance')));
+        }
+        this.options = options;
+        this.animate = options.animate !== undefined ? options.animate : true;
+    }
+    load() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this._loaded = true;
+            if (!this.canvas) {
+                this.canvas = (this.options.canvas instanceof HTMLCanvasElement) ?
+                    this.options.canvas :
+                    document.getElementById(this.options.canvas);
+                // cast to HTMLCanvasElement in else of ternary
+                // should we do a safety check and throw if it's not actually HTMLCanvasElement?
+            }
+            this.width = this.canvas.width;
+            this.height = this.canvas.height;
+            if (this._hasInvalidDimensions()) {
+                this.fire(new ErrorEvent(new Error('Canvas dimensions cannot be less than or equal to zero.')));
+                return;
+            }
+            this.play = function () {
+                this._playing = true;
+                this.map.triggerRepaint();
+            };
+            this.pause = function () {
+                if (this._playing) {
+                    this.prepare();
+                    this._playing = false;
+                }
+            };
+            this._finishLoading();
+        });
+    }
+    /**
+     * Returns the HTML `canvas` element.
+     *
+     * @returns The HTML `canvas` element.
+     */
+    getCanvas() {
+        return this.canvas;
+    }
+    onAdd(map) {
+        this.map = map;
+        this.load();
+        if (this.canvas) {
+            if (this.animate)
+                this.play();
+        }
+    }
+    onRemove() {
+        this.pause();
+    }
+    prepare() {
+        let resize = false;
+        if (this.canvas.width !== this.width) {
+            this.width = this.canvas.width;
+            resize = true;
+        }
+        if (this.canvas.height !== this.height) {
+            this.height = this.canvas.height;
+            resize = true;
+        }
+        if (this._hasInvalidDimensions())
+            return;
+        if (Object.keys(this.tiles).length === 0)
+            return; // not enough data for current position
+        const context = this.map.painter.context;
+        const gl = context.gl;
+        if (!this.texture) {
+            this.texture = new Texture(context, this.canvas, gl.RGBA, { premultiply: true });
+        }
+        else if (resize || this._playing) {
+            this.texture.update(this.canvas, { premultiply: true });
+        }
+        let newTilesLoaded = false;
+        for (const w in this.tiles) {
+            const tile = this.tiles[w];
+            if (tile.state !== 'loaded') {
+                tile.state = 'loaded';
+                tile.texture = this.texture;
+                newTilesLoaded = true;
+            }
+        }
+        if (newTilesLoaded) {
+            this.fire(new Event('data', { dataType: 'source', sourceDataType: 'idle', sourceId: this.id }));
+        }
+    }
+    serialize() {
+        return {
+            type: 'canvas',
+            animate: this.animate,
+            canvas: this.options.canvas,
+            coordinates: this.coordinates
+        };
+    }
+    hasTransition() {
+        return this._playing;
+    }
+    _hasInvalidDimensions() {
+        for (const x of [this.canvas.width, this.canvas.height]) {
+            if (isNaN(x) || x <= 0)
+                return true;
+        }
+        return false;
+    }
+}
+
+const registeredSources = {};
+/**
+ * Creates a tiled data source instance given an options object.
+ *
+ * @param id - The id for the source. Must not be used by any existing source.
+ * @param specification - Source options, specific to the source type (except for `options.type`, which is always required).
+ * @param source - A source definition object compliant with
+ * [`maplibre-gl-style-spec`](https://maplibre.org/maplibre-style-spec/#sources) or, for a third-party source type,
+  * with that type's requirements.
+ * @param dispatcher - A {@link Dispatcher} instance, which can be used to send messages to the workers.
+ * @returns a newly created source
+ */
+const create = (id, specification, dispatcher, eventedParent) => {
+    const Class = getSourceType(specification.type);
+    const source = new Class(id, specification, dispatcher, eventedParent);
+    if (source.id !== id) {
+        throw new Error(`Expected Source id to be ${id} instead of ${source.id}`);
+    }
+    return source;
+};
+const getSourceType = (name) => {
+    switch (name) {
+        case 'geojson':
+            return GeoJSONSource;
+        case 'image':
+            return ImageSource;
+        case 'raster':
+            return RasterTileSource;
+        case 'raster-dem':
+            return RasterDEMTileSource;
+        case 'vector':
+            return VectorTileSource;
+        case 'video':
+            return VideoSource;
+        case 'canvas':
+            return CanvasSource;
+    }
+    return registeredSources[name];
+};
+const setSourceType = (name, type) => {
+    registeredSources[name] = type;
+};
+/**
+ * Adds a custom source type, making it available for use with {@link Map.addSource}.
+ * @param name - The name of the source type; source definition objects use this name in the `{type: ...}` field.
+ * @param SourceType - A {@link SourceClass} - which is a constructor for the `Source` interface.
+ * @returns a promise that is resolved when the source type is ready or rejected with an error.
+ */
+const addSourceType = (name, SourceType) => __awaiter(void 0, void 0, void 0, function* () {
+    if (getSourceType(name)) {
+        throw new Error(`A source type called "${name}" already exists.`);
+    }
+    setSourceType(name, SourceType);
+});
+
+function deserialize(input, style) {
+    const output = {};
+    // Guard against the case where the map's style has been set to null while
+    // this bucket has been parsing.
+    if (!style)
+        return output;
+    for (const bucket of input) {
+        const layers = bucket.layerIds
+            .map((id) => style.getLayer(id))
+            .filter(Boolean);
+        if (layers.length === 0) {
+            continue;
+        }
+        // look up StyleLayer objects from layer ids (since we don't
+        // want to waste time serializing/copying them from the worker)
+        bucket.layers = layers;
+        if (bucket.stateDependentLayerIds) {
+            bucket.stateDependentLayers = bucket.stateDependentLayerIds.map((lId) => layers.filter((l) => l.id === lId)[0]);
+        }
+        for (const layer of layers) {
+            output[layer.id] = bucket;
+        }
+    }
+    return output;
 }
 
 const RTLPluginLoadedEventName = 'RTLPluginLoaded';
@@ -42789,7 +42914,7 @@ class Tile {
             return;
         const vtLayers = featureIndex.loadVTLayers();
         const sourceLayer = params && params.sourceLayer ? params.sourceLayer : '';
-        const layer = vtLayers._geojsonTileLayer || vtLayers[sourceLayer];
+        const layer = vtLayers[GEOJSON_TILE_LAYER_NAME] || vtLayers[sourceLayer];
         if (!layer)
             return;
         const filter = featureFilter(params === null || params === void 0 ? void 0 : params.filter, params === null || params === void 0 ? void 0 : params.globalState);
@@ -42887,7 +43012,7 @@ class Tile {
                 continue;
             const bucket = this.buckets[id];
             // Buckets are grouped by common source-layer
-            const sourceLayerId = bucket.layers[0]['sourceLayer'] || '_geojsonTileLayer';
+            const sourceLayerId = bucket.layers[0]['sourceLayer'] || GEOJSON_TILE_LAYER_NAME;
             const sourceLayer = vtLayers[sourceLayerId];
             const sourceLayerStates = states[sourceLayerId];
             if (!sourceLayer || !sourceLayerStates || Object.keys(sourceLayerStates).length === 0)
@@ -43858,34 +43983,37 @@ class TileManager extends Evented {
      * Analogy: imagine two sheets of paper in 3D space:
      *   - one sheet = ideal tiles at varying overscaledZ
      *   - the second sheet = maxCoveringZoom
+     *
+     * @param retainTileMap - this parameters will be updated with the child tiles to keep
+     * @param idealTilesWithoutData - which of the ideal tiles currently does not have loaded data
+     * @return a set of tiles that need to be loaded
      */
-    _retainLoadedChildren(targetTiles, retain) {
-        const targetTileIDs = Object.values(targetTiles);
-        const loadedDescendents = this._getLoadedDescendents(targetTileIDs);
-        const incomplete = {};
+    _retainLoadedChildren(retainTileMap, idealTilesWithoutData) {
+        const loadedDescendents = this._getLoadedDescendents(idealTilesWithoutData);
+        const incomplete = new Set();
         // retain the uppermost descendents of target tiles
-        for (const targetID of targetTileIDs) {
+        for (const targetID of idealTilesWithoutData) {
             const descendents = loadedDescendents[targetID.key];
             if (!(descendents === null || descendents === void 0 ? void 0 : descendents.length)) {
-                incomplete[targetID.key] = targetID;
+                incomplete.add(targetID);
                 continue;
             }
             // find descendents within the max covering zoom range
-            const maxCoveringZoom = targetID.overscaledZ + TileManager.maxUnderzooming;
+            const maxCoveringZoom = targetID.overscaledZ + TileManager.maxOverzooming;
             const candidates = descendents.filter(t => t.tileID.overscaledZ <= maxCoveringZoom);
             if (!candidates.length) {
-                incomplete[targetID.key] = targetID;
+                incomplete.add(targetID);
                 continue;
             }
             // retain the uppermost descendents in the topmost zoom below the target tile
             const topZoom = Math.min(...candidates.map(t => t.tileID.overscaledZ));
             const topIDs = candidates.filter(t => t.tileID.overscaledZ === topZoom).map(t => t.tileID);
             for (const tileID of topIDs) {
-                retain[tileID.key] = tileID;
+                retainTileMap[tileID.key] = tileID;
             }
             //determine if the retained generation is fully covered
             if (!this._areDescendentsComplete(topIDs, topZoom, targetID.overscaledZ)) {
-                incomplete[targetID.key] = targetID;
+                incomplete.add(targetID);
             }
         }
         return incomplete;
@@ -44003,7 +44131,7 @@ class TileManager extends Evented {
         if (!this.used && !this.usedForTerrain) {
             idealTileIDs = [];
         }
-        else if (this._source.tileID) {
+        else if (this._source.tileID) { // image source
             idealTileIDs = transform.getVisibleUnwrappedCoordinates(this._source.tileID)
                 .map((unwrapped) => new OverscaledTileID(unwrapped.canonical.z, unwrapped.wrap, unwrapped.canonical.z, unwrapped.canonical.x, unwrapped.canonical.y));
         }
@@ -44019,7 +44147,7 @@ class TileManager extends Evented {
                 terrain,
                 calculateTileZoom: this._source.calculateTileZoom,
             });
-            if (this._source.hasTile) {
+            if (this._source.hasTile) { // tile should be in bounds
                 idealTileIDs = idealTileIDs.filter((coord) => this._source.hasTile(coord));
             }
         }
@@ -44117,23 +44245,21 @@ class TileManager extends Evented {
      */
     _updateRetainedTiles(idealTileIDs, zoom) {
         var _a;
-        const retain = {};
-        const checked = {};
-        const minCoveringZoom = Math.max(zoom - TileManager.maxOverzooming, this._source.minzoom);
-        let missingIdealTiles = {};
+        const idealTilesWithoutData = new Set();
         for (const idealID of idealTileIDs) {
             const idealTile = this._addTile(idealID);
-            // retain the tile even if it's not loaded because it's an ideal tile.
-            retain[idealID.key] = idealID;
             if (!idealTile.hasData()) {
-                missingIdealTiles[idealID.key] = idealID;
+                idealTilesWithoutData.add(idealID);
             }
         }
-        missingIdealTiles = this._retainLoadedChildren(missingIdealTiles, retain);
+        // retain the tile even if it's not loaded because it's an ideal tile.
+        const retainTileMap = idealTileIDs.reduce((acc, t) => { acc[t.key] = t; return acc; }, {});
+        const tileIdsWithoutData = this._retainLoadedChildren(retainTileMap, idealTilesWithoutData);
         // for remaining missing tiles with incomplete child coverage, seek a loaded parent tile
-        for (const idealKey in missingIdealTiles) {
-            const tileID = missingIdealTiles[idealKey];
-            let tile = this._tiles[idealKey];
+        const checked = {};
+        const minCoveringZoom = Math.max(zoom - TileManager.maxUnderzooming, this._source.minzoom);
+        for (const tileID of tileIdsWithoutData) {
+            let tile = this._tiles[tileID.key];
             // As we ascend up the tile pyramid of the ideal tile, we check whether the parent
             // tile has been previously requested (and errored because we only loop over tiles with no data)
             // in order to determine if we need to request its parent.
@@ -44151,7 +44277,7 @@ class TileManager extends Evented {
                 if (tile) {
                     const hasData = tile.hasData();
                     if (hasData || !((_a = this.map) === null || _a === void 0 ? void 0 : _a.cancelPendingTileRequestsWhileZooming) || parentWasRequested) {
-                        retain[parentId.key] = parentId;
+                        retainTileMap[parentId.key] = parentId;
                     }
                     // Save the current values, since they're the parent of the next iteration
                     // of the parent tile ascent loop.
@@ -44161,7 +44287,7 @@ class TileManager extends Evented {
                 }
             }
         }
-        return retain;
+        return retainTileMap;
     }
     /**
      * Designate fading bases and parents using a many-to-one relationship where the lower children fade in/out
@@ -44543,21 +44669,21 @@ class TileManager extends Evented {
      * Set the value of a particular state for a feature
      */
     setFeatureState(sourceLayer, featureId, state) {
-        sourceLayer = sourceLayer || '_geojsonTileLayer';
+        sourceLayer = sourceLayer || GEOJSON_TILE_LAYER_NAME;
         this._state.updateState(sourceLayer, featureId, state);
     }
     /**
      * Resets the value of a particular state key for a feature
      */
     removeFeatureState(sourceLayer, featureId, key) {
-        sourceLayer = sourceLayer || '_geojsonTileLayer';
+        sourceLayer = sourceLayer || GEOJSON_TILE_LAYER_NAME;
         this._state.removeFeatureState(sourceLayer, featureId, key);
     }
     /**
      * Get the entire state object for a feature
      */
     getFeatureState(sourceLayer, featureId) {
-        sourceLayer = sourceLayer || '_geojsonTileLayer';
+        sourceLayer = sourceLayer || GEOJSON_TILE_LAYER_NAME;
         return this._state.getState(sourceLayer, featureId);
     }
     /**
@@ -44583,8 +44709,8 @@ class TileManager extends Evented {
         this._cache.filter(tile => !tile.hasDependency(namespaces, keys));
     }
 }
-TileManager.maxOverzooming = 10;
-TileManager.maxUnderzooming = 3;
+TileManager.maxUnderzooming = 10;
+TileManager.maxOverzooming = 3;
 function compareTileId(a, b) {
     // Different copies of the world are sorted based on their distance to the center.
     // Wrap values are converted to unsigned distances by reserving odd number for copies
@@ -59537,7 +59663,7 @@ class Painter {
         this.setup();
         // Within each layer there are multiple distinct z-planes that can be drawn to.
         // This is implemented using the WebGL depth buffer.
-        this.numSublayers = TileManager.maxUnderzooming + TileManager.maxOverzooming + 1;
+        this.numSublayers = TileManager.maxOverzooming + TileManager.maxUnderzooming + 1;
         this.depthEpsilon = 1 / Math.pow(2, 16);
         this.crossTileSymbolIndex = new CrossTileSymbolIndex();
     }
