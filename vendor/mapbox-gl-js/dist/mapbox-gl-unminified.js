@@ -5695,42 +5695,23 @@ class Formatted {
 class ImageVariant {
     constructor(id, options = {}) {
         this.id = ImageId.from(id);
-        this.options = Object.assign({}, options);
-        if (!options.transform) {
-            this.options.transform = new DOMMatrix([
+        this.options = Object.assign({
+            transform: [
                 1,
                 0,
                 0,
                 1,
                 0,
                 0
-            ]);
-        } else {
-            const {a, b, c, d, e, f} = options.transform;
-            this.options.transform = new DOMMatrix([
-                a,
-                b,
-                c,
-                d,
-                e,
-                f
-            ]);
-        }
+            ]
+        }, options);
     }
     toString() {
-        const {a, b, c, d, e, f} = this.options.transform;
         const serialized = {
             name: this.id.name,
             iconsetId: this.id.iconsetId,
             params: this.options.params,
-            transform: {
-                a,
-                b,
-                c,
-                d,
-                e,
-                f
-            }
+            transform: this.options.transform
         };
         return JSON.stringify(serialized);
     }
@@ -5738,29 +5719,22 @@ class ImageVariant {
         let name, iconsetId, params, transform;
         try {
             ({name, iconsetId, params, transform} = JSON.parse(str) || {});
-        } catch (e2) {
+        } catch (e) {
             return null;
         }
         if (!name)
             return null;
-        const {a, b, c, d, e, f} = transform || {};
         return new ImageVariant({
             name,
             iconsetId
         }, {
             params,
-            transform: new DOMMatrix([
-                a,
-                b,
-                c,
-                d,
-                e,
-                f
-            ])
+            transform
         });
     }
-    scaleSelf(factor, yFactor) {
-        this.options.transform.scaleSelf(factor, yFactor);
+    scaleSelf(factor, yFactor = factor) {
+        this.options.transform[0] *= factor;
+        this.options.transform[3] *= yFactor;
         return this;
     }
 }
@@ -11517,9 +11491,6 @@ Grid.deserialize = function deserialize2(serialized) {
 Object.defineProperty(Grid, 'name', { value: 'Grid' });
 register(Grid, 'Grid');
 delete Point.prototype.constructor;
-if (typeof DOMMatrix !== 'undefined') {
-    register(DOMMatrix, 'DOMMatrix');
-}
 register(Color, 'Color');
 register(Error, 'Error');
 register(Formatted, 'Formatted');
@@ -11538,16 +11509,13 @@ for (const name in expressions) {
         register(expressions[name], `Expression${ name }`);
 }
 function isArrayBuffer(val) {
-    return val && typeof ArrayBuffer !== 'undefined' && (val instanceof ArrayBuffer || val.constructor && val.constructor.name === 'ArrayBuffer');
-}
-function isImageBitmap(val) {
-    return self.ImageBitmap && val instanceof ImageBitmap;
+    return val && (val instanceof ArrayBuffer || val.constructor && val.constructor.name === 'ArrayBuffer');
 }
 function serialize(input, transferables) {
     if (input === null || input === void 0 || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp) {
         return input;
     }
-    if (isArrayBuffer(input) || isImageBitmap(input)) {
+    if (isArrayBuffer(input) || input instanceof ImageBitmap) {
         if (transferables) {
             transferables.add(input);
         }
@@ -11587,38 +11555,6 @@ function serialize(input, transferables) {
         let idx = 0;
         for (const value of input.values()) {
             properties[++idx] = serialize(value);
-        }
-        return properties;
-    }
-    if (input instanceof DOMMatrix) {
-        const properties = { '$name': 'DOMMatrix' };
-        const matrixProperties = [
-            'is2D',
-            'm11',
-            'm12',
-            'm13',
-            'm14',
-            'm21',
-            'm22',
-            'm23',
-            'm24',
-            'm31',
-            'm32',
-            'm33',
-            'm34',
-            'm41',
-            'm42',
-            'm43',
-            'm44',
-            'a',
-            'b',
-            'c',
-            'd',
-            'e',
-            'f'
-        ];
-        for (const property of matrixProperties) {
-            properties[property] = input[property];
         }
         return properties;
     }
@@ -11666,7 +11602,7 @@ function serialize(input, transferables) {
     throw new Error(`can't serialize object of type ${ typeof input }`);
 }
 function deserialize(input) {
-    if (input === null || input === void 0 || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp || isArrayBuffer(input) || isImageBitmap(input) || ArrayBuffer.isView(input) || input instanceof ImageData) {
+    if (input === null || input === void 0 || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp || isArrayBuffer(input) || input instanceof ImageBitmap || ArrayBuffer.isView(input) || input instanceof ImageData) {
         return input;
     }
     if (Array.isArray(input)) {
@@ -11693,40 +11629,6 @@ function deserialize(input) {
                 set.add(deserialize(value));
             }
             return set;
-        }
-        if (name === 'DOMMatrix') {
-            let values;
-            if (input['is2D']) {
-                values = [
-                    input['a'],
-                    input['b'],
-                    input['c'],
-                    input['d'],
-                    input['e'],
-                    input['f']
-                ];
-            } else {
-                values = [
-                    input['m11'],
-                    input['m12'],
-                    input['m13'],
-                    input['m14'],
-                    input['m21'],
-                    input['m22'],
-                    input['m23'],
-                    input['m24'],
-                    input['m31'],
-                    input['m32'],
-                    input['m33'],
-                    input['m34'],
-                    input['m41'],
-                    input['m42'],
-                    input['m43'],
-                    input['m44']
-                ];
-            }
-            const matrix = new DOMMatrix(values);
-            return matrix;
         }
         if (name === 'BigInt') {
             return BigInt(input.value);
@@ -13569,11 +13471,12 @@ class Struct {
 }
 const DEFAULT_CAPACITY = 128;
 const RESIZE_MULTIPLIER = 5;
+const EMPTY_BUFFER = new ArrayBuffer(0);
 class StructArray {
     constructor() {
         this._reallocCount = 0;
-        this.capacity = -1;
-        this.resize(0);
+        this.capacity = 0;
+        this.length = 0;
     }
     /**
    * Serialize a StructArray instance.  Serializes both the raw data and the
@@ -13583,7 +13486,7 @@ class StructArray {
    */
     static serialize(array, transferables) {
         array._trim();
-        if (transferables) {
+        if (transferables && array.arrayBuffer) {
             transferables.add(array.arrayBuffer);
         }
         return {
@@ -13595,7 +13498,12 @@ class StructArray {
         const structArray = Object.create(this.prototype);
         structArray.arrayBuffer = input.arrayBuffer;
         structArray.length = input.length;
-        structArray.capacity = input.arrayBuffer.byteLength / structArray.bytesPerElement;
+        if (input.arrayBuffer) {
+            structArray.capacity = input.arrayBuffer.byteLength / structArray.bytesPerElement;
+        } else {
+            structArray.capacity = 0;
+            structArray.arrayBuffer = EMPTY_BUFFER;
+        }
         structArray._refreshViews();
         return structArray;
     }
@@ -34582,8 +34490,8 @@ class ImagePosition {
         if (usvg && imageVariant && imageVariant.options && imageVariant.options.transform) {
             const transform = imageVariant.options.transform;
             return {
-                x: transform.a,
-                y: transform.d
+                x: transform[0],
+                y: transform[3]
             };
         } else {
             return {
@@ -34639,9 +34547,10 @@ function getImageBin(image, padding, scale = [
 }
 function getImagePosition(id, src, padding) {
     const imageVariant = ImageVariant.parse(id);
+    const transform = imageVariant.options.transform;
     const bin = getImageBin(src, padding, [
-        imageVariant.options.transform.a,
-        imageVariant.options.transform.d
+        transform[0],
+        transform[3]
     ]);
     return {
         bin,
@@ -42423,7 +42332,7 @@ function renderIcon(icon, options) {
     const tree = icon.usvg_tree;
     const naturalWidth = tree.width;
     const naturalHeight = tree.height;
-    const tr = options.transform ? options.transform : new DOMMatrix();
+    const tr = new DOMMatrix(options.transform);
     const renderedWidth = Math.max(1, Math.round(naturalWidth * tr.a));
     const renderedHeight = Math.max(1, Math.round(naturalHeight * tr.d));
     const finalTr = new DOMMatrix([
@@ -45168,7 +45077,7 @@ exports$1.Y = isFeatureConstant;
 exports$1.Z = isStateConstant;
 exports$1._ = CompoundExpression;
 exports$1.a = isMapboxHTTPCDNURL;
-exports$1.a$ = StructArrayLayout4i8;
+exports$1.a$ = StructArrayLayout3ui6;
 exports$1.a0 = isString;
 exports$1.a1 = csscolorparserExports;
 exports$1.a2 = isExpressionFilter;
@@ -45234,7 +45143,7 @@ exports$1.ay = pixelsToTileUnits;
 exports$1.az = getBounds;
 exports$1.b = isMapboxHTTPFontsURL;
 exports$1.b$ = pointInFootprint;
-exports$1.b0 = StructArrayLayout3ui6;
+exports$1.b0 = StructArrayLayout4i8;
 exports$1.b1 = uniqueId;
 exports$1.b2 = CollisionBoxArray;
 exports$1.b3 = SymbolBucket;
@@ -45480,8 +45389,8 @@ exports$1.el = StructArrayLayout3f12;
 exports$1.em = rotateY$1;
 exports$1.en = fromMat4;
 exports$1.eo = StructArrayLayout5f20;
-exports$1.ep = StructArrayLayout7f28;
-exports$1.eq = mulberry32;
+exports$1.ep = mulberry32;
+exports$1.eq = StructArrayLayout7f28;
 exports$1.er = mapValue;
 exports$1.es = rotateY;
 exports$1.et = invert$1;
@@ -55532,8 +55441,8 @@ function getTileMesh(canonical, projection) {
             used[mIndex] = used[mIndex] || used[leftChildIndex] || used[rightChildIndex];
         }
     }
-    const vertices = new index.a$();
-    const indices = new index.b0();
+    const vertices = new index.b0();
+    const indices = new index.a$();
     let numVertices = 0;
     function addVertex(x, y) {
         const k = y * gridSize + x;
@@ -55991,7 +55900,6 @@ class Tile {
             return;
         if (!painter.style)
             return;
-        const vtLayers = this.latestFeatureIndex.loadVTLayers();
         const availableImages = painter.style.listImages();
         const brightness = painter.style.getBrightness();
         for (const id in this.buckets) {
@@ -56000,7 +55908,6 @@ class Tile {
             const bucket = this.buckets[id];
             const bucketLayer = bucket.layers[0];
             const sourceLayerId = bucketLayer['sourceLayer'] || '_geojsonTileLayer';
-            const sourceLayer = vtLayers[sourceLayerId];
             const sourceCache = painter.style.getLayerSourceCache(bucketLayer);
             let sourceLayerStates = {};
             if (sourceCache) {
@@ -56011,6 +55918,8 @@ class Tile {
             bucket.hasAppearances = bucket.layers.some(layer2 => layer2.appearances && layer2.appearances.length > 0);
             const layers = withStateUpdates ? bucket.stateDependentLayers : bucket.layers;
             if (withStateUpdates && bucket.stateDependentLayers.length !== 0 || isBrightnessChanged) {
+                const vtLayers = this.latestFeatureIndex.loadVTLayers();
+                const sourceLayer = vtLayers[sourceLayerId];
                 bucket.update(sourceLayerStates, sourceLayer, availableImages, imagePositions, layers, isBrightnessChanged, brightness);
             }
             if (withStateUpdates && bucket.stateDependentLayers.length !== 0 || isBrightnessChanged || bucket.hasAppearances) {
@@ -56104,8 +56013,8 @@ class Tile {
             boundsVertices = mesh.vertices;
             boundsIndices = mesh.indices;
         } else {
-            boundsVertices = new index.a$();
-            boundsIndices = new index.b0();
+            boundsVertices = new index.b0();
+            boundsIndices = new index.a$();
             for (const {x, y} of boundsLine) {
                 boundsVertices.emplaceBack(x, y, 0, 0);
             }
@@ -56194,7 +56103,7 @@ class Tile {
         const numVertices = SEGMENTS + 1;
         const step = index.al / SEGMENTS;
         const vertices = new index.bc();
-        const indices = new index.b0();
+        const indices = new index.a$();
         const extraGlobe = new index.bn();
         const totalVertices = numVertices * numVertices;
         const totalTriangles = SEGMENTS * SEGMENTS * 2;
@@ -71387,7 +71296,7 @@ function sortByDistanceToCamera(tileIDs, painter) {
 }
 function createGrid(count) {
     const boundsArray = new index.bc();
-    const indexArray = new index.b0();
+    const indexArray = new index.a$();
     const size = count + 2;
     boundsArray.reserve(size * size);
     indexArray.reserve((size - 1) * (size - 1) * 2);
@@ -73645,7 +73554,7 @@ function drawCollisionDebug(painter, sourceCache, layer, coords, translate, tran
 }
 function createQuadTriangles(quadCount) {
     const triCount = quadCount * 2;
-    const array = new index.b0();
+    const array = new index.a$();
     array.resize(triCount);
     array._trim();
     for (let i = 0; i < triCount; i++) {
@@ -77461,7 +77370,7 @@ function addVertex(vertexArray, x, y, z) {
 class SkyboxGeometry {
     constructor(context) {
         this.vertexArray = new index.el();
-        this.indices = new index.b0();
+        this.indices = new index.a$();
         addVertex(this.vertexArray, -1, -1, 1);
         addVertex(this.vertexArray, 1, -1, 1);
         addVertex(this.vertexArray, -1, 1, 1);
@@ -77630,7 +77539,7 @@ class AtmosphereBuffer {
         vertices.emplaceBack(1, 1, 1, 1, 0);
         vertices.emplaceBack(1, -1, 1, 1, 1);
         vertices.emplaceBack(-1, -1, 1, 0, 1);
-        const triangles = new index.b0();
+        const triangles = new index.a$();
         triangles.emplaceBack(0, 1, 2);
         triangles.emplaceBack(2, 3, 0);
         this.vertexBuffer = context.createVertexBuffer(vertices, atmosphereLayout.members);
@@ -77668,7 +77577,7 @@ const starsLayout = index.eh([
 ]);
 
 function generateUniformDistributedPointsOnSphere(pointsCount) {
-    const sRand = index.eq(30);
+    const sRand = index.ep(30);
     const points = [];
     for (let i = 0; i < pointsCount; ++i) {
         const lon = 2 * Math.PI * sRand();
@@ -77720,9 +77629,9 @@ class Atmosphere {
             const sizeRange = this.params.sizeRange;
             const intensityRange = this.params.intensityRange;
             const stars = generateUniformDistributedPointsOnSphere(this.params.starsCount);
-            const sRand = index.eq(300);
-            const vertices = new index.ep();
-            const triangles = new index.b0();
+            const sRand = index.ep(300);
+            const vertices = new index.eq();
+            const triangles = new index.a$();
             let base = 0;
             for (let i = 0; i < stars.length; ++i) {
                 const star = index.c4([], stars[i], 200);
@@ -79090,7 +78999,7 @@ class Vignette {
         const program = painter.getOrCreateProgram('vignette');
         if (!this.vignetteVx || !this.vignetteIdx) {
             const vertices = new index.eJ();
-            const triangles = new index.b0();
+            const triangles = new index.a$();
             vertices.emplaceBack(-1, -1);
             vertices.emplaceBack(1, -1);
             vertices.emplaceBack(1, 1);
@@ -79176,7 +79085,7 @@ function boxWrap(unwrappedPos, boxSize) {
     ];
 }
 function generateUniformDistributedPointsInsideCube(pointsCount) {
-    const sRand = index.eq(1323123451230);
+    const sRand = index.ep(1323123451230);
     const points = [];
     for (let i = 0; i < pointsCount; ++i) {
         const vx = -1 + 2 * sRand();
@@ -79286,9 +79195,9 @@ class Rain extends PrecipitationBase {
         if (!this.particlesVx) {
             const positions = generateUniformDistributedPointsInsideCube(this.particlesCount);
             const vertices = new index.eM();
-            const triangles = new index.b0();
+            const triangles = new index.a$();
             let base = 0;
-            const sRand = index.eq(1323123451230);
+            const sRand = index.ep(1323123451230);
             for (let i = 0; i < positions.length; ++i) {
                 const p = positions[i];
                 const angularVelocityScale = -1 + 2 * sRand();
@@ -79510,9 +79419,9 @@ class Snow extends PrecipitationBase {
         if (!this.particlesVx) {
             const positions = generateUniformDistributedPointsInsideCube(this.particlesCount);
             const vertices = new index.eN();
-            const triangles = new index.b0();
+            const triangles = new index.a$();
             let base = 0;
-            const sRand = index.eq(1323123451230);
+            const sRand = index.ep(1323123451230);
             for (let i = 0; i < positions.length; ++i) {
                 const p = positions[i];
                 const velocityScale = sRand();
@@ -79817,14 +79726,14 @@ class Painter {
         viewportArray.emplaceBack(1, 1);
         this.viewportBuffer = context.createVertexBuffer(viewportArray, index.be.members);
         this.viewportSegments = index.bf.simpleSegment(0, 0, 4, 2);
-        const tileBoundsArray = new index.a$();
+        const tileBoundsArray = new index.b0();
         tileBoundsArray.emplaceBack(0, 0, 0, 0);
         tileBoundsArray.emplaceBack(index.al, 0, index.al, 0);
         tileBoundsArray.emplaceBack(0, index.al, 0, index.al);
         tileBoundsArray.emplaceBack(index.al, index.al, index.al, index.al);
         this.mercatorBoundsBuffer = context.createVertexBuffer(tileBoundsArray, index.bh.members);
         this.mercatorBoundsSegments = index.bf.simpleSegment(0, 0, 4, 2);
-        const quadTriangleIndices = new index.b0();
+        const quadTriangleIndices = new index.a$();
         quadTriangleIndices.emplaceBack(0, 1, 2);
         quadTriangleIndices.emplaceBack(2, 1, 3);
         this.quadTriangleIndexBuffer = context.createIndexBuffer(quadTriangleIndices);

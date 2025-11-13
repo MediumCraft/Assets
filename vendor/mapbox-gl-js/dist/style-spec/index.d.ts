@@ -1883,7 +1883,14 @@ declare class ImageId {
 type StringifiedImageVariant = Brand<string, "ImageVariant">;
 type RasterizationOptions = {
 	params?: Record<string, Color>;
-	transform?: DOMMatrix;
+	transform?: [
+		number,
+		number,
+		number,
+		number,
+		number,
+		number
+	];
 };
 declare class ImageVariant {
 	id: ImageId;

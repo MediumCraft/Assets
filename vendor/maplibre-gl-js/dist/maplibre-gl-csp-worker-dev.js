@@ -42330,7 +42330,9 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
                 const data = yield this._pendingData;
                 this._geoJSONIndex = this._createGeoJSONIndex(data, params);
                 this.loaded = {};
-                const result = { data };
+                const result = params.dataDiff && isUpdateableGeoJSON(data) ?
+                    { shouldApplyDiff: true } :
+                    { data };
                 if (perf) {
                     const resourceTimingData = perf.finish();
                     // it's necessary to eval the result of getEntriesByName() here via parse/stringify

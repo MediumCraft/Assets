@@ -42621,7 +42621,9 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
                 const data = yield this._pendingData;
                 this._geoJSONIndex = this._createGeoJSONIndex(data, params);
                 this.loaded = {};
-                const result = { data };
+                const result = params.dataDiff && performance.isUpdateableGeoJSON(data) ?
+                    { shouldApplyDiff: true } :
+                    { data };
                 if (perf) {
                     const resourceTimingData = perf.finish();
                     // it's necessary to eval the result of getEntriesByName() here via parse/stringify
@@ -43065,7 +43067,7 @@ var devDependencies = {
 	"@typescript-eslint/parser": "^8.43.0",
 	"@unicode/unicode-17.0.0": "^1.6.14",
 	"@vitest/coverage-v8": "4.0.8",
-	"@vitest/eslint-plugin": "^1.4.1",
+	"@vitest/eslint-plugin": "^1.4.2",
 	"@vitest/ui": "4.0.8",
 	address: "^2.0.3",
 	autoprefixer: "^10.4.21",
@@ -46292,7 +46294,7 @@ class GeoJSONSource extends performance$1.Evented {
         this._pendingWorkerUpdate = { data: options.data };
         this.actor = dispatcher.getActor();
         this.setEventedParent(eventedParent);
-        this._data = options.data;
+        this._data = typeof options.data === 'string' ? { url: options.data } : { geojson: options.data };
         this._options = performance$1.extend({}, options);
         this._collectResourceTiming = options.collectResourceTiming;
         if (options.maxzoom !== undefined)
@@ -46358,34 +46360,19 @@ class GeoJSONSource extends performance$1.Evented {
         this.map = map;
         this.load();
     }
-    /**
-     * Sets the GeoJSON data and re-renders the map.
-     *
-     * @param data - A GeoJSON data object or a URL to one. The latter is preferable in the case of large GeoJSON files.
-     */
-    setData(data) {
-        this._data = data;
+    setData(data, waitForCompletion) {
+        this._data = typeof data === 'string' ? { url: data } : { geojson: data };
         this._pendingWorkerUpdate = { data };
-        this._updateWorkerData();
+        const updatePromise = this._updateWorkerData();
+        if (waitForCompletion)
+            return updatePromise;
         return this;
     }
-    /**
-     * Updates the source's GeoJSON, and re-renders the map.
-     *
-     * For sources with lots of features, this method can be used to make updates more quickly.
-     *
-     * This approach requires unique IDs for every feature in the source. The IDs can either be specified on the feature,
-     * or by using the promoteId option to specify which property should be used as the ID.
-     *
-     * It is an error to call updateData on a source that did not have unique IDs for each of its features already.
-     *
-     * Updates are applied on a best-effort basis, updating an ID that does not exist will not result in an error.
-     *
-     * @param diff - The changes that need to be applied.
-     */
-    updateData(diff) {
+    updateData(diff, waitForCompletion) {
         this._pendingWorkerUpdate.diff = performance$1.mergeSourceDiffs(this._pendingWorkerUpdate.diff, diff);
-        this._updateWorkerData();
+        const updatePromise = this._updateWorkerData();
+        if (waitForCompletion)
+            return updatePromise;
         return this;
     }
     /**
@@ -46522,7 +46509,12 @@ class GeoJSONSource extends performance$1.Evented {
                     this.fire(new performance$1.Event('dataabort', { dataType: 'source' }));
                     return;
                 }
-                this._data = result.data;
+                if (!result.shouldApplyDiff) {
+                    this._data = { geojson: result.data };
+                }
+                else {
+                    this._applyDiff(diff);
+                }
                 let resourceTiming = null;
                 if (result.resourceTiming && result.resourceTiming[this.id]) {
                     resourceTiming = result.resourceTiming[this.id].slice(0);
@@ -46552,15 +46544,39 @@ class GeoJSONSource extends performance$1.Evented {
             }
         });
     }
+    _applyDiff(diff) {
+        const promoteId = typeof this.promoteId === 'string' ? this.promoteId : undefined;
+        // Lazily convert `this._data` to updateable if it's not already
+        if (!this._data.url &&
+            !this._data.updateable &&
+            performance$1.isUpdateableGeoJSON(this._data.geojson, promoteId)) {
+            this._data = { updateable: performance$1.toUpdateable(this._data.geojson, promoteId) };
+        }
+        if (diff && this._data.updateable) {
+            performance$1.applySourceDiff(this._data.updateable, diff, promoteId);
+        }
+        else {
+            // This should never happen because the worker would not set `shouldApplyDiff: true` if the source was not updateable.
+            performance$1.warnOnce('Cannot apply GeoJSONSource#updateData due to internal error');
+        }
+    }
     _getShouldReloadTileOptions(diff) {
         if (!diff || diff.removeAll)
             return undefined;
         const { add = [], update = [], remove = [] } = (diff || {});
         const prevIds = new Set([...update.map(u => u.id), ...remove]);
+        for (const id of prevIds.values()) {
+            if (typeof id !== 'number') {
+                performance$1.warnOnce(`GeoJSONSource "${this.id}": updateData is slower when using string GeoJSON feature IDs (e.g. "${id}"). Consider using numeric IDs for better performance.`);
+                return undefined;
+            }
+        }
         const nextBounds = [
             ...update.map(f => f.newGeometry),
             ...add.map(f => f.geometry)
-        ].map(g => getGeoJSONBounds(g));
+        ]
+            .filter(Boolean)
+            .map(g => getGeoJSONBounds(g));
         return {
             nextBounds,
             prevIds
@@ -46571,8 +46587,9 @@ class GeoJSONSource extends performance$1.Evented {
      * @internal
      */
     shouldReloadTile(tile, { nextBounds, prevIds }) {
-        if (!tile.latestFeatureIndex)
-            return false;
+        if (!tile.latestFeatureIndex) {
+            return tile.state !== 'unloaded';
+        }
         // Update the tile if it PREVIOUSLY contained an updated feature.
         const layers = tile.latestFeatureIndex.loadVTLayers();
         for (let i = 0; i < tile.latestFeatureIndex.featureIndexArray.length; i++) {
@@ -46643,7 +46660,12 @@ class GeoJSONSource extends performance$1.Evented {
     serialize() {
         return performance$1.extend({}, this._options, {
             type: this.type,
-            data: this._data
+            data: this._data.updateable ?
+                {
+                    type: 'FeatureCollection',
+                    features: Array.from(this._data.updateable.values())
+                } :
+                this._data.url || this._data.geojson
         });
     }
     hasTransition() {

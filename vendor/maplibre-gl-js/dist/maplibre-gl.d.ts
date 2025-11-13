@@ -2282,7 +2282,11 @@ export declare class GeoJSONSource extends Evented implements Source {
 	promoteId: PromoteIdSpecification;
 	isTileClipped: boolean;
 	reparseOverscaled: boolean;
-	_data: GeoJSON.GeoJSON | string | undefined;
+	_data: ExactlyOne<{
+		url: string;
+		geojson: GeoJSON.GeoJSON;
+		updateable: globalThis.Map<GeoJSONFeatureId, GeoJSON.Feature>;
+	}>;
 	_options: GeoJSONSourceInternalOptions;
 	workerOptions: GeoJSONWorkerOptions;
 	map: Map$1;
@@ -2306,8 +2310,10 @@ export declare class GeoJSONSource extends Evented implements Source {
 	 * Sets the GeoJSON data and re-renders the map.
 	 *
 	 * @param data - A GeoJSON data object or a URL to one. The latter is preferable in the case of large GeoJSON files.
+	 * @param waitForCompletion - If true, the method will return a promise that resolves when set data is complete.
 	 */
-	setData(data: GeoJSON.GeoJSON | string): this;
+	setData(data: GeoJSON.GeoJSON | string, waitForCompletion: true): Promise<void>;
+	setData(data: GeoJSON.GeoJSON | string, waitForCompletion?: false): this;
 	/**
 	 * Updates the source's GeoJSON, and re-renders the map.
 	 *
@@ -2321,8 +2327,10 @@ export declare class GeoJSONSource extends Evented implements Source {
 	 * Updates are applied on a best-effort basis, updating an ID that does not exist will not result in an error.
 	 *
 	 * @param diff - The changes that need to be applied.
+	 * @param waitForCompletion - If true, the method will return a promise that resolves when the update is complete.
 	 */
-	updateData(diff: GeoJSONSourceDiff): this;
+	updateData(diff: GeoJSONSourceDiff, waitForCompletion: true): Promise<void>;
+	updateData(diff: GeoJSONSourceDiff, waitForCompletion?: false): this;
 	/**
 	 * Allows to get the source's actual GeoJSON data.
 	 *
@@ -2391,6 +2399,7 @@ export declare class GeoJSONSource extends Evented implements Source {
 	 * using geojson-vt or supercluster as appropriate.
 	 */
 	_updateWorkerData(): Promise<void>;
+	private _applyDiff;
 	_getShouldReloadTileOptions(diff?: GeoJSONSourceDiff): GeoJSONSourceShouldReloadTileOptions | undefined;
 	/**
 	 * Determine whether a tile should be reloaded based on a set of options associated with a {@link MapSourceDataChangedEvent}.
@@ -7500,6 +7509,7 @@ type GetClusterLeavesParams = ClusterIDAndSource & {
 };
 type GeoJSONWorkerSourceLoadDataResult = {
 	data?: GeoJSON.GeoJSON;
+	shouldApplyDiff?: boolean;
 	resourceTiming?: {
 		[_: string]: Array<PerformanceResourceTiming>;
 	};
@@ -7801,6 +7811,11 @@ export type Complete<T> = {
 export type RequireAtLeastOne<T> = {
 	[K in keyof T]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<keyof T, K>>>;
 }[keyof T];
+type ExactlyOne<T, Keys extends keyof T = keyof T> = {
+	[K in Keys]: Required<Pick<T, K>> & {
+		[P in Exclude<Keys, K>]?: never;
+	};
+}[Keys];
 /**
  * Adds the map's position to its page's location hash.
  * Passed as an option to the map object.

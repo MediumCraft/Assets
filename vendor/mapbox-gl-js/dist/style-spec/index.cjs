@@ -13670,42 +13670,23 @@
   class ImageVariant {
       constructor(id, options = {}) {
           this.id = ImageId.from(id);
-          this.options = Object.assign({}, options);
-          if (!options.transform) {
-              this.options.transform = new DOMMatrix([
+          this.options = Object.assign({
+              transform: [
                   1,
                   0,
                   0,
                   1,
                   0,
                   0
-              ]);
-          } else {
-              const {a, b, c, d, e, f} = options.transform;
-              this.options.transform = new DOMMatrix([
-                  a,
-                  b,
-                  c,
-                  d,
-                  e,
-                  f
-              ]);
-          }
+              ]
+          }, options);
       }
       toString() {
-          const {a, b, c, d, e, f} = this.options.transform;
           const serialized = {
               name: this.id.name,
               iconsetId: this.id.iconsetId,
               params: this.options.params,
-              transform: {
-                  a,
-                  b,
-                  c,
-                  d,
-                  e,
-                  f
-              }
+              transform: this.options.transform
           };
           return JSON.stringify(serialized);
       }
@@ -13713,29 +13694,22 @@
           let name, iconsetId, params, transform;
           try {
               ({name, iconsetId, params, transform} = JSON.parse(str) || {});
-          } catch (e2) {
+          } catch (e) {
               return null;
           }
           if (!name)
               return null;
-          const {a, b, c, d, e, f} = transform || {};
           return new ImageVariant({
               name,
               iconsetId
           }, {
               params,
-              transform: new DOMMatrix([
-                  a,
-                  b,
-                  c,
-                  d,
-                  e,
-                  f
-              ])
+              transform
           });
       }
-      scaleSelf(factor, yFactor) {
-          this.options.transform.scaleSelf(factor, yFactor);
+      scaleSelf(factor, yFactor = factor) {
+          this.options.transform[0] *= factor;
+          this.options.transform[3] *= yFactor;
           return this;
       }
   }
