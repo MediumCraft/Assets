@@ -1,5 +1,5 @@
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-11)
+ * @license Highcharts JS v12.4.0-modified (2025-11-13)
  * @module highcharts/highcharts
  *
  * (c) 2009-2025 Torstein Honsi
@@ -24,7 +24,7 @@ return /******/ (function() { // webpackBootstrap
 /***/ (function() {
 
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-11)
+ * @license Highcharts JS v12.4.0-modified (2025-11-13)
  * @module highcharts/polyfills
  *
  * (c) 2009-2025 Torstein Honsi
@@ -33823,7 +33823,8 @@ var Series = /** @class */ (function () {
             dataSorting = options.dataSorting,
             oldData = this.points,
             pointsToAdd = [],
-            equalLength = data.length === oldData.length;
+            equalLength = data.length === oldData.length,
+            oldXIncrement = this.xIncrement;
         var hasUpdatedByKey,
             i,
             point,
@@ -33919,7 +33920,8 @@ var Series = /** @class */ (function () {
             _this.addPoint(point, false, void 0, void 0, false);
         }, this);
         var xData = this.getColumn('x');
-        if (this.xIncrement === null &&
+        if (oldXIncrement !== null &&
+            this.xIncrement === null &&
             xData.length) {
             this.xIncrement = Series_arrayMax(xData);
             this.autoIncrement();
@@ -50861,7 +50863,7 @@ var Responsive;
 
 ;// ./code/es5/es-modules/masters/highcharts.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-11)
+ * @license Highcharts JS v12.4.0-modified (2025-11-13)
  * @module highcharts/highcharts
  *
  * (c) 2009-2025 Highsoft AS

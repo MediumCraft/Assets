@@ -1,5 +1,5 @@
 /**
- * @license Highchart Stock v12.4.0-modified (2025-11-11)
+ * @license Highchart Stock v12.4.0-modified (2025-11-13)
  * @module highcharts/highstock
  *
  * (c) 2009-2025 Highsoft AS

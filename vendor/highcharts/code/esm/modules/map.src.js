@@ -1,5 +1,5 @@
 /**
- * @license Highmaps JS v12.4.0-modified (2025-11-11)
+ * @license Highmaps JS v12.4.0-modified (2025-11-13)
  * @module highcharts/modules/map
  * @requires highcharts
  *
@@ -1517,7 +1517,7 @@ Array.prototype.push.apply((external_highcharts_src_js_default_Axis_default()).k
 
 ;// ./code/es-modules/masters/modules/coloraxis.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-11)
+ * @license Highcharts JS v12.4.0-modified (2025-11-13)
  * @module highcharts/modules/color-axis
  * @requires highcharts
  *

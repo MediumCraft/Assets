@@ -1,5 +1,5 @@
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-11)
+ * @license Highcharts JS v12.4.0-modified (2025-11-13)
  * @module highcharts/modules/cylinder
  * @requires highcharts
  * @requires highcharts/highcharts-3d
@@ -5596,7 +5596,7 @@ external_highcharts_src_js_default_SeriesRegistry_default().registerSeriesType('
 
 ;// ./code/es-modules/masters/highcharts-3d.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-11)
+ * @license Highcharts JS v12.4.0-modified (2025-11-13)
  * @module highcharts/highcharts-3d
  * @requires highcharts
  *

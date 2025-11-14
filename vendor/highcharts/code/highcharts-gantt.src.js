@@ -1,5 +1,5 @@
 /**
- * @license Highcharts Gantt JS v12.4.0-modified (2025-11-11)
+ * @license Highcharts Gantt JS v12.4.0-modified (2025-11-13)
  * @module highcharts/highcharts-gantt
  *
  * (c) 2017-2025 Highsoft AS
@@ -32009,7 +32009,7 @@ class Series {
      * @function Highcharts.Series#updateData
      */
     updateData(data, animation) {
-        const { options, requireSorting } = this, dataSorting = options.dataSorting, oldData = this.points, pointsToAdd = [], equalLength = data.length === oldData.length;
+        const { options, requireSorting } = this, dataSorting = options.dataSorting, oldData = this.points, pointsToAdd = [], equalLength = data.length === oldData.length, oldXIncrement = this.xIncrement;
         let hasUpdatedByKey, i, point, lastIndex, succeeded = true;
         this.xIncrement = null;
         // Iterate the new data
@@ -32097,7 +32097,8 @@ class Series {
             this.addPoint(point, false, void 0, void 0, false);
         }, this);
         const xData = this.getColumn('x');
-        if (this.xIncrement === null &&
+        if (oldXIncrement !== null &&
+            this.xIncrement === null &&
             xData.length) {
             this.xIncrement = Series_arrayMax(xData);
             this.autoIncrement();
@@ -47475,7 +47476,7 @@ var Responsive;
 
 ;// ./code/es-modules/masters/highcharts.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-11)
+ * @license Highcharts JS v12.4.0-modified (2025-11-13)
  * @module highcharts/highcharts
  *
  * (c) 2009-2025 Highsoft AS
@@ -56296,7 +56297,7 @@ Pathfinder.prototype.algorithms = PathfinderAlgorithms;
 
 ;// ./code/es-modules/masters/modules/pathfinder.src.js
 /**
- * @license Highcharts Gantt JS v12.4.0-modified (2025-11-11)
+ * @license Highcharts Gantt JS v12.4.0-modified (2025-11-13)
  * @module highcharts/modules/pathfinder
  * @requires highcharts
  *
@@ -56426,7 +56427,7 @@ const StaticScale = {
 
 ;// ./code/es-modules/masters/modules/static-scale.src.js
 /**
- * @license Highcharts Gantt JS v12.4.0-modified (2025-11-11)
+ * @license Highcharts Gantt JS v12.4.0-modified (2025-11-13)
  * @module highcharts/modules/static-scale
  * @requires highcharts
  *
@@ -57239,7 +57240,7 @@ Series_SeriesRegistry.registerSeriesType('xrange', XRangeSeries);
 
 ;// ./code/es-modules/masters/modules/xrange.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-11)
+ * @license Highcharts JS v12.4.0-modified (2025-11-13)
  * @module highcharts/modules/xrange
  * @requires highcharts
  *
@@ -60816,7 +60817,7 @@ Series_SeriesRegistry.registerSeriesType('gantt', GanttSeries);
 
 ;// ./code/es-modules/masters/modules/gantt.src.js
 /**
- * @license Highcharts Gantt JS v12.4.0-modified (2025-11-11)
+ * @license Highcharts Gantt JS v12.4.0-modified (2025-11-13)
  * @module highcharts/modules/gantt
  * @requires highcharts
  *

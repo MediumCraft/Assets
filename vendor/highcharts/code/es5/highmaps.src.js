@@ -1,5 +1,5 @@
 /**
- * @license Highcharts Maps v12.4.0-modified (2025-11-11)
+ * @license Highcharts Maps v12.4.0-modified (2025-11-13)
  * @module highcharts/highmaps
  *
  * (c) 2011-2025 Highsoft AS
@@ -33650,7 +33650,8 @@ var Series = /** @class */ (function () {
             dataSorting = options.dataSorting,
             oldData = this.points,
             pointsToAdd = [],
-            equalLength = data.length === oldData.length;
+            equalLength = data.length === oldData.length,
+            oldXIncrement = this.xIncrement;
         var hasUpdatedByKey,
             i,
             point,
@@ -33746,7 +33747,8 @@ var Series = /** @class */ (function () {
             _this.addPoint(point, false, void 0, void 0, false);
         }, this);
         var xData = this.getColumn('x');
-        if (this.xIncrement === null &&
+        if (oldXIncrement !== null &&
+            this.xIncrement === null &&
             xData.length) {
             this.xIncrement = Series_arrayMax(xData);
             this.autoIncrement();
@@ -50688,7 +50690,7 @@ var Responsive;
 
 ;// ./code/es5/es-modules/masters/highcharts.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-11)
+ * @license Highcharts JS v12.4.0-modified (2025-11-13)
  * @module highcharts/highcharts
  *
  * (c) 2009-2025 Highsoft AS
@@ -52393,7 +52395,7 @@ Array.prototype.push.apply(Axis_Axis.keepProps, ColorAxis.keepProps);
 
 ;// ./code/es5/es-modules/masters/modules/coloraxis.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-11)
+ * @license Highcharts JS v12.4.0-modified (2025-11-13)
  * @module highcharts/modules/color-axis
  * @requires highcharts
  *
@@ -63142,7 +63144,7 @@ Series_SeriesRegistry.registerSeriesType('heatmap', HeatmapSeries);
 
 ;// ./code/es5/es-modules/masters/modules/map.src.js
 /**
- * @license Highmaps JS v12.4.0-modified (2025-11-11)
+ * @license Highmaps JS v12.4.0-modified (2025-11-13)
  * @module highcharts/modules/map
  * @requires highcharts
  *

@@ -657,7 +657,7 @@ var Series = /** @class */ (function () {
     Series.prototype.updateData = function (data, animation) {
         var _this = this;
         var _a;
-        var _b = this, options = _b.options, requireSorting = _b.requireSorting, dataSorting = options.dataSorting, oldData = this.points, pointsToAdd = [], equalLength = data.length === oldData.length;
+        var _b = this, options = _b.options, requireSorting = _b.requireSorting, dataSorting = options.dataSorting, oldData = this.points, pointsToAdd = [], equalLength = data.length === oldData.length, oldXIncrement = this.xIncrement;
         var hasUpdatedByKey, i, point, lastIndex, succeeded = true;
         this.xIncrement = null;
         // Iterate the new data
@@ -746,7 +746,8 @@ var Series = /** @class */ (function () {
             _this.addPoint(point, false, void 0, void 0, false);
         }, this);
         var xData = this.getColumn('x');
-        if (this.xIncrement === null &&
+        if (oldXIncrement !== null &&
+            this.xIncrement === null &&
             xData.length) {
             this.xIncrement = arrayMax(xData);
             this.autoIncrement();
