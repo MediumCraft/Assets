@@ -1,5 +1,5 @@
 /**
- * @license Highstock JS v12.4.0-modified (2025-11-13)
+ * @license Highstock JS v12.4.0-modified (2025-11-15)
  * @module highcharts/indicators/aroon-oscillator
  * @requires highcharts
  * @requires highcharts/modules/stock

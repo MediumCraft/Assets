@@ -1,6 +1,6 @@
 /**
  * MapLibre GL JS
- * @license 3-Clause BSD. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v5.12.0/LICENSE.txt
+ * @license 3-Clause BSD. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v5.13.0/LICENSE.txt
  */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
@@ -10,7 +10,7 @@ typeof define === 'function' && define.amd ? define(['exports'], factory) :
 
 var name = "maplibre-gl";
 var description = "BSD licensed community fork of mapbox-gl, a WebGL interactive maps library";
-var version$2 = "5.12.0";
+var version$2 = "5.13.0";
 var main = "dist/maplibre-gl.js";
 var style = "dist/maplibre-gl.css";
 var license = "BSD-3-Clause";
@@ -79,14 +79,14 @@ var devDependencies = {
 	"@types/request": "^2.48.13",
 	"@types/shuffle-seed": "^1.1.3",
 	"@types/window-or-global": "^1.0.6",
-	"@typescript-eslint/eslint-plugin": "^8.46.3",
+	"@typescript-eslint/eslint-plugin": "^8.46.4",
 	"@typescript-eslint/parser": "^8.43.0",
 	"@unicode/unicode-17.0.0": "^1.6.14",
 	"@vitest/coverage-v8": "4.0.8",
 	"@vitest/eslint-plugin": "^1.4.2",
 	"@vitest/ui": "4.0.8",
 	address: "^2.0.3",
-	autoprefixer: "^10.4.21",
+	autoprefixer: "^10.4.22",
 	benchmark: "^2.1.4",
 	canvas: "^3.2.0",
 	cspell: "^9.3.0",
@@ -100,7 +100,7 @@ var devDependencies = {
 	"eslint-plugin-html": "^8.1.3",
 	"eslint-plugin-import": "^2.32.0",
 	"eslint-plugin-react": "^7.37.5",
-	"eslint-plugin-tsdoc": "0.4.0",
+	"eslint-plugin-tsdoc": "0.5.0",
 	expect: "^30.2.0",
 	glob: "^11.0.3",
 	globals: "^16.5.0",
@@ -124,7 +124,7 @@ var devDependencies = {
 	react: "^19.1.1",
 	"react-dom": "^19.2.0",
 	regenerate: "^1.4.2",
-	rollup: "^4.53.1",
+	rollup: "^4.53.2",
 	"rollup-plugin-sourcemaps2": "^0.5.4",
 	"rollup-plugin-visualizer": "^6.0.5",
 	rw: "^1.3.3",
@@ -41778,7 +41778,7 @@ class GeoJSONSource extends Evented {
                     options.request.collectResourceTiming = this._collectResourceTiming;
                 }
                 else {
-                    options.data = JSON.stringify(data);
+                    options.data = data;
                 }
                 this._pendingWorkerUpdate.data = undefined;
             }
@@ -41797,11 +41797,11 @@ class GeoJSONSource extends Evented {
                     this.fire(new Event('dataabort', { dataType: 'source' }));
                     return;
                 }
-                if (!result.shouldApplyDiff) {
-                    this._data = { geojson: result.data };
+                if (result.applyDiff) {
+                    this._applyDiff(diff);
                 }
                 else {
-                    this._applyDiff(diff);
+                    this._data = { geojson: result.data };
                 }
                 let resourceTiming = null;
                 if (result.resourceTiming && result.resourceTiming[this.id]) {
@@ -41844,18 +41844,18 @@ class GeoJSONSource extends Evented {
             applySourceDiff(this._data.updateable, diff, promoteId);
         }
         else {
-            // This should never happen because the worker would not set `shouldApplyDiff: true` if the source was not updateable.
+            // This should never happen because the worker would not set `applyDiff: true` if the source was not updateable.
             warnOnce('Cannot apply GeoJSONSource#updateData due to internal error');
         }
     }
     _getShouldReloadTileOptions(diff) {
-        if (!diff || diff.removeAll)
+        if (this._options.cluster || !diff || diff.removeAll)
             return undefined;
         const { add = [], update = [], remove = [] } = (diff || {});
         const prevIds = new Set([...update.map(u => u.id), ...remove]);
         for (const id of prevIds.values()) {
-            if (typeof id !== 'number') {
-                warnOnce(`GeoJSONSource "${this.id}": updateData is slower when using string GeoJSON feature IDs (e.g. "${id}"). Consider using numeric IDs for better performance.`);
+            if (typeof id !== 'number' && this.promoteId == null) {
+                warnOnce(`GeoJSONSource "${this.id}": updateData is slower when using string GeoJSON feature IDs (e.g. "${id}"). Consider using promoteId or numeric IDs for better performance.`);
                 return undefined;
             }
         }
@@ -41883,7 +41883,8 @@ class GeoJSONSource extends Evented {
         for (let i = 0; i < tile.latestFeatureIndex.featureIndexArray.length; i++) {
             const featureIndex = tile.latestFeatureIndex.featureIndexArray.get(i);
             const feature = layers[GEOJSON_TILE_LAYER_NAME].feature(featureIndex.featureIndex);
-            if (prevIds.has(feature.id)) {
+            const id = tile.latestFeatureIndex.getId(feature, GEOJSON_TILE_LAYER_NAME);
+            if (prevIds.has(id)) {
                 return true;
             }
         }

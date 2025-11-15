@@ -1,5 +1,5 @@
 /**
- * @license Highstock JS v12.4.0-modified (2025-11-13)
+ * @license Highstock JS v12.4.0-modified (2025-11-15)
  * @module highcharts/indicators/cmf
  * @requires highcharts
  * @requires highcharts/modules/stock
@@ -1008,16 +1008,25 @@ class DataTableCore {
      * @emits #afterSetRows
      */
     setRow(row, rowIndex = this.rowCount, insert, eventDetail) {
-        const { columns } = this, indexRowCount = insert ? this.rowCount + 1 : rowIndex + 1;
-        objectEach(row, (cellValue, columnId) => {
-            let column = columns[columnId] ||
-                eventDetail?.addColumns !== false && new Array(indexRowCount);
+        const { columns } = this, indexRowCount = insert ? this.rowCount + 1 : rowIndex + 1, rowKeys = Object.keys(row);
+        if (eventDetail?.addColumns !== false) {
+            for (let i = 0, iEnd = rowKeys.length; i < iEnd; i++) {
+                const key = rowKeys[i];
+                if (!columns[key]) {
+                    columns[key] = [];
+                }
+            }
+        }
+        objectEach(columns, (column, columnId) => {
+            if (!column && eventDetail?.addColumns !== false) {
+                column = new Array(indexRowCount);
+            }
             if (column) {
                 if (insert) {
-                    column = splice(column, rowIndex, 0, true, [cellValue]).array;
+                    column = splice(column, rowIndex, 0, true, [row[columnId] ?? null]).array;
                 }
                 else {
-                    column[rowIndex] = cellValue;
+                    column[rowIndex] = row[columnId] ?? null;
                 }
                 columns[columnId] = column;
             }
@@ -6891,7 +6900,7 @@ var BrokenAxis;
 
 ;// ./code/es-modules/masters/modules/broken-axis.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-13)
+ * @license Highcharts JS v12.4.0-modified (2025-11-15)
  * @module highcharts/modules/broken-axis
  * @requires highcharts
  *
@@ -8383,7 +8392,7 @@ const DataGroupingComposition = {
 
 ;// ./code/es-modules/masters/modules/datagrouping.src.js
 /**
- * @license Highstock JS v12.4.0-modified (2025-11-13)
+ * @license Highstock JS v12.4.0-modified (2025-11-15)
  * @module highcharts/modules/datagrouping
  * @requires highcharts
  *
@@ -8720,7 +8729,7 @@ const MouseWheelZoomComposition = {
 
 ;// ./code/es-modules/masters/modules/mouse-wheel-zoom.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-13)
+ * @license Highcharts JS v12.4.0-modified (2025-11-15)
  * @module highcharts/modules/mouse-wheel-zoom
  * @requires highcharts
  *
@@ -8740,7 +8749,7 @@ mouse_wheel_zoom_src_G.MouseWheelZoom.compose(mouse_wheel_zoom_src_G.Chart);
 
 ;// ./code/es-modules/masters/modules/stock.src.js
 /**
- * @license Highstock JS v12.4.0-modified (2025-11-13)
+ * @license Highstock JS v12.4.0-modified (2025-11-15)
  * @module highcharts/modules/stock
  * @requires highcharts
  *

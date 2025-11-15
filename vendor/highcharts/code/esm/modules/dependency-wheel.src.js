@@ -1,5 +1,5 @@
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-13)
+ * @license Highcharts JS v12.4.0-modified (2025-11-15)
  * @module highcharts/modules/dependency-wheel
  * @requires highcharts
  * @requires highcharts/modules/sankey
@@ -2286,7 +2286,7 @@ external_highcharts_src_js_default_SeriesRegistry_default().registerSeriesType('
 
 ;// ./code/es-modules/masters/modules/sankey.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-13)
+ * @license Highcharts JS v12.4.0-modified (2025-11-15)
  * @module highcharts/modules/sankey
  * @requires highcharts
  *

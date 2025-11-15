@@ -1,6 +1,6 @@
 /**
  * MapLibre GL JS
- * @license 3-Clause BSD. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v5.12.0/LICENSE.txt
+ * @license 3-Clause BSD. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v5.13.0/LICENSE.txt
  */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
@@ -42575,6 +42575,9 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
         this._dataUpdateable = new Map();
         this._createGeoJSONIndex = createGeoJSONIndexFunc;
     }
+    /**
+     * Retrieves and sends loaded vector tiles to the main thread.
+     */
     loadVectorTile(params, _abortController) {
         return performance.__awaiter(this, void 0, void 0, function* () {
             const canonical = params.tileID.canonical;
@@ -42590,10 +42593,10 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
         });
     }
     /**
-     * Fetches (if appropriate), parses, and index geojson data into tiles. This
+     * Fetches (if appropriate), parses and indexes geojson data into tiles. This
      * preparatory method must be called before {@link GeoJSONWorkerSource.loadTile}
      * can correctly serve up tiles. The first call to this method must contain a valid
-     * {@link params.data}, {@link params.request}, or {@link params.dataDiff}. Subsequent
+     * {@link params.data}, {@link params.request} or {@link params.dataDiff}. Subsequent
      * calls may omit these parameters to reprocess the existing data (such as to update
      * clustering options).
      *
@@ -42609,44 +42612,50 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
         return performance.__awaiter(this, void 0, void 0, function* () {
             var _a;
             (_a = this._pendingRequest) === null || _a === void 0 ? void 0 : _a.abort();
-            const perf = (params && params.request && params.request.collectResourceTiming) ?
-                new performance.RequestPerformance(params.request) : false;
+            const perf = this._startPerformance(params);
             this._pendingRequest = new AbortController();
             try {
-                // Load and process data if no data has been loaded previously, or if there is
-                // a new request, data, or dataDiff to process.
+                // Load and process the GeoJSON data if it hasn't been loaded yet or if the data is changed.
                 if (!this._pendingData || params.request || params.data || params.dataDiff) {
                     this._pendingData = this.loadAndProcessGeoJSON(params, this._pendingRequest);
                 }
                 const data = yield this._pendingData;
                 this._geoJSONIndex = this._createGeoJSONIndex(data, params);
                 this.loaded = {};
+                // Let the main thread know whether to apply a diff - or return the full data set.
                 const result = params.dataDiff && performance.isUpdateableGeoJSON(data) ?
-                    { shouldApplyDiff: true } :
+                    { applyDiff: true } :
                     { data };
-                if (perf) {
-                    const resourceTimingData = perf.finish();
-                    // it's necessary to eval the result of getEntriesByName() here via parse/stringify
-                    // late evaluation in the main thread causes TypeError: illegal invocation
-                    if (resourceTimingData) {
-                        result.resourceTiming = {};
-                        result.resourceTiming[params.source] = JSON.parse(JSON.stringify(resourceTimingData));
-                    }
-                }
+                this._finishPerformance(perf, params, result);
                 return result;
             }
             catch (err) {
                 delete this._pendingRequest;
-                if (performance.isAbortError(err)) {
+                if (performance.isAbortError(err))
                     return { abandoned: true };
-                }
                 throw err;
             }
         });
     }
+    _startPerformance(params) {
+        var _a;
+        if (!((_a = params === null || params === void 0 ? void 0 : params.request) === null || _a === void 0 ? void 0 : _a.collectResourceTiming))
+            return;
+        return new performance.RequestPerformance(params.request);
+    }
+    _finishPerformance(perf, params, result) {
+        if (!perf)
+            return;
+        const resourceTimingData = perf.finish();
+        // it's necessary to eval the result of getEntriesByName() here via parse/stringify
+        // late evaluation in the main thread causes TypeError: illegal invocation
+        if (resourceTimingData) {
+            result.resourceTiming = {};
+            result.resourceTiming[params.source] = JSON.parse(JSON.stringify(resourceTimingData));
+        }
+    }
     /**
-     * Allows to get the source's actual GeoJSON.
-     *
+     * Get the source's full GeoJSON data source.
      * @returns a promise which is resolved with the source's actual GeoJSON
      */
     getData() {
@@ -42664,7 +42673,8 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
     * @returns A promise that resolves when the tile is reloaded
     */
     reloadTile(params) {
-        const loaded = this.loaded, uid = params.uid;
+        const loaded = this.loaded;
+        const uid = params.uid;
         if (loaded && loaded[uid]) {
             return super.reloadTile(params);
         }
@@ -42673,9 +42683,8 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
         }
     }
     /**
-     * Fetch, parse and process GeoJSON according to the given params.
-     *
-     * Defers to {@link GeoJSONWorkerSource.loadGeoJSON} for the fetching and parsing.
+     * Fetch, parse and process GeoJSON according to the given parameters.
+     * Defers to {@link GeoJSONWorkerSource._loadGeoJSONFromString} for the fetching and parsing.
      *
      * @param params - the parameters
      * @param abortController - the abort controller that allows aborting this operation
@@ -42683,59 +42692,76 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
      */
     loadAndProcessGeoJSON(params, abortController) {
         return performance.__awaiter(this, void 0, void 0, function* () {
-            let data = yield this.loadGeoJSON(params, abortController);
+            let data;
+            if (params.request) {
+                // Data is loaded from a fetchable URL
+                data = yield this.loadGeoJSONFromUrl(params.request, params.promoteId, abortController);
+            }
+            else if (params.data) {
+                // Data is loaded from a GeoJSON Object
+                data = this._loadGeoJSONFromObject(params.data, params.promoteId);
+            }
+            else if (params.dataDiff) {
+                // Data is loaded from a GeoJSONSourceDiff
+                data = this._loadGeoJSONFromDiff(params.dataDiff, params.promoteId, params.source);
+            }
             delete this._pendingRequest;
             if (typeof data !== 'object') {
                 throw new Error(`Input data given to '${params.source}' is not a valid GeoJSON object.`);
             }
+            // Generate winding-order compliant GeoJSON Polygon and MultiPolygon geometries
             rewind$1(data, true);
             if (params.filter) {
-                const compiled = performance.createExpression(params.filter, { type: 'boolean', 'property-type': 'data-driven', overridable: false, transition: false });
-                if (compiled.result === 'error')
-                    throw new Error(compiled.value.map(err => `${err.key}: ${err.message}`).join(', '));
-                const features = data.features.filter(feature => compiled.value.evaluate({ zoom: 0 }, feature));
-                data = { type: 'FeatureCollection', features };
+                data = this._filterGeoJSON(data, params.filter);
             }
             return data;
         });
     }
     /**
-     * Fetch and parse GeoJSON according to the given params.
-     *
-     * GeoJSON is loaded and parsed from `params.url` if it exists, or else
-     * expected as a literal (string or object) `params.data`.
-     *
-     * @param params - the parameters
-     * @param abortController - the abort controller that allows aborting this operation
-     * @returns a promise that resolves when the data is loaded
+     * Loads GeoJSON from a URL and sets the sources updateable GeoJSON object.
      */
-    loadGeoJSON(params, abortController) {
+    loadGeoJSONFromUrl(request, promoteId, abortController) {
         return performance.__awaiter(this, void 0, void 0, function* () {
-            const { promoteId } = params;
-            if (params.request) {
-                const response = yield performance.getJSON(params.request, abortController);
-                this._dataUpdateable = performance.isUpdateableGeoJSON(response.data, promoteId) ? performance.toUpdateable(response.data, promoteId) : undefined;
-                return response.data;
-            }
-            if (typeof params.data === 'string') {
-                try {
-                    const parsed = JSON.parse(params.data);
-                    this._dataUpdateable = performance.isUpdateableGeoJSON(parsed, promoteId) ? performance.toUpdateable(parsed, promoteId) : undefined;
-                    return parsed;
-                }
-                catch (_a) {
-                    throw new Error(`Input data given to '${params.source}' is not a valid GeoJSON object.`);
-                }
-            }
-            if (!params.dataDiff) {
-                throw new Error(`Input data given to '${params.source}' is not a valid GeoJSON object.`);
-            }
-            if (!this._dataUpdateable) {
-                throw new Error(`Cannot update existing geojson data in ${params.source}`);
-            }
-            performance.applySourceDiff(this._dataUpdateable, params.dataDiff, promoteId);
-            return { type: 'FeatureCollection', features: Array.from(this._dataUpdateable.values()) };
+            const response = yield performance.getJSON(request, abortController);
+            this._dataUpdateable = performance.isUpdateableGeoJSON(response.data, promoteId) ? performance.toUpdateable(response.data, promoteId) : undefined;
+            return response.data;
         });
+    }
+    /**
+     * Loads GeoJSON from a string and sets the sources updateable GeoJSON object.
+     */
+    _loadGeoJSONFromObject(data, promoteId) {
+        this._dataUpdateable = performance.isUpdateableGeoJSON(data, promoteId) ? performance.toUpdateable(data, promoteId) : undefined;
+        return data;
+    }
+    /**
+     * Loads GeoJSON from a GeoJSONSourceDiff and applies it to the existing source updateable GeoJSON object.
+     */
+    _loadGeoJSONFromDiff(dataDiff, promoteId, source) {
+        if (!this._dataUpdateable) {
+            throw new Error(`Cannot update existing geojson data in ${source}`);
+        }
+        // Incrementally apply the diff to existing source data
+        performance.applySourceDiff(this._dataUpdateable, dataDiff, promoteId);
+        const features = Array.from(this._dataUpdateable.values());
+        return this._toFeatureCollection(features);
+    }
+    /**
+     * Applies a filter to a GeoJSON object.
+     */
+    _filterGeoJSON(data, filter) {
+        const compiled = performance.createExpression(filter, { type: 'boolean', 'property-type': 'data-driven', overridable: false, transition: false });
+        if (compiled.result === 'error') {
+            throw new Error(compiled.value.map(err => `${err.key}: ${err.message}`).join(', '));
+        }
+        const features = data.features.filter(feature => compiled.value.evaluate({ zoom: 0 }, feature));
+        return this._toFeatureCollection(features);
+    }
+    /**
+     * Converts an array of GeoJSON features into a GeoJSON FeatureCollection.
+     */
+    _toFeatureCollection(features) {
+        return { type: 'FeatureCollection', features };
     }
     removeSource(_params) {
         return performance.__awaiter(this, void 0, void 0, function* () {
@@ -42755,8 +42781,10 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
     }
 }
 function createGeoJSONIndex(data, params) {
-    return params.cluster ? new Supercluster(getSuperclusterOptions(params)).load(data.features) :
-        geojsonvt(data, params.geojsonVtOptions);
+    if (params.cluster) {
+        return new Supercluster(getSuperclusterOptions(params)).load(data.features);
+    }
+    return geojsonvt(data, params.geojsonVtOptions);
 }
 function getSuperclusterOptions({ superclusterOptions, clusterProperties }) {
     if (!clusterProperties || !superclusterOptions)
@@ -42994,7 +43022,7 @@ define('index', ['exports', './shared'], (function (exports$1, performance$1) { 
 
 var name = "maplibre-gl";
 var description = "BSD licensed community fork of mapbox-gl, a WebGL interactive maps library";
-var version$2 = "5.12.0";
+var version$2 = "5.13.0";
 var main = "dist/maplibre-gl.js";
 var style = "dist/maplibre-gl.css";
 var license = "BSD-3-Clause";
@@ -43063,14 +43091,14 @@ var devDependencies = {
 	"@types/request": "^2.48.13",
 	"@types/shuffle-seed": "^1.1.3",
 	"@types/window-or-global": "^1.0.6",
-	"@typescript-eslint/eslint-plugin": "^8.46.3",
+	"@typescript-eslint/eslint-plugin": "^8.46.4",
 	"@typescript-eslint/parser": "^8.43.0",
 	"@unicode/unicode-17.0.0": "^1.6.14",
 	"@vitest/coverage-v8": "4.0.8",
 	"@vitest/eslint-plugin": "^1.4.2",
 	"@vitest/ui": "4.0.8",
 	address: "^2.0.3",
-	autoprefixer: "^10.4.21",
+	autoprefixer: "^10.4.22",
 	benchmark: "^2.1.4",
 	canvas: "^3.2.0",
 	cspell: "^9.3.0",
@@ -43084,7 +43112,7 @@ var devDependencies = {
 	"eslint-plugin-html": "^8.1.3",
 	"eslint-plugin-import": "^2.32.0",
 	"eslint-plugin-react": "^7.37.5",
-	"eslint-plugin-tsdoc": "0.4.0",
+	"eslint-plugin-tsdoc": "0.5.0",
 	expect: "^30.2.0",
 	glob: "^11.0.3",
 	globals: "^16.5.0",
@@ -43108,7 +43136,7 @@ var devDependencies = {
 	react: "^19.1.1",
 	"react-dom": "^19.2.0",
 	regenerate: "^1.4.2",
-	rollup: "^4.53.1",
+	rollup: "^4.53.2",
 	"rollup-plugin-sourcemaps2": "^0.5.4",
 	"rollup-plugin-visualizer": "^6.0.5",
 	rw: "^1.3.3",
@@ -46490,7 +46518,7 @@ class GeoJSONSource extends performance$1.Evented {
                     options.request.collectResourceTiming = this._collectResourceTiming;
                 }
                 else {
-                    options.data = JSON.stringify(data);
+                    options.data = data;
                 }
                 this._pendingWorkerUpdate.data = undefined;
             }
@@ -46509,11 +46537,11 @@ class GeoJSONSource extends performance$1.Evented {
                     this.fire(new performance$1.Event('dataabort', { dataType: 'source' }));
                     return;
                 }
-                if (!result.shouldApplyDiff) {
-                    this._data = { geojson: result.data };
+                if (result.applyDiff) {
+                    this._applyDiff(diff);
                 }
                 else {
-                    this._applyDiff(diff);
+                    this._data = { geojson: result.data };
                 }
                 let resourceTiming = null;
                 if (result.resourceTiming && result.resourceTiming[this.id]) {
@@ -46556,18 +46584,18 @@ class GeoJSONSource extends performance$1.Evented {
             performance$1.applySourceDiff(this._data.updateable, diff, promoteId);
         }
         else {
-            // This should never happen because the worker would not set `shouldApplyDiff: true` if the source was not updateable.
+            // This should never happen because the worker would not set `applyDiff: true` if the source was not updateable.
             performance$1.warnOnce('Cannot apply GeoJSONSource#updateData due to internal error');
         }
     }
     _getShouldReloadTileOptions(diff) {
-        if (!diff || diff.removeAll)
+        if (this._options.cluster || !diff || diff.removeAll)
             return undefined;
         const { add = [], update = [], remove = [] } = (diff || {});
         const prevIds = new Set([...update.map(u => u.id), ...remove]);
         for (const id of prevIds.values()) {
-            if (typeof id !== 'number') {
-                performance$1.warnOnce(`GeoJSONSource "${this.id}": updateData is slower when using string GeoJSON feature IDs (e.g. "${id}"). Consider using numeric IDs for better performance.`);
+            if (typeof id !== 'number' && this.promoteId == null) {
+                performance$1.warnOnce(`GeoJSONSource "${this.id}": updateData is slower when using string GeoJSON feature IDs (e.g. "${id}"). Consider using promoteId or numeric IDs for better performance.`);
                 return undefined;
             }
         }
@@ -46595,7 +46623,8 @@ class GeoJSONSource extends performance$1.Evented {
         for (let i = 0; i < tile.latestFeatureIndex.featureIndexArray.length; i++) {
             const featureIndex = tile.latestFeatureIndex.featureIndexArray.get(i);
             const feature = layers[performance$1.GEOJSON_TILE_LAYER_NAME].feature(featureIndex.featureIndex);
-            if (prevIds.has(feature.id)) {
+            const id = tile.latestFeatureIndex.getId(feature, performance$1.GEOJSON_TILE_LAYER_NAME);
+            if (prevIds.has(id)) {
                 return true;
             }
         }

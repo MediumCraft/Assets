@@ -7486,11 +7486,17 @@ type GeoJSONWorkerOptions = {
 };
 type LoadGeoJSONParameters = GeoJSONWorkerOptions & {
 	type: "geojson";
+	/**
+	 * Request parameters including a URL to fetch GeoJSON data.
+	 */
 	request?: RequestParameters;
 	/**
-	 * Literal GeoJSON data. Must be provided if `request.url` is not.
+	 * GeoJSON data to set as the source's data.
 	 */
-	data?: string;
+	data?: GeoJSON.GeoJSON;
+	/**
+	 * GeoJSONSourceDiff to apply to the existing GeoJSON source data.
+	 */
 	dataDiff?: GeoJSONSourceDiff;
 };
 type RTLPluginStatus = "unavailable" | "deferred" | "requested" | "loading" | "loaded" | "error";
@@ -7509,7 +7515,7 @@ type GetClusterLeavesParams = ClusterIDAndSource & {
 };
 type GeoJSONWorkerSourceLoadDataResult = {
 	data?: GeoJSON.GeoJSON;
-	shouldApplyDiff?: boolean;
+	applyDiff?: boolean;
 	resourceTiming?: {
 		[_: string]: Array<PerformanceResourceTiming>;
 	};

@@ -859,7 +859,7 @@ var DataTable = /** @class */ (function (_super) {
      * Cell values to set.
      *
      * @param {number} [rowIndex]
-     * Index of the row to set. Leave `undefind` to add as a new row.
+     * Index of the row to set. Leave `undefined` to add as a new row.
      *
      * @param {boolean} [insert]
      * Whether to insert the row at the given index, or to overwrite the row.
@@ -924,7 +924,7 @@ var DataTable = /** @class */ (function (_super) {
                 }
             }
             else {
-                _super.prototype.setRow.call(this, row, i2, void 0, { silent: true });
+                _super.prototype.setRow.call(this, row, i2, insert, { silent: true });
             }
         }
         var indexRowCount = insert ?

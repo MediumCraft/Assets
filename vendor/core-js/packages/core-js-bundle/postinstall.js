@@ -59,4 +59,4 @@ function showBanner() {
   console.log(COLOR ? BANNER : BANNER.replace(/\u001B\[\d+m/g, ''));
 }
 
-//if (isBannerRequired()) showBanner();
+if (isBannerRequired()) showBanner();

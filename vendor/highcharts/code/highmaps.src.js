@@ -1,5 +1,5 @@
 /**
- * @license Highcharts Maps v12.4.0-modified (2025-11-13)
+ * @license Highcharts Maps v12.4.0-modified (2025-11-15)
  * @module highcharts/highmaps
  *
  * (c) 2011-2025 Highsoft AS
@@ -28584,16 +28584,25 @@ class DataTableCore {
      * @emits #afterSetRows
      */
     setRow(row, rowIndex = this.rowCount, insert, eventDetail) {
-        const { columns } = this, indexRowCount = insert ? this.rowCount + 1 : rowIndex + 1;
-        DataTableCore_objectEach(row, (cellValue, columnId) => {
-            let column = columns[columnId] ||
-                eventDetail?.addColumns !== false && new Array(indexRowCount);
+        const { columns } = this, indexRowCount = insert ? this.rowCount + 1 : rowIndex + 1, rowKeys = Object.keys(row);
+        if (eventDetail?.addColumns !== false) {
+            for (let i = 0, iEnd = rowKeys.length; i < iEnd; i++) {
+                const key = rowKeys[i];
+                if (!columns[key]) {
+                    columns[key] = [];
+                }
+            }
+        }
+        DataTableCore_objectEach(columns, (column, columnId) => {
+            if (!column && eventDetail?.addColumns !== false) {
+                column = new Array(indexRowCount);
+            }
             if (column) {
                 if (insert) {
-                    column = splice(column, rowIndex, 0, true, [cellValue]).array;
+                    column = splice(column, rowIndex, 0, true, [row[columnId] ?? null]).array;
                 }
                 else {
-                    column[rowIndex] = cellValue;
+                    column[rowIndex] = row[columnId] ?? null;
                 }
                 columns[columnId] = column;
             }
@@ -47470,7 +47479,7 @@ var Responsive;
 
 ;// ./code/es-modules/masters/highcharts.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-13)
+ * @license Highcharts JS v12.4.0-modified (2025-11-15)
  * @module highcharts/highcharts
  *
  * (c) 2009-2025 Highsoft AS
@@ -49042,7 +49051,7 @@ Array.prototype.push.apply(Axis_Axis.keepProps, ColorAxis.keepProps);
 
 ;// ./code/es-modules/masters/modules/coloraxis.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-13)
+ * @license Highcharts JS v12.4.0-modified (2025-11-15)
  * @module highcharts/modules/color-axis
  * @requires highcharts
  *
@@ -58785,7 +58794,7 @@ Series_SeriesRegistry.registerSeriesType('heatmap', HeatmapSeries);
 
 ;// ./code/es-modules/masters/modules/map.src.js
 /**
- * @license Highmaps JS v12.4.0-modified (2025-11-13)
+ * @license Highmaps JS v12.4.0-modified (2025-11-15)
  * @module highcharts/modules/map
  * @requires highcharts
  *

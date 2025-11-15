@@ -1,8 +1,9 @@
 /**
  * core-js 3.46.0
- * © 2025 CoreJS, Inc.
- * license: All Rights Reserved (https://core-js.io)
- * source: [not available for free version] */
+ * © 2014-2025 Denis Pushkarev (zloirock.ru)
+ * license: https://github.com/zloirock/core-js/blob/v3.46.0/LICENSE
+ * source: https://github.com/zloirock/core-js
+ */
 !function (undefined) { 'use strict'; /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -1505,9 +1506,9 @@ var store = module.exports = globalThis[SHARED] || defineGlobalProperty(SHARED, 
 (store.versions || (store.versions = [])).push({
   version: '3.46.0',
   mode: IS_PURE ? 'pure' : 'global',
-  copyright: '© 2025 CoreJS, Inc. (core-js.io)',
-  license: 'All Rights Reserved (https://core-js.io)',
-  source: '[not available for free version]'
+  copyright: '© 2014-2025 Denis Pushkarev (zloirock.ru), 2025 CoreJS Company (core-js.io)',
+  license: 'https://github.com/zloirock/core-js/blob/v3.46.0/LICENSE',
+  source: 'https://github.com/zloirock/core-js'
 });
 
 

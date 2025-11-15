@@ -1,5 +1,5 @@
 /**
- * @license Highchart Stock v12.4.0-modified (2025-11-13)
+ * @license Highchart Stock v12.4.0-modified (2025-11-15)
  * @module highcharts/highstock
  *
  * (c) 2009-2025 Highsoft AS
@@ -30102,16 +30102,28 @@ var DataTableCore = /** @class */ (function () {
     DataTableCore.prototype.setRow = function (row, rowIndex, insert, eventDetail) {
         if (rowIndex === void 0) { rowIndex = this.rowCount; }
         var columns = this.columns,
-            indexRowCount = insert ? this.rowCount + 1 : rowIndex + 1;
-        DataTableCore_objectEach(row, function (cellValue, columnId) {
-            var column = columns[columnId] ||
-                    (eventDetail === null || eventDetail === void 0 ? void 0 : eventDetail.addColumns) !== false && new Array(indexRowCount);
+            indexRowCount = insert ? this.rowCount + 1 : rowIndex + 1,
+            rowKeys = Object.keys(row);
+        if ((eventDetail === null || eventDetail === void 0 ? void 0 : eventDetail.addColumns) !== false) {
+            for (var i = 0, iEnd = rowKeys.length; i < iEnd; i++) {
+                var key = rowKeys[i];
+                if (!columns[key]) {
+                    columns[key] = [];
+                }
+            }
+        }
+        DataTableCore_objectEach(columns, function (column, columnId) {
+            var _a,
+                _b;
+            if (!column && (eventDetail === null || eventDetail === void 0 ? void 0 : eventDetail.addColumns) !== false) {
+                column = new Array(indexRowCount);
+            }
             if (column) {
                 if (insert) {
-                    column = splice(column, rowIndex, 0, true, [cellValue]).array;
+                    column = splice(column, rowIndex, 0, true, [(_a = row[columnId]) !== null && _a !== void 0 ? _a : null]).array;
                 }
                 else {
-                    column[rowIndex] = cellValue;
+                    column[rowIndex] = (_b = row[columnId]) !== null && _b !== void 0 ? _b : null;
                 }
                 columns[columnId] = column;
             }
@@ -50690,7 +50702,7 @@ var Responsive;
 
 ;// ./code/es5/es-modules/masters/highcharts.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-13)
+ * @license Highcharts JS v12.4.0-modified (2025-11-15)
  * @module highcharts/highcharts
  *
  * (c) 2009-2025 Highsoft AS
@@ -62884,7 +62896,7 @@ var BrokenAxis;
 
 ;// ./code/es5/es-modules/masters/modules/broken-axis.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-13)
+ * @license Highcharts JS v12.4.0-modified (2025-11-15)
  * @module highcharts/modules/broken-axis
  * @requires highcharts
  *
@@ -64446,7 +64458,7 @@ var DataGroupingComposition = {
 
 ;// ./code/es5/es-modules/masters/modules/datagrouping.src.js
 /**
- * @license Highstock JS v12.4.0-modified (2025-11-13)
+ * @license Highstock JS v12.4.0-modified (2025-11-15)
  * @module highcharts/modules/datagrouping
  * @requires highcharts
  *
@@ -64801,7 +64813,7 @@ var MouseWheelZoomComposition = {
 
 ;// ./code/es5/es-modules/masters/modules/mouse-wheel-zoom.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-13)
+ * @license Highcharts JS v12.4.0-modified (2025-11-15)
  * @module highcharts/modules/mouse-wheel-zoom
  * @requires highcharts
  *
@@ -64821,7 +64833,7 @@ mouse_wheel_zoom_src_G.MouseWheelZoom.compose(mouse_wheel_zoom_src_G.Chart);
 
 ;// ./code/es5/es-modules/masters/modules/stock.src.js
 /**
- * @license Highstock JS v12.4.0-modified (2025-11-13)
+ * @license Highstock JS v12.4.0-modified (2025-11-15)
  * @module highcharts/modules/stock
  * @requires highcharts
  *

@@ -60,12 +60,15 @@
   "bugs": {
     "url": "https://github.com/zloirock/core-js/issues"
   },
-  "funding": "https://core-js.io",
-  "license": "All Rights Reserved",
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/core-js"
+  },
+  "license": "MIT",
   "author": {
-    "name": "CoreJS, Inc.",
-    "email": "no-reply@core-js.io",
-    "url": "https://core-js.io"
+    "name": "Denis Pushkarev",
+    "email": "zloirock@zloirock.ru",
+    "url": "http://zloirock.ru"
   },
   "main": "index.js",
   "scripts": {

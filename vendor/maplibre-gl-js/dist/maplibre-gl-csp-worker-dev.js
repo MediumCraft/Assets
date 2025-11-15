@@ -1,6 +1,6 @@
 /**
  * MapLibre GL JS
- * @license 3-Clause BSD. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v5.12.0/LICENSE.txt
+ * @license 3-Clause BSD. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v5.13.0/LICENSE.txt
  */
 var maplibregl = (function () {
 'use strict';
@@ -42284,6 +42284,9 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
         this._dataUpdateable = new Map();
         this._createGeoJSONIndex = createGeoJSONIndexFunc;
     }
+    /**
+     * Retrieves and sends loaded vector tiles to the main thread.
+     */
     loadVectorTile(params, _abortController) {
         return __awaiter(this, void 0, void 0, function* () {
             const canonical = params.tileID.canonical;
@@ -42299,10 +42302,10 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
         });
     }
     /**
-     * Fetches (if appropriate), parses, and index geojson data into tiles. This
+     * Fetches (if appropriate), parses and indexes geojson data into tiles. This
      * preparatory method must be called before {@link GeoJSONWorkerSource.loadTile}
      * can correctly serve up tiles. The first call to this method must contain a valid
-     * {@link params.data}, {@link params.request}, or {@link params.dataDiff}. Subsequent
+     * {@link params.data}, {@link params.request} or {@link params.dataDiff}. Subsequent
      * calls may omit these parameters to reprocess the existing data (such as to update
      * clustering options).
      *
@@ -42318,44 +42321,50 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
             (_a = this._pendingRequest) === null || _a === void 0 ? void 0 : _a.abort();
-            const perf = (params && params.request && params.request.collectResourceTiming) ?
-                new RequestPerformance(params.request) : false;
+            const perf = this._startPerformance(params);
             this._pendingRequest = new AbortController();
             try {
-                // Load and process data if no data has been loaded previously, or if there is
-                // a new request, data, or dataDiff to process.
+                // Load and process the GeoJSON data if it hasn't been loaded yet or if the data is changed.
                 if (!this._pendingData || params.request || params.data || params.dataDiff) {
                     this._pendingData = this.loadAndProcessGeoJSON(params, this._pendingRequest);
                 }
                 const data = yield this._pendingData;
                 this._geoJSONIndex = this._createGeoJSONIndex(data, params);
                 this.loaded = {};
+                // Let the main thread know whether to apply a diff - or return the full data set.
                 const result = params.dataDiff && isUpdateableGeoJSON(data) ?
-                    { shouldApplyDiff: true } :
+                    { applyDiff: true } :
                     { data };
-                if (perf) {
-                    const resourceTimingData = perf.finish();
-                    // it's necessary to eval the result of getEntriesByName() here via parse/stringify
-                    // late evaluation in the main thread causes TypeError: illegal invocation
-                    if (resourceTimingData) {
-                        result.resourceTiming = {};
-                        result.resourceTiming[params.source] = JSON.parse(JSON.stringify(resourceTimingData));
-                    }
-                }
+                this._finishPerformance(perf, params, result);
                 return result;
             }
             catch (err) {
                 delete this._pendingRequest;
-                if (isAbortError(err)) {
+                if (isAbortError(err))
                     return { abandoned: true };
-                }
                 throw err;
             }
         });
     }
+    _startPerformance(params) {
+        var _a;
+        if (!((_a = params === null || params === void 0 ? void 0 : params.request) === null || _a === void 0 ? void 0 : _a.collectResourceTiming))
+            return;
+        return new RequestPerformance(params.request);
+    }
+    _finishPerformance(perf, params, result) {
+        if (!perf)
+            return;
+        const resourceTimingData = perf.finish();
+        // it's necessary to eval the result of getEntriesByName() here via parse/stringify
+        // late evaluation in the main thread causes TypeError: illegal invocation
+        if (resourceTimingData) {
+            result.resourceTiming = {};
+            result.resourceTiming[params.source] = JSON.parse(JSON.stringify(resourceTimingData));
+        }
+    }
     /**
-     * Allows to get the source's actual GeoJSON.
-     *
+     * Get the source's full GeoJSON data source.
      * @returns a promise which is resolved with the source's actual GeoJSON
      */
     getData() {
@@ -42373,7 +42382,8 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
     * @returns A promise that resolves when the tile is reloaded
     */
     reloadTile(params) {
-        const loaded = this.loaded, uid = params.uid;
+        const loaded = this.loaded;
+        const uid = params.uid;
         if (loaded && loaded[uid]) {
             return super.reloadTile(params);
         }
@@ -42382,9 +42392,8 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
         }
     }
     /**
-     * Fetch, parse and process GeoJSON according to the given params.
-     *
-     * Defers to {@link GeoJSONWorkerSource.loadGeoJSON} for the fetching and parsing.
+     * Fetch, parse and process GeoJSON according to the given parameters.
+     * Defers to {@link GeoJSONWorkerSource._loadGeoJSONFromString} for the fetching and parsing.
      *
      * @param params - the parameters
      * @param abortController - the abort controller that allows aborting this operation
@@ -42392,59 +42401,76 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
      */
     loadAndProcessGeoJSON(params, abortController) {
         return __awaiter(this, void 0, void 0, function* () {
-            let data = yield this.loadGeoJSON(params, abortController);
+            let data;
+            if (params.request) {
+                // Data is loaded from a fetchable URL
+                data = yield this.loadGeoJSONFromUrl(params.request, params.promoteId, abortController);
+            }
+            else if (params.data) {
+                // Data is loaded from a GeoJSON Object
+                data = this._loadGeoJSONFromObject(params.data, params.promoteId);
+            }
+            else if (params.dataDiff) {
+                // Data is loaded from a GeoJSONSourceDiff
+                data = this._loadGeoJSONFromDiff(params.dataDiff, params.promoteId, params.source);
+            }
             delete this._pendingRequest;
             if (typeof data !== 'object') {
                 throw new Error(`Input data given to '${params.source}' is not a valid GeoJSON object.`);
             }
+            // Generate winding-order compliant GeoJSON Polygon and MultiPolygon geometries
             rewind$1(data, true);
             if (params.filter) {
-                const compiled = createExpression(params.filter, { type: 'boolean', 'property-type': 'data-driven', overridable: false, transition: false });
-                if (compiled.result === 'error')
-                    throw new Error(compiled.value.map(err => `${err.key}: ${err.message}`).join(', '));
-                const features = data.features.filter(feature => compiled.value.evaluate({ zoom: 0 }, feature));
-                data = { type: 'FeatureCollection', features };
+                data = this._filterGeoJSON(data, params.filter);
             }
             return data;
         });
     }
     /**
-     * Fetch and parse GeoJSON according to the given params.
-     *
-     * GeoJSON is loaded and parsed from `params.url` if it exists, or else
-     * expected as a literal (string or object) `params.data`.
-     *
-     * @param params - the parameters
-     * @param abortController - the abort controller that allows aborting this operation
-     * @returns a promise that resolves when the data is loaded
+     * Loads GeoJSON from a URL and sets the sources updateable GeoJSON object.
      */
-    loadGeoJSON(params, abortController) {
+    loadGeoJSONFromUrl(request, promoteId, abortController) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { promoteId } = params;
-            if (params.request) {
-                const response = yield getJSON(params.request, abortController);
-                this._dataUpdateable = isUpdateableGeoJSON(response.data, promoteId) ? toUpdateable(response.data, promoteId) : undefined;
-                return response.data;
-            }
-            if (typeof params.data === 'string') {
-                try {
-                    const parsed = JSON.parse(params.data);
-                    this._dataUpdateable = isUpdateableGeoJSON(parsed, promoteId) ? toUpdateable(parsed, promoteId) : undefined;
-                    return parsed;
-                }
-                catch (_a) {
-                    throw new Error(`Input data given to '${params.source}' is not a valid GeoJSON object.`);
-                }
-            }
-            if (!params.dataDiff) {
-                throw new Error(`Input data given to '${params.source}' is not a valid GeoJSON object.`);
-            }
-            if (!this._dataUpdateable) {
-                throw new Error(`Cannot update existing geojson data in ${params.source}`);
-            }
-            applySourceDiff(this._dataUpdateable, params.dataDiff, promoteId);
-            return { type: 'FeatureCollection', features: Array.from(this._dataUpdateable.values()) };
+            const response = yield getJSON(request, abortController);
+            this._dataUpdateable = isUpdateableGeoJSON(response.data, promoteId) ? toUpdateable(response.data, promoteId) : undefined;
+            return response.data;
         });
+    }
+    /**
+     * Loads GeoJSON from a string and sets the sources updateable GeoJSON object.
+     */
+    _loadGeoJSONFromObject(data, promoteId) {
+        this._dataUpdateable = isUpdateableGeoJSON(data, promoteId) ? toUpdateable(data, promoteId) : undefined;
+        return data;
+    }
+    /**
+     * Loads GeoJSON from a GeoJSONSourceDiff and applies it to the existing source updateable GeoJSON object.
+     */
+    _loadGeoJSONFromDiff(dataDiff, promoteId, source) {
+        if (!this._dataUpdateable) {
+            throw new Error(`Cannot update existing geojson data in ${source}`);
+        }
+        // Incrementally apply the diff to existing source data
+        applySourceDiff(this._dataUpdateable, dataDiff, promoteId);
+        const features = Array.from(this._dataUpdateable.values());
+        return this._toFeatureCollection(features);
+    }
+    /**
+     * Applies a filter to a GeoJSON object.
+     */
+    _filterGeoJSON(data, filter) {
+        const compiled = createExpression(filter, { type: 'boolean', 'property-type': 'data-driven', overridable: false, transition: false });
+        if (compiled.result === 'error') {
+            throw new Error(compiled.value.map(err => `${err.key}: ${err.message}`).join(', '));
+        }
+        const features = data.features.filter(feature => compiled.value.evaluate({ zoom: 0 }, feature));
+        return this._toFeatureCollection(features);
+    }
+    /**
+     * Converts an array of GeoJSON features into a GeoJSON FeatureCollection.
+     */
+    _toFeatureCollection(features) {
+        return { type: 'FeatureCollection', features };
     }
     removeSource(_params) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -42464,8 +42490,10 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
     }
 }
 function createGeoJSONIndex(data, params) {
-    return params.cluster ? new Supercluster(getSuperclusterOptions(params)).load(data.features) :
-        geojsonvt(data, params.geojsonVtOptions);
+    if (params.cluster) {
+        return new Supercluster(getSuperclusterOptions(params)).load(data.features);
+    }
+    return geojsonvt(data, params.geojsonVtOptions);
 }
 function getSuperclusterOptions({ superclusterOptions, clusterProperties }) {
     if (!clusterProperties || !superclusterOptions)

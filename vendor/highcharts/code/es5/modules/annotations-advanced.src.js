@@ -1,5 +1,5 @@
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-13)
+ * @license Highcharts JS v12.4.0-modified (2025-11-15)
  * @module highcharts/modules/annotations-advanced
  * @requires highcharts
  *
@@ -7862,7 +7862,7 @@ var NavigationBindings = /** @class */ (function () {
 
 ;// ./code/es5/es-modules/masters/modules/annotations.src.js
 /**
- * @license Highcharts JS v12.4.0-modified (2025-11-13)
+ * @license Highcharts JS v12.4.0-modified (2025-11-15)
  * @module highcharts/modules/annotations
  * @requires highcharts
  *
